@@ -2,4 +2,4 @@
 
 Sharing source codes with the others.
 
-Any Mobile C users have right to modify the ucc repository.
+Any Mobile C users can pull request the ucc repository.
