@@ -6,7 +6,7 @@
  *****************************************************************************/
 
 // supported platforms check. NOTE iOS only, but may works on other platforms
-#if !defined(_OS_IOS_)
+#if !defined(_OS_IOS_) && !defined(_OS_ANDROID_) && !defined(_OS_WINDOWS_)
     #error "Not supported platform!"
 #endif
 
@@ -22,13 +22,8 @@
 
 // NOTE the md2 model was found on this site:
 // http://leileilol.mancubus.net/garyacordsucks/64.246.6.138/_gcsgames.com/GCSenemy/md2.htm
-#ifdef ANDROID
-    #define MD2_FILE         "/sdcard/C++ Compiler/chip.md2"
-    #define MD2_TEXTURE_FILE "/sdcard/C++ Compiler/chipskin.bmp"
-#else
-    #define MD2_FILE         "Resources/chip.md2"
-    #define MD2_TEXTURE_FILE "Resources/chipskin.bmp"
-#endif
+#define MD2_FILE         "Resources/chip.md2"
+#define MD2_TEXTURE_FILE "Resources/chipskin.bmp"
 
 // mini API
 #include "MiniAPI/MiniModels.h"
@@ -42,7 +37,7 @@ typedef struct
 //------------------------------------------------------------------------------
 // renderer buffers should no more be generated since CCR version 1.1
 #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-    #ifndef ANDROID
+    #ifndef _OS_ANDROID_
         GLuint g_Framebuffer, g_Renderbuffer;
     #endif
 #endif
@@ -81,7 +76,7 @@ void on_GLES2_Init(int view_w, int view_h)
 {
     // renderer buffers should no more be generated since CCR version 1.1
     #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-        #ifndef ANDROID
+        #ifndef _OS_ANDROID_
             // generate and bind in memory frame buffers to render to
             glGenFramebuffers(1, &g_Framebuffer);
             glBindFramebuffer(GL_FRAMEBUFFER, g_Framebuffer);
@@ -283,9 +278,4 @@ void on_GLES2_TouchEnd(float x, float y)
 //------------------------------------------------------------------------------
 void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
 {}
-//------------------------------------------------------------------------------
-#ifdef IOS
-    void on_GLES2_DeviceRotate(int orientation)
-    {}
-#endif
 //------------------------------------------------------------------------------

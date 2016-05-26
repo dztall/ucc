@@ -6,7 +6,7 @@
  *****************************************************************************/
 
 // supported platforms check. NOTE iOS only, but may works on other platforms
-#if !defined(_OS_IOS_)
+#if !defined(_OS_IOS_) && !defined(_OS_ANDROID_) && !defined(_OS_WINDOWS_)
     #error "Not supported platform!"
 #endif
 
@@ -26,16 +26,12 @@
 #include "MiniAPI/MiniShapes.h"
 #include "MiniAPI/MiniShader.h"
 
-#ifdef ANDROID
-    #define EARTH_TEXTURE_FILE "/sdcard/C++ Compiler/earthmap.bmp"
-#else
-    #define EARTH_TEXTURE_FILE "Resources/earthmap.bmp"
-#endif
+#define EARTH_TEXTURE_FILE "Resources/earthmap.bmp"
 
 //------------------------------------------------------------------------------
 // renderer buffers should no more be generated since CCR version 1.1
 #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-    #ifndef ANDROID
+    #ifndef _OS_ANDROID_
         GLuint g_Renderbuffer, g_Framebuffer;
     #endif
 #endif
@@ -77,7 +73,7 @@ void on_GLES2_Init(int view_w, int view_h)
 {
     // renderer buffers should no more be generated since CCR version 1.1
     #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-        #ifndef ANDROID
+        #ifndef _OS_ANDROID_
             // generate and bind in memory frame buffers to render to
             glGenRenderbuffers(1, &g_Renderbuffer);
             glBindRenderbuffer(GL_RENDERBUFFER, g_Renderbuffer);
@@ -285,9 +281,4 @@ void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
     // increase or decrease rotation speed
     g_RotationSpeed += (x - prev_x) * 0.001f;
 }
-//------------------------------------------------------------------------------
-#ifdef IOS
-    void on_GLES2_DeviceRotate(int orientation)
-    {}
-#endif
 //------------------------------------------------------------------------------

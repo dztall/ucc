@@ -7,7 +7,7 @@
  *****************************************************************************/
 
 // supported platforms check. NOTE iOS only, but may works on other platforms
-#if !defined(_OS_IOS_)
+#if !defined(_OS_IOS_) && !defined(_OS_ANDROID_) && !defined(_OS_WINDOWS_)
     #error "Not supported platform!"
 #endif
 
@@ -28,18 +28,13 @@
 #include "MiniAPI/MiniShader.h"
 
 // NOTE the texture was found here: http://opengameart.org/content/stone-texture-bump
-#ifdef ANDROID
-    #define STONE_TEXTURE_FILE "/sdcard/C++ Compiler/stone.bmp"
-    #define STONE_BUMPMAP_FILE "/sdcard/C++ Compiler/stone_bump.bmp"
-#else
-    #define STONE_TEXTURE_FILE "Resources/stone.bmp"
-    #define STONE_BUMPMAP_FILE "Resources/stone_bump.bmp"
-#endif
+#define STONE_TEXTURE_FILE "Resources/stone.bmp"
+#define STONE_BUMPMAP_FILE "Resources/stone_bump.bmp"
 
 //------------------------------------------------------------------------------
 // renderer buffers should no more be generated since CCR version 1.1
 #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-    #ifndef ANDROID
+    #ifndef _OS_ANDROID_
         GLuint g_Renderbuffer, g_Framebuffer;
     #endif
 #endif
@@ -115,7 +110,7 @@ void on_GLES2_Init(int view_w, int view_h)
 {
     // renderer buffers should no more be generated since CCR version 1.1
     #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-        #ifndef ANDROID
+        #ifndef _OS_ANDROID_
             // generate and bind in memory frame buffers to render to
             glGenRenderbuffers(1, &g_Renderbuffer);
             glBindRenderbuffer(GL_RENDERBUFFER, g_Renderbuffer);
@@ -278,9 +273,4 @@ void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
                 1.0f - ((y * maxY) / g_View.m_Height),
                 2.0f);
 }
-//------------------------------------------------------------------------------
-#ifdef IOS
-    void on_GLES2_DeviceRotate(int orientation)
-    {}
-#endif
 //------------------------------------------------------------------------------
