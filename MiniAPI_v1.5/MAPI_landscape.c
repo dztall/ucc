@@ -1,14 +1,17 @@
 /*****************************************************************************
- * ==> Bump mapping demo ----------------------------------------------------*
+ * ==> Landscape generator demo ---------------------------------------------*
  *****************************************************************************
- * Description : A bump mapped stone wall with diffuse light, swipe on       *
- *               screen to modify diffuse light properties                   *
+ * Description : A landscape generator based on a grayscale image            *
  * Developer   : Jean-Milost Reymond                                         *
  *****************************************************************************/
 
 // supported platforms check. NOTE iOS only, but may works on other platforms
 #if !defined(_OS_IOS_) && !defined(_OS_ANDROID_) && !defined(_OS_WINDOWS_)
     #error "Not supported platform!"
+#endif
+
+#ifdef CCR_FORCE_LLVM_INTERPRETER
+#error "Clang/LLVM on iOS does not support function pointer yet. Consider using CPP built-in compiler."
 #endif
 
 // std
@@ -27,9 +30,12 @@
 #include "MiniAPI/MiniShapes.h"
 #include "MiniAPI/MiniShader.h"
 
-// NOTE the texture was found here: http://opengameart.org/content/stone-texture-bump
-#define STONE_TEXTURE_FILE "Resources/stone.bmp"
-#define STONE_BUMPMAP_FILE "Resources/stone_bump.bmp"
+#if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
+#include <ccr.h>
+#endif
+
+#define LANDSCAPE_TEXTURE_FILE "Resources/grass.bmp"
+#define LANDSCAPE_DATA_FILE    "Resources/the_face.bmp"
 
 //------------------------------------------------------------------------------
 // renderer buffers should no more be generated since CCR version 1.1
@@ -38,57 +44,21 @@
         GLuint g_Renderbuffer, g_Framebuffer;
     #endif
 #endif
-GLuint             g_ShaderProgram      = 0;
-float*             g_pSurfaceVB         = 0;
-int                g_SurfaceVertexCount = 0;
-const float        g_SurfaceWidth       = 10.0f;
-const float        g_SurfaceHeight      = 12.5f;
-GLuint             g_TextureIndex       = GL_INVALID_VALUE;
-GLuint             g_BumpMapIndex       = GL_INVALID_VALUE;
-GLuint             g_PositionSlot       = 0;
-GLuint             g_ColorSlot          = 0;
-GLuint             g_TexCoordSlot       = 0;
-GLuint             g_LightPos           = 0;
-GLuint             g_TexSamplerSlot     = 0;
-GLuint             g_BumpMapSamplerSlot = 0;
-MG_Size            g_View;
+GLuint             g_ShaderProgram  = 0;
+float              g_MapHeight      = 3.0f;
+float              g_MapScale       = 0.2f;
+float              g_Angle          = 0.0f;
+float              g_RotationSpeed  = 0.02f;
+float              g_Time           = 0.0f;
+float              g_Interval       = 0.0f;
+const unsigned int g_FPS            = 15;
+GLuint             g_TextureIndex   = GL_INVALID_VALUE;
+GLuint             g_PositionSlot   = 0;
+GLuint             g_ColorSlot      = 0;
+GLuint             g_TexCoordSlot   = 0;
+GLuint             g_TexSamplerSlot = 0;
+ML_Mesh*           g_pLandscapeMesh = 0;
 MV_VertexFormat    g_VertexFormat;
-//------------------------------------------------------------------------------
-const char* g_pVSDiffuseBumpMap =
-    "precision mediump float;"
-    "attribute vec4 qr_vPosition;"
-    "attribute vec4 qr_vColor;"
-    "attribute vec2 qr_vTexCoord;"
-    "uniform   vec3 qr_vLightPos;"
-    "uniform   mat4 qr_uProjection;"
-    "uniform   mat4 qr_uModelview;"
-    "varying   vec4 qr_fColor;"
-    "varying   vec2 qr_fTexCoord;"
-    "varying   vec3 qr_fLightPos;"
-    "void main(void)"
-    "{"
-    "    qr_fColor    = qr_vColor;"
-    "    qr_fTexCoord = qr_vTexCoord;"
-    "    qr_fLightPos = qr_vLightPos;"
-    "    gl_Position  = qr_uProjection * qr_uModelview * qr_vPosition;"
-    "}";
-//------------------------------------------------------------------------------
-// NOTE this shader was written on the base of the following article:
-// http://www.swiftless.com/tutorials/glsl/8_bump_mapping.html
-const char* g_pFSDiffuseBumpMap =
-    "precision mediump float;"
-    "uniform sampler2D qr_sColorMap;"
-    "uniform sampler2D qr_sBumpMap;"
-    "varying lowp vec4 qr_fColor;"
-    "varying      vec2 qr_fTexCoord;"
-    "varying      vec3 qr_fLightPos;"
-    "void main(void)"
-    "{"
-    "    vec3  normal  = normalize(texture2D(qr_sBumpMap, qr_fTexCoord).rgb * 2.0 - 1.0);"
-    "    float diffuse = max(dot(normal, qr_fLightPos), 0.0);"
-    "    vec3  color   = diffuse * texture2D(qr_sColorMap, qr_fTexCoord).rgb;"
-    "    gl_FragColor  = vec4(color, 1.0);"
-    "}";
 //------------------------------------------------------------------------------
 void ApplyMatrix(float w, float h)
 {
@@ -108,6 +78,10 @@ void ApplyMatrix(float w, float h)
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
 {
+    int            landscapeWidth;
+    int            landscapeHeight;
+    unsigned char* pData = 0;
+
     // renderer buffers should no more be generated since CCR version 1.1
     #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
         #ifndef _OS_ANDROID_
@@ -124,32 +98,38 @@ void on_GLES2_Init(int view_w, int view_h)
     #endif
 
     // compile, link and use shaders
-    g_ShaderProgram = CompileShaders(g_pVSDiffuseBumpMap, g_pFSDiffuseBumpMap);
+    g_ShaderProgram = CompileShaders(g_pVSTextured, g_pFSTextured);
     glUseProgram(g_ShaderProgram);
+
+    // load landscape data from grayscale image model
+    LoadLandscape(LANDSCAPE_DATA_FILE, &pData, &landscapeWidth, &landscapeHeight);
 
     g_VertexFormat.m_UseNormals  = 0;
     g_VertexFormat.m_UseTextures = 1;
     g_VertexFormat.m_UseColors   = 1;
 
-    // generate surface
-    CreateSurface(&g_SurfaceWidth,
-                  &g_SurfaceHeight,
-                  0xFFFFFFFF,
-                  &g_VertexFormat,
-                  &g_pSurfaceVB,
-                  &g_SurfaceVertexCount);
+    // generate landscape
+    CreateLandscape(pData,
+                    landscapeWidth,
+                    landscapeHeight,
+                    g_MapHeight,
+                    g_MapScale,
+                    &g_VertexFormat,
+                    0xFFFFFFFF,
+                    &g_pLandscapeMesh);
 
-    // load earth texture
-    g_TextureIndex = LoadTexture(STONE_TEXTURE_FILE);
-    g_BumpMapIndex = LoadTexture(STONE_BUMPMAP_FILE);
+    // landscape image data will no longer be used
+    if (pData)
+        free(pData);
+
+    // load landscape texture
+    g_TextureIndex = LoadTexture(LANDSCAPE_TEXTURE_FILE);
 
     // get shader attributes
-    g_PositionSlot       = glGetAttribLocation(g_ShaderProgram,  "qr_vPosition");
-    g_ColorSlot          = glGetAttribLocation(g_ShaderProgram,  "qr_vColor");
-    g_TexCoordSlot       = glGetAttribLocation(g_ShaderProgram,  "qr_vTexCoord");
-    g_LightPos           = glGetUniformLocation(g_ShaderProgram, "qr_vLightPos");
-    g_TexSamplerSlot     = glGetUniformLocation(g_ShaderProgram, "qr_sColorMap");
-    g_BumpMapSamplerSlot = glGetUniformLocation(g_ShaderProgram, "qr_sBumpMap");
+    g_PositionSlot   = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
+    g_ColorSlot      = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
+    g_TexCoordSlot   = glGetAttribLocation(g_ShaderProgram, "qr_vTexCoord");
+    g_TexSamplerSlot = glGetAttribLocation(g_ShaderProgram, "qr_sColorMap");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -159,20 +139,21 @@ void on_GLES2_Init(int view_w, int view_h)
 
     // enable culling
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
+    glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
+    glDisable(GL_CULL_FACE);
 
-    // notify shader about default light position
-    glUniform3f(g_LightPos, 0.0f, 0.0f, 2.0f);
+    // calculate frame interval
+    g_Interval = 1000.0f / g_FPS;
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
 {
-    // delete surface vertices
-    if (g_pSurfaceVB)
+    // delete landscape mesh
+    if (g_pLandscapeMesh)
     {
-        free(g_pSurfaceVB);
-        g_pSurfaceVB = 0;
+        free(g_pLandscapeMesh);
+        g_pLandscapeMesh = 0;
     }
 
     // delete shader program
@@ -184,68 +165,87 @@ void on_GLES2_Final()
 //------------------------------------------------------------------------------
 void on_GLES2_Size(int view_w, int view_h)
 {
-    // get view size
-    g_View.m_Width  = view_w;
-    g_View.m_Height = view_h;
-
     glViewport(0, 0, view_w, view_h);
     ApplyMatrix(view_w, view_h);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
-{}
+{
+    unsigned int frameCount = 0;
+
+    // calculate next time
+    g_Time += (timeStep_sec * 1000.0f);
+
+    // count frames to skip
+    while (g_Time > g_Interval)
+    {
+        g_Time -= g_Interval;
+        ++frameCount;
+    }
+
+    // calculate next rotation angle
+    g_Angle += (g_RotationSpeed * frameCount);
+
+    // is rotating angle out of bounds?
+    while (g_Angle >= 6.28f)
+        g_Angle -= 6.28f;
+}
 //------------------------------------------------------------------------------
 void on_GLES2_Render()
 {
     int        stride;
     MG_Vector3 t;
+    MG_Vector3 r;
+    MG_Matrix  translateMatrix;
+    MG_Matrix  yRotateMatrix;
     MG_Matrix  modelViewMatrix;
     GLvoid*    pCoords;
     GLvoid*    pTexCoords;
     GLvoid*    pColors;
 
     // clear scene background and depth buffer
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(0.1f, 0.65f, 0.9f, 1.0f);
     glClearDepthf(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // calculate vertex stride
-    stride = g_VertexFormat.m_Stride;
-
-    // populate surface translation vector
+    // set translation
     t.m_X =  0.0f;
-    t.m_Y =  0.0f;
-    t.m_Z = -15.0f;
+    t.m_Y = -2.0f;
+    t.m_Z = -5.0f;
 
-    // get translation matrix
-    GetTranslateMatrix(&t, &modelViewMatrix);
+    GetTranslateMatrix(&t, &translateMatrix);
+
+    // set rotation on Y axis
+    r.m_X = 0.0f;
+    r.m_Y = 1.0f;
+    r.m_Z = 0.0f;
+
+    // calculate model view matrix (it's a rotation on the y axis)
+    GetRotateMatrix(&g_Angle, &r, &yRotateMatrix);
+
+    // build model view matrix
+    MatrixMultiply(&yRotateMatrix, &translateMatrix, &modelViewMatrix);
 
     // connect model view matrix to shader
     GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
-    // enable position, texture and color slots
+    // configure texture to draw
+    glActiveTexture(GL_TEXTURE0);
+    glUniform1i(g_TexSamplerSlot, GL_TEXTURE0);
+
+    // calculate vertex stride
+    stride = g_VertexFormat.m_Stride;
+
+    // enable position and color slots
     glEnableVertexAttribArray(g_PositionSlot);
     glEnableVertexAttribArray(g_TexCoordSlot);
     glEnableVertexAttribArray(g_ColorSlot);
 
-    // enable OpenGL texturing engine
-    glEnable(GL_TEXTURE_2D);
-
-    // connect texture to shader
-    glActiveTexture(GL_TEXTURE0);
-    glUniform1i(g_TexSamplerSlot, 0);
-    glBindTexture(GL_TEXTURE_2D, g_TextureIndex);
-
-    // connect bump map to shader
-    glActiveTexture(GL_TEXTURE1);
-    glUniform1i(g_BumpMapSamplerSlot, 1);
-    glBindTexture(GL_TEXTURE_2D, g_BumpMapIndex);
-
-    // get next vertices buffer
-    pCoords    = &g_pSurfaceVB[0];
-    pTexCoords = &g_pSurfaceVB[3];
-    pColors    = &g_pSurfaceVB[5];
+    // get next vertices fan buffer
+    pCoords    = &g_pLandscapeMesh->m_pVertexBuffer[0];
+    pTexCoords = &g_pLandscapeMesh->m_pVertexBuffer[3];
+    pColors    = &g_pLandscapeMesh->m_pVertexBuffer[5];
 
     // connect buffer to shader
     glVertexAttribPointer(g_PositionSlot, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), pCoords);
@@ -253,7 +253,12 @@ void on_GLES2_Render()
     glVertexAttribPointer(g_ColorSlot,    4, GL_FLOAT, GL_FALSE, stride * sizeof(float), pColors);
 
     // draw it
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glDrawArrays(GL_TRIANGLES, 0, g_pLandscapeMesh->m_VertexCount / stride);
+
+    // disconnect slots from shader
+    glDisableVertexAttribArray(g_PositionSlot);
+    glDisableVertexAttribArray(g_TexCoordSlot);
+    glDisableVertexAttribArray(g_ColorSlot);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchBegin(float x, float y)
@@ -264,13 +269,29 @@ void on_GLES2_TouchEnd(float x, float y)
 //------------------------------------------------------------------------------
 void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
 {
-    const float maxX = 2.0f;
-    const float maxY = 2.0f;
-
-    // convert screen coordinates to light world coordinate and notify shader about new light position
-    glUniform3f(g_LightPos,
-                ((x * maxX) / g_View.m_Width) - 1.0f,
-                1.0f - ((y * maxY) / g_View.m_Height),
-                2.0f);
+    // increase or decrease rotation speed
+    g_RotationSpeed += (x - prev_x) * 0.001f;
 }
 //------------------------------------------------------------------------------
+
+#if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
+int main()
+{
+	ccrSet_GLES2_Init_Callback(on_GLES2_Init);
+	ccrSet_GLES2_Final_Callback(on_GLES2_Final);
+	ccrSet_GLES2_Size_Callback(on_GLES2_Size);
+	ccrSet_GLES2_Update_Callback(on_GLES2_Update);
+	ccrSet_GLES2_Render_Callback(on_GLES2_Render);
+	ccrSet_GLES2_TouchBegin_Callback(on_GLES2_TouchBegin);
+	ccrSet_GLES2_TouchMove_Callback(on_GLES2_TouchMove);
+	ccrSet_GLES2_TouchEnd_Callback(on_GLES2_TouchEnd);
+
+	ccrBegin_GLES2_Drawing();
+
+	while(ccrGetEvent(false)!=CCR_EVENT_QUIT);
+
+	ccrEnd_GLES2_Drawing();
+
+	return 0;
+}
+#endif
