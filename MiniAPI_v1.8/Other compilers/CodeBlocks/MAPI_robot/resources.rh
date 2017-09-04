@@ -1,0 +1,6 @@
+#ifndef RESOURCES_RH
+#define RESOURCES_RH
+
+#define IDI_MAIN_ICON 1000
+
+#endif // RESOURCES_RH
