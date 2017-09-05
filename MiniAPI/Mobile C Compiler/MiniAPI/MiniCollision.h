@@ -814,7 +814,7 @@ int PolygonsIntersect(MG_Vector3* pP1V1, MG_Vector3* pP1V2, MG_Vector3* pP1V3,
 * Checks if a ray intersects a polygon
 *@param pRay - ray
 *@param pPolygon - polygon
-*@return 1 if ray intersect polygon, otherwise 0
+*@return 1 if ray intersects polygon, otherwise 0
 */
 int TriRayIntersect(const MG_Ray* pRay, const MC_Polygon* pPolygon)
 {
@@ -836,7 +836,7 @@ int TriRayIntersect(const MG_Ray* pRay, const MC_Polygon* pPolygon)
 * Checks if a ray intersects a box
 *@param pRay - ray
 *@param pBox - box
-*@return 1 if ray intersect box, otherwise 0
+*@return 1 if ray intersects box, otherwise 0
 */
 int RayBoxIntersect(MG_Ray* pRay, MG_Box* pBox)
 {
@@ -863,7 +863,7 @@ int RayBoxIntersect(MG_Ray* pRay, MG_Box* pBox)
         tx1 = ((pBox->m_Min.m_X - pRay->m_Pos.m_X) * pRay->m_InvDir.m_X);
     else
     if ((pBox->m_Min.m_X - pRay->m_Pos.m_X) < 0.0f)
-        tx1 =  -inf;
+        tx1 = -inf;
     else
         tx1 = inf;
 
@@ -876,16 +876,16 @@ int RayBoxIntersect(MG_Ray* pRay, MG_Box* pBox)
     else
         tx2 = inf;
 
-    // calculate nearest point where ray intersects box on x coordinate
+    // calculate nearest point where ray intersects box on y coordinate
     if (pRay->m_InvDir.m_Y != inf)
         ty1 = ((pBox->m_Min.m_Y - pRay->m_Pos.m_Y) * pRay->m_InvDir.m_Y);
     else
     if ((pBox->m_Min.m_Y - pRay->m_Pos.m_Y) < 0.0f)
-        ty1 =  -inf;
+        ty1 = -inf;
     else
         ty1 = inf;
 
-    // calculate farthest point where ray intersects box on x coordinate
+    // calculate farthest point where ray intersects box on y coordinate
     if (pRay->m_InvDir.m_Y != inf)
         ty2 = ((pBox->m_Max.m_Y - pRay->m_Pos.m_Y) * pRay->m_InvDir.m_Y);
     else
@@ -894,16 +894,16 @@ int RayBoxIntersect(MG_Ray* pRay, MG_Box* pBox)
     else
         ty2 = inf;
 
-    // calculate nearest point where ray intersects box on x coordinate
+    // calculate nearest point where ray intersects box on z coordinate
     if (pRay->m_InvDir.m_Z != inf)
         tz1 = ((pBox->m_Min.m_Z - pRay->m_Pos.m_Z) * pRay->m_InvDir.m_Z);
     else
     if ((pBox->m_Min.m_Z - pRay->m_Pos.m_Z) < 0.0f)
-        tz1 =  -inf;
+        tz1 = -inf;
     else
         tz1 = inf;
 
-    // calculate farthest point where ray intersects box on x coordinate
+    // calculate farthest point where ray intersects box on z coordinate
     if (pRay->m_InvDir.m_Z != inf)
         tz2 = ((pBox->m_Max.m_Z - pRay->m_Pos.m_Z) * pRay->m_InvDir.m_Z);
     else
@@ -1132,7 +1132,7 @@ int GetPolygonsFromVB(const float*       pVB,
 
 /**
 * Release polygons previously created by GetPolygonsFromVB() or AddPolygon()
-*@aram pPolygons - polygon array to release
+*@param pPolygons - polygon array to release
 */
 void ReleasePolygons(MC_Polygon* pPolygons)
 {
@@ -1214,7 +1214,7 @@ void CutBox(const MG_Box* pBox, MG_Box* pLeftBox, MG_Box* pRightBox)
 *@param pNode - root or parent node to create from
 *@param pPolygons - source polygon array
 *@param polygonsCount - polygon array count
-*@returns 1 on success, otherwise 0
+*@return 1 on success, otherwise 0
 */
 int PopulateTree(MC_AABBNode* pNode, const MC_Polygon* pPolygons, unsigned polygonsCount)
 {
@@ -1403,7 +1403,7 @@ int PopulateTree(MC_AABBNode* pNode, const MC_Polygon* pPolygons, unsigned polyg
 *@param pNode - root or parent node to resolve
 *@param[out] pPolygons - polygons belonging to boxes hit by ray
 *@param[out] polygonsCount - polygon array count
-*@returns 1 on success, otherwise 0
+*@return 1 on success, otherwise 0
 */
 int ResolveTree(MG_Ray* pRay, MC_AABBNode* pNode, MC_Polygon** pPolygons, unsigned* pPolygonsCount)
 {

@@ -4,9 +4,9 @@
  * Description : Minimal OpenAL player library                               *
  * Developer   : Jean-Milost Reymond                                         *
  * Copyright   : 2015, this file is part of the Minimal API. You are free    *
- *               to copy or redistribute this file, modify it, or use it for *
- *               your own projects, commercial or not                        *
- *****************************************************************************/
+ *               to copy or redistribute this file, modify it, or use it for *
+ *               your own projects, commercial or not                        *
+ *****************************************************************************/
 
 #ifndef MiniPlayerH
 #define MiniPlayerH
@@ -111,7 +111,7 @@ int LoadSoundBuffer(unsigned char*  pFileName,
 *@param sampling - sampling to use (standard values are e.g. 48000, 44100, ...)
 *@param[out] pBufferID - newly created OpenAL sound buffer identifier (needed to delete the sound)
 *@param[out] pID - newly created OpenAL sound identifier
-*@returns 1 on success, otherwise 0
+*@return 1 on success, otherwise 0
 */
 int CreateSound(const ALCdevice*  pOpenALDevice,
                 const ALCcontext* pOpenALContext,
@@ -165,7 +165,7 @@ int CreateSound(const ALCdevice*  pOpenALDevice,
 /**
 * Plays sound
 *@param id - sound identifier to play
-*@returns 1 on success, otherwise 0
+*@return 1 on success, otherwise 0
 */
 int PlaySound(ALuint id)
 {
@@ -179,7 +179,7 @@ int PlaySound(ALuint id)
 /**
 * Pauses sound
 *@param id - sound identifier to pause
-*@returns 1 on success, otherwise 0
+*@return 1 on success, otherwise 0
 */
 int PauseSound(ALuint id)
 {
@@ -193,7 +193,7 @@ int PauseSound(ALuint id)
 /**
 * Stops sound
 *@param id - sound identifier to stop
-*@returns 1 on success, otherwise 0
+*@return 1 on success, otherwise 0
 */
 int StopSound(ALuint id)
 {
@@ -207,7 +207,7 @@ int StopSound(ALuint id)
 /**
 * Checks if sound is currently playing
 *@param id - sound identifier to check
-*@returns 1 if sound is currently playing, otherwise 0
+*@return 1 if sound is currently playing, otherwise 0
 */
 int IsSoundPlaying(ALuint id)
 {
@@ -228,7 +228,7 @@ int IsSoundPlaying(ALuint id)
 * Changes sound pitch
 *@param id - sound identifier for which pitch should be modified
 *@param pValue - new pitch value (see OpenAL documentation for correct value range)
-*@returns 1 on success, otherwise 0
+*@return 1 on success, otherwise 0
 */
 int ChangeSoundPitch(ALuint id, float* pValue)
 {
@@ -248,7 +248,7 @@ int ChangeSoundPitch(ALuint id, float* pValue)
 * Changes sound volume
 *@param id - sound identifier for which volume should be modified
 *@param pValue - new volume value (see OpenAL documentation for correct value range)
-*@returns 1 on success, otherwise 0
+*@return 1 on success, otherwise 0
 */
 int ChangeSoundVolume(ALuint id, float* pValue)
 {
@@ -268,7 +268,7 @@ int ChangeSoundVolume(ALuint id, float* pValue)
 * Changes sound minimum volume limit
 *@param id - sound identifier for which limit should be modified
 *@param pValue - new minimum volume limit value (see OpenAL documentation for correct value range)
-*@returns 1 on success, otherwise 0
+*@return 1 on success, otherwise 0
 */
 int ChangeSoundVolumeMin(ALuint id, float* pValue)
 {
@@ -288,7 +288,7 @@ int ChangeSoundVolumeMin(ALuint id, float* pValue)
 * Changes sound maximum volume limit
 *@param id - sound identifier for which limit should be modified
 *@param pValue - new maximum volume limit value (see OpenAL documentation for correct value range)
-*@returns 1 on success, otherwise 0
+*@return 1 on success, otherwise 0
 */
 int ChangeSoundVolumeMax(ALuint id, float* pValue)
 {
@@ -310,7 +310,7 @@ int ChangeSoundVolumeMax(ALuint id, float* pValue)
 *@param pX - sound source x position
 *@param pY - sound source y position
 *@param pZ - sound source z position
-*@returns 1 on success, otherwise 0
+*@return 1 on success, otherwise 0
 */
 int ChangeSoundPosition(ALuint id, float* pX, float* pY, float* pZ)
 {

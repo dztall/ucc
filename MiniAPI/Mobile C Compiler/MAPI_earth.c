@@ -5,6 +5,12 @@
  * Developer   : Jean-Milost Reymond                                         *
  *****************************************************************************/
 
+// supported platforms check (for now, only supports iOS and Android devices.
+// NOTE Android support is theorical, never tested on a such device)
+#if !defined(IOS) && !defined(ANDROID)
+    #error "Not supported platform!"
+#endif
+
 // std
 #include <stdlib.h>
 #include <string.h>
@@ -29,12 +35,15 @@
 #ifdef ANDROID
     #define EARTH_TEXTURE_FILE "/sdcard/C++ Compiler/earthmap.bmp"
 #else
-    #define EARTH_TEXTURE_FILE "Private/Resources/earthmap.bmp"
+    #define EARTH_TEXTURE_FILE "Resources/earthmap.bmp"
 #endif
 
 //------------------------------------------------------------------------------
-#ifndef ANDROID
-    GLuint g_Renderbuffer, g_Framebuffer;
+// renderer buffers should no more be generated since CCR version 1.1
+#if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
+    #ifndef ANDROID
+        GLuint g_Renderbuffer, g_Framebuffer;
+    #endif
 #endif
 GLuint             g_ShaderProgram  = 0;
 float*             g_pVertexBuffer  = 0;
@@ -57,12 +66,20 @@ MV_VertexFormat    g_VertexFormat;
 void ApplyOrtho(float maxX, float maxY) const
 {
     // get orthogonal matrix
-    float     left   = -5.0f;
-    float     right  =  5.0f;
-    float     bottom = -5.0f * 1.12f;
-    float     top    =  5.0f * 1.12f;
-    float     near   =  1.0f;
-    float     far    =  20.0f;
+    float left  = -5.0f;
+    float right =  5.0f;
+    float near  =  1.0f;
+    float far   =  20.0f;
+
+    // screen ratio was modified since CCR version 1.1
+    #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
+        float bottom = -5.0f * 1.12f;
+        float top    =  5.0f * 1.12f;
+    #else
+        float bottom = -5.0f * 1.24f;
+        float top    =  5.0f * 1.24f;
+    #endif
+
     MG_Matrix ortho;
     GetOrtho(&left, &right, &bottom, &top, &near, &far, &ortho);
 
@@ -73,16 +90,19 @@ void ApplyOrtho(float maxX, float maxY) const
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
 {
-    #ifndef ANDROID
-        // generate and bind in memory frame buffers to render to
-        glGenRenderbuffers(1, &g_Renderbuffer);
-        glBindRenderbuffer(GL_RENDERBUFFER, g_Renderbuffer);
-        glGenFramebuffers(1,&g_Framebuffer);
-        glBindFramebuffer(GL_FRAMEBUFFER, g_Framebuffer);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER,
-                                  GL_COLOR_ATTACHMENT0,
-                                  GL_RENDERBUFFER,
-                                  g_Renderbuffer);
+    // renderer buffers should no more be generated since CCR version 1.1
+    #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
+        #ifndef ANDROID
+            // generate and bind in memory frame buffers to render to
+            glGenRenderbuffers(1, &g_Renderbuffer);
+            glBindRenderbuffer(GL_RENDERBUFFER, g_Renderbuffer);
+            glGenFramebuffers(1,&g_Framebuffer);
+            glBindFramebuffer(GL_FRAMEBUFFER, g_Framebuffer);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER,
+                                      GL_COLOR_ATTACHMENT0,
+                                      GL_RENDERBUFFER,
+                                      g_Renderbuffer);
+        #endif
     #endif
 
     // compile, link and use shaders

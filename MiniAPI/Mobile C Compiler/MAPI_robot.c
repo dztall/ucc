@@ -5,6 +5,12 @@
  * Developer   : Jean-Milost Reymond                                         *
  *****************************************************************************/
 
+// supported platforms check (for now, only supports iOS and Android devices.
+// NOTE Android support is theorical, never tested on a such device)
+#if !defined(IOS) && !defined(ANDROID)
+    #error "Not supported platform!"
+#endif
+
 // std
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,12 +26,14 @@
     #include <OpenGLES/ES2/glext.h>
 #endif
 
+// NOTE the md2 model was found on this site:
+// http://leileilol.mancubus.net/garyacordsucks/64.246.6.138/_gcsgames.com/GCSenemy/md2.htm
 #ifdef ANDROID
     #define MD2_FILE         "/sdcard/C++ Compiler/chip.md2"
     #define MD2_TEXTURE_FILE "/sdcard/C++ Compiler/chipskin.bmp"
 #else
-    #define MD2_FILE         "Private/Resources/chip.md2"
-    #define MD2_TEXTURE_FILE "Private/Resources/chipskin.bmp"
+    #define MD2_FILE         "Resources/chip.md2"
+    #define MD2_TEXTURE_FILE "Resources/chipskin.bmp"
 #endif
 
 // mini API
@@ -38,8 +46,11 @@ typedef struct
     float m_Range[2];
 } QR_MD2Animation;
 //------------------------------------------------------------------------------
-#ifndef ANDROID
-    GLuint g_Framebuffer, g_Renderbuffer;
+// renderer buffers should no more be generated since CCR version 1.1
+#if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
+    #ifndef ANDROID
+        GLuint g_Framebuffer, g_Renderbuffer;
+    #endif
 #endif
 MV_VertexFormat    g_ModelFormat;
 MM_MD2Model*       g_pModel         = 0;
@@ -76,17 +87,20 @@ void ApplyProjection(float width, float height) const
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
 {
-    #ifndef ANDROID
-        // generate and bind in memory frame buffers to render to
-        glGenFramebuffers(1, &g_Framebuffer);
-        glBindFramebuffer(GL_FRAMEBUFFER, g_Framebuffer);
+    // renderer buffers should no more be generated since CCR version 1.1
+    #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
+        #ifndef ANDROID
+            // generate and bind in memory frame buffers to render to
+            glGenFramebuffers(1, &g_Framebuffer);
+            glBindFramebuffer(GL_FRAMEBUFFER, g_Framebuffer);
 
-        glGenRenderbuffers(1, &g_Renderbuffer);
-        glBindRenderbuffer(GL_RENDERBUFFER, g_Renderbuffer);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER,
-                                  GL_COLOR_ATTACHMENT0,
-                                  GL_RENDERBUFFER,
-                                  g_Renderbuffer);
+            glGenRenderbuffers(1, &g_Renderbuffer);
+            glBindRenderbuffer(GL_RENDERBUFFER, g_Renderbuffer);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER,
+                                      GL_COLOR_ATTACHMENT0,
+                                      GL_RENDERBUFFER,
+                                      g_Renderbuffer);
+        #endif
     #endif
 
     // compile, link and use shaders

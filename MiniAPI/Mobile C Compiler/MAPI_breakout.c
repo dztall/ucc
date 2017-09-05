@@ -5,6 +5,12 @@
  * Developer   : Jean-Milost Reymond                                         *
  *****************************************************************************/
 
+// supported platforms check (for now, only supports iOS and Android devices.
+// NOTE Android support is theorical, never tested on a such device)
+#if !defined(IOS) && !defined(ANDROID)
+    #error "Not supported platform!"
+#endif
+
 // std
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,8 +47,8 @@
         #define BALL_REBOUND_SOUND_FILE "/sdcard/C++ Compiler/samples/ball_rebound.wav"
         #define BAR_EXPLODE_SOUND_FILE  "/sdcard/C++ Compiler/samples/bar_explode.wav"
     #else
-        #define BALL_REBOUND_SOUND_FILE "Private/Resources/ball_rebound.wav"
-        #define BAR_EXPLODE_SOUND_FILE  "Private/Resources/bar_explode.wav"
+        #define BALL_REBOUND_SOUND_FILE "Resources/ball_rebound.wav"
+        #define BAR_EXPLODE_SOUND_FILE  "Resources/bar_explode.wav"
     #endif
 #endif
 

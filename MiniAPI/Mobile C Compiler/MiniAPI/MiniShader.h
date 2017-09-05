@@ -4,9 +4,9 @@
  * Description : Minimal shader library                                      *
  * Developer   : Jean-Milost Reymond                                         *
  * Copyright   : 2015, this file is part of the Minimal API. You are free    *
- *               to copy or redistribute this file, modify it, or use it for *
- *               your own projects, commercial or not                        *
- *****************************************************************************/
+ *               to copy or redistribute this file, modify it, or use it for *
+ *               your own projects, commercial or not                        *
+ *****************************************************************************/
 
 #ifndef MiniShaderH
 #define MiniShaderH

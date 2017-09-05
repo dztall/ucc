@@ -1,9 +1,16 @@
 /*****************************************************************************
  * ==> Aligned-Axis collision detection demo --------------------------------*
  *****************************************************************************
- * Description : Collision detection with aligned-axis bounding box tree     *
+ * Description : Collision detection with aligned-axis bounding box tree.    *
+ *               Tap anywhere on the sphere to select a polygon              *
  * Developer   : Jean-Milost Reymond                                         *
  *****************************************************************************/
+
+// supported platforms check (for now, only supports iOS and Android devices.
+// NOTE Android support is theorical, never tested on a such device)
+#if !defined(IOS) && !defined(ANDROID)
+    #error "Not supported platform!"
+#endif
 
 // std
 #include <stdlib.h>
@@ -27,15 +34,12 @@
 #include "MiniAPI/MiniCollision.h"
 #include "MiniAPI/MiniShader.h"
 
-#ifdef ANDROID
-    #define EARTH_TEXTURE_FILE "/sdcard/C++ Compiler/earthmap.bmp"
-#else
-    #define EARTH_TEXTURE_FILE "Private/Resources/earthmap.bmp"
-#endif
-
 //------------------------------------------------------------------------------
-#ifndef ANDROID
-    GLuint g_Renderbuffer, g_Framebuffer;
+// renderer buffers should no more be generated since CCR version 1.1
+#if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
+    #ifndef ANDROID
+        GLuint g_Renderbuffer, g_Framebuffer;
+    #endif
 #endif
 GLuint             g_ShaderProgram        = 0;
 float*             g_pVertexBuffer        = 0;
@@ -50,18 +54,27 @@ float              g_RayX                 = 0.0f;
 float              g_RayY                 = 0.0f;
 GLuint             g_PositionSlot         = 0;
 GLuint             g_ColorSlot            = 0;
+MG_Size            g_View;
 MV_VertexFormat    g_VertexFormat;
 float              g_PolygonArray[21];
 //------------------------------------------------------------------------------
 void ApplyOrtho(float maxX, float maxY) const
 {
     // get orthogonal matrix
-    float     left   = -5.0f;
-    float     right  =  5.0f;
-    float     bottom = -5.0f * 1.12f;
-    float     top    =  5.0f * 1.12f;
-    float     near   =  1.0f;
-    float     far    =  20.0f;
+    float left  = -5.0f;
+    float right =  5.0f;
+    float near  =  1.0f;
+    float far   =  20.0f;
+
+    // screen ratio was modified since CCR version 1.1
+    #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
+        float bottom = -5.0f * 1.12f;
+        float top    =  5.0f * 1.12f;
+    #else
+        float bottom = -5.0f * 1.24f;
+        float top    =  5.0f * 1.24f;
+    #endif
+
     MG_Matrix ortho;
     GetOrtho(&left, &right, &bottom, &top, &near, &far, &ortho);
 
@@ -72,16 +85,19 @@ void ApplyOrtho(float maxX, float maxY) const
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
 {
-    #ifndef ANDROID
-        // generate and bind in memory frame buffers to render to
-        glGenRenderbuffers(1, &g_Renderbuffer);
-        glBindRenderbuffer(GL_RENDERBUFFER, g_Renderbuffer);
-        glGenFramebuffers(1,&g_Framebuffer);
-        glBindFramebuffer(GL_FRAMEBUFFER, g_Framebuffer);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER,
-                                  GL_COLOR_ATTACHMENT0,
-                                  GL_RENDERBUFFER,
-                                  g_Renderbuffer);
+    // renderer buffers should no more be generated since CCR version 1.1
+    #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
+        #ifndef ANDROID
+            // generate and bind in memory frame buffers to render to
+            glGenRenderbuffers(1, &g_Renderbuffer);
+            glBindRenderbuffer(GL_RENDERBUFFER, g_Renderbuffer);
+            glGenFramebuffers(1,&g_Framebuffer);
+            glBindFramebuffer(GL_FRAMEBUFFER, g_Framebuffer);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER,
+                                      GL_COLOR_ATTACHMENT0,
+                                      GL_RENDERBUFFER,
+                                      g_Renderbuffer);
+        #endif
     #endif
 
     // compile, link and use shaders
@@ -178,6 +194,9 @@ void on_GLES2_Final()
 //------------------------------------------------------------------------------
 void on_GLES2_Size(int view_w, int view_h)
 {
+    g_View.m_Width  = view_w;
+    g_View.m_Height = view_h;
+
     glViewport(0, 0, view_w, view_h);
     ApplyOrtho(2.0f, 2.0f);
 }
@@ -332,9 +351,9 @@ void on_GLES2_TouchEnd(float x, float y)
     const float maxX = 10.0f;
     const float maxY = 10.0f;
 
-    // convert screen coordinates (0, 0, 320, 370) to ray world coordinate
-    g_RayX = ((x * maxX) / 320.0f) - 5.0f;
-    g_RayY = 5.0f - ((y * maxY) / 370.0f);
+    // convert screen coordinates to ray world coordinate
+    g_RayX = ((x * maxX) / g_View.m_Width) - 5.0f;
+    g_RayY = 5.0f - ((y * maxY) / g_View.m_Height);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
