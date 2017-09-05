@@ -50,7 +50,7 @@ float*             g_pVertexBuffer  = 0;
 int                g_VertexCount    = 0;
 MV_Index*          g_pIndexes       = 0;
 int                g_IndexCount     = 0;
-float              g_Radius         = 5.0f;
+float              g_Radius         = 1.0f;
 float              g_Angle          = 0.0f;
 float              g_RotationSpeed  = 0.1f;
 float              g_Time           = 0.0f;
@@ -63,29 +63,20 @@ GLuint             g_TexCoordSlot   = 0;
 GLuint             g_TexSamplerSlot = 0;
 MV_VertexFormat    g_VertexFormat;
 //------------------------------------------------------------------------------
-void ApplyOrtho(float maxX, float maxY) const
+void ApplyMatrix(float w, float h) const
 {
     // get orthogonal matrix
-    float left  = -5.0f;
-    float right =  5.0f;
-    float near  =  1.0f;
-    float far   =  20.0f;
+    const float near   = 1.0f;
+    const float far    = 20.0f;
+    const float fov    = 45.0f;
+    const float aspect = (GLfloat)w/(GLfloat)h;
 
-    // screen ratio was modified since CCR version 1.1
-    #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-        float bottom = -5.0f * 1.12f;
-        float top    =  5.0f * 1.12f;
-    #else
-        float bottom = -5.0f * 1.24f;
-        float top    =  5.0f * 1.24f;
-    #endif
-
-    MG_Matrix ortho;
-    GetOrtho(&left, &right, &bottom, &top, &near, &far, &ortho);
+    MG_Matrix matrix;
+    GetPerspective(&fov, &aspect, &near, &far, &matrix);
 
     // connect projection matrix to shader
     GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
-    glUniformMatrix4fv(projectionUniform, 1, 0, &ortho.m_Table[0][0]);
+    glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
@@ -141,7 +132,7 @@ void on_GLES2_Init(int view_w, int view_h)
 
     // enable culling
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
+    glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
     // calculate frame interval
@@ -174,7 +165,7 @@ void on_GLES2_Final()
 void on_GLES2_Size(int view_w, int view_h)
 {
     glViewport(0, 0, view_w, view_h);
-    ApplyOrtho(2.0f, 2.0f);
+    ApplyMatrix(view_w, view_h);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
@@ -205,7 +196,9 @@ void on_GLES2_Render()
     unsigned    j;
     int         stride;
     float       xAngle;
+    MG_Vector3  t;
     MG_Vector3  r;
+    MG_Matrix   translateMatrix;
     MG_Matrix   xRotateMatrix;
     MG_Matrix   yRotateMatrix;
     MG_Matrix   modelViewMatrix;
@@ -217,6 +210,13 @@ void on_GLES2_Render()
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClearDepthf(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // set translation
+    t.m_X =  0.0f;
+    t.m_Y =  0.0f;
+    t.m_Z = -4.0f;
+
+    GetTranslateMatrix(&t, &translateMatrix);
 
     // set rotation on X axis
     r.m_X = 1.0f;
@@ -238,7 +238,8 @@ void on_GLES2_Render()
     GetRotateMatrix(&g_Angle, &r, &yRotateMatrix);
 
     // build model view matrix
-    MatrixMultiply(&xRotateMatrix, &yRotateMatrix, &modelViewMatrix);
+    MatrixMultiply(&xRotateMatrix,   &yRotateMatrix,   &modelViewMatrix);
+    MatrixMultiply(&modelViewMatrix, &translateMatrix, &modelViewMatrix);
 
     // connect model view matrix to shader
     GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
@@ -288,7 +289,7 @@ void on_GLES2_TouchEnd(float x, float y)
 void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
 {
     // increase or decrease rotation speed
-    g_RotationSpeed += (x - prev_x) * -0.001f;
+    g_RotationSpeed += (x - prev_x) * 0.001f;
 }
 //------------------------------------------------------------------------------
 #ifdef IOS

@@ -267,7 +267,7 @@ GLuint LoadTexture(const unsigned char* pFileName)
         for (x = 0; x < width; ++x)
             for (c = 0; c < 3; ++c)
                 pPixels[3 * (width * y + x) + c] =
-                        pBitmapData[bytesPerRow * y + 3 * x + (2 - c)];
+                        pBitmapData[bytesPerRow * y + 3 * (width - x - 1) + (2 - c)];
 
     // create new OpenGL texture
     glGenTextures(1, &index);

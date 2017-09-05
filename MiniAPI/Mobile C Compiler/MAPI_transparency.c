@@ -57,7 +57,7 @@ float*             g_pSurfaceVB         = 0;
 int                g_SurfaceVertexCount = 0;
 const float        g_SurfaceWidth       = 20.0f;
 const float        g_SurfaceHeight      = 20.0f;
-const float        g_SphereRadius       = 5.0f;
+const float        g_SphereRadius       = 1.0f;
 float              g_Angle              = 0.0f;
 float              g_RotationSpeed      = 0.1f;
 float              g_AlphaLevel         = 0.5f;
@@ -74,29 +74,20 @@ GLuint             g_AlphaSlot          = 0;
 GLuint             g_ModelviewUniform   = 0;
 MV_VertexFormat    g_VertexFormat;
 //------------------------------------------------------------------------------
-void ApplyOrtho(float maxX, float maxY) const
+void ApplyMatrix(float w, float h) const
 {
     // get orthogonal matrix
-    float left  = -5.0f;
-    float right =  5.0f;
-    float near  =  1.0f;
-    float far   =  20.0f;
+    const float near   = 1.0f;
+    const float far    = 20.0f;
+    const float fov    = 45.0f;
+    const float aspect = (GLfloat)w/(GLfloat)h;
 
-    // screen ratio was modified since CCR version 1.1
-    #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-        float bottom = -5.0f * 1.12f;
-        float top    =  5.0f * 1.12f;
-    #else
-        float bottom = -5.0f * 1.24f;
-        float top    =  5.0f * 1.24f;
-    #endif
-
-    MG_Matrix ortho;
-    GetOrtho(&left, &right, &bottom, &top, &near, &far, &ortho);
+    MG_Matrix matrix;
+    GetPerspective(&fov, &aspect, &near, &far, &matrix);
 
     // connect projection matrix to shader
     GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
-    glUniformMatrix4fv(projectionUniform, 1, 0, &ortho.m_Table[0][0]);
+    glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
@@ -192,7 +183,7 @@ void on_GLES2_Final()
 void on_GLES2_Size(int view_w, int view_h)
 {
     glViewport(0, 0, view_w, view_h);
-    ApplyOrtho(2.0f, 2.0f);
+    ApplyMatrix(view_w, view_h);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
@@ -225,6 +216,7 @@ void on_GLES2_Render()
     float      xAngle;
     MG_Vector3 t;
     MG_Vector3 r;
+    MG_Matrix  translateMatrix;
     MG_Matrix  xRotateMatrix;
     MG_Matrix  yRotateMatrix;
     MG_Matrix  modelViewMatrix;
@@ -241,7 +233,7 @@ void on_GLES2_Render()
     // because depth test should be deactivated later to allow alpha blending to work correctly)
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
+    glCullFace(GL_BACK);
     glDisable(GL_BLEND);
 
     // calculate vertex stride
@@ -300,6 +292,14 @@ void on_GLES2_Render()
     // bind glass texture
     glBindTexture(GL_TEXTURE_2D, g_GlassTextureIndex);
 
+    // populate sphere translation vector
+    t.m_X =  0.0f;
+    t.m_Y =  0.0f;
+    t.m_Z = -4.0f;
+
+    // get translation matrix
+    GetTranslateMatrix(&t, &translateMatrix);
+
     // set rotation on X axis
     r.m_X = 1.0f;
     r.m_Y = 0.0f;
@@ -320,7 +320,8 @@ void on_GLES2_Render()
     GetRotateMatrix(&g_Angle, &r, &yRotateMatrix);
 
     // build model view matrix
-    MatrixMultiply(&xRotateMatrix, &yRotateMatrix, &modelViewMatrix);
+    MatrixMultiply(&xRotateMatrix,   &yRotateMatrix,   &modelViewMatrix);
+    MatrixMultiply(&modelViewMatrix, &translateMatrix, &modelViewMatrix);
 
     // connect model view matrix to shader
     glUniformMatrix4fv(g_ModelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
@@ -330,9 +331,8 @@ void on_GLES2_Render()
 
     // configure OpenGL to draw transparency (NOTE all opaque objects should be drawn before,
     // because depth test should be disabled to allow alpha blending to work correctly)
-    glDisable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_NONE);
+    glCullFace(GL_BACK);
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -369,7 +369,7 @@ void on_GLES2_TouchEnd(float x, float y)
 void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
 {
     // increase or decrease rotation speed
-    g_RotationSpeed += (x - prev_x) * -0.001f;
+    g_RotationSpeed += (x - prev_x) * 0.001f;
 
     // increase or decrease alpha level
     g_AlphaLevel += (y - prev_y) * -0.001f;

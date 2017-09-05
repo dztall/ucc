@@ -16,6 +16,12 @@
 #include <math.h>
 
 //-----------------------------------------------------------------------------
+// Global defines
+//-----------------------------------------------------------------------------
+
+#define M_MC_PI 3.1415926535897932384626433832795f
+
+//-----------------------------------------------------------------------------
 // Structures
 //-----------------------------------------------------------------------------
 
@@ -369,7 +375,7 @@ void GetPerspective(float*     pFovyDeg,
     // invalid for n <= 0, f <= 0, a = 0, or n = f
 
     // calculate field of view, and sinus and cosinus values
-    const float halfFovyRad = 3.1415f * *pFovyDeg / 360.0f;
+    const float halfFovyRad = M_MC_PI * *pFovyDeg / 360.0f;
     const float si          = sinf(halfFovyRad);
     const float co          = cosf(halfFovyRad);
 

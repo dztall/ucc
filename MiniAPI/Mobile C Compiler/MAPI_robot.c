@@ -67,22 +67,20 @@ const unsigned int g_FPS            = 15;
 const unsigned int g_AnimIndex      = 0; // Can only be 0 (robot walks) or 1 (robot dies)
 QR_MD2Animation    g_Animation[2];
 //------------------------------------------------------------------------------
-void ApplyProjection(float width, float height) const
+void ApplyMatrix(float w, float h) const
 {
     // get orthogonal matrix
-    float left   = -width  * 0.5f;
-    float right  =  width  * 0.5f;
-    float bottom = -height * 0.5f;
-    float top    =  height * 0.5f;
-    float near   =  1.0f;
-    float far    =  100.0f;
+    const float near   = 1.0f;
+    const float far    = 20.0f;
+    const float fov    = 45.0f;
+    const float aspect = (GLfloat)w/(GLfloat)h;
 
-    MG_Matrix ortho;
-    GetOrtho(&left, &right, &bottom, &top, &near, &far, &ortho);
+    MG_Matrix matrix;
+    GetPerspective(&fov, &aspect, &near, &far, &matrix);
 
     // connect projection matrix to shader
     GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
-    glUniformMatrix4fv(projectionUniform, 1, 0, &ortho.m_Table[0][0]);
+    glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
@@ -158,7 +156,7 @@ void on_GLES2_Final()
 void on_GLES2_Size(int view_w, int view_h)
 {
     glViewport(0, 0, view_w, view_h);
-    ApplyProjection(24.0f, 24.0f * 1.12f);
+    ApplyMatrix(view_w, view_h);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
@@ -213,7 +211,7 @@ void on_GLES2_Render()
     // set translation
     t.m_X =  0.0f;
     t.m_Y =  0.0f;
-    t.m_Z = -20.0f;
+    t.m_Z = -75.0f;
 
     GetTranslateMatrix(&t, &translateMatrix);
 
@@ -228,9 +226,9 @@ void on_GLES2_Render()
     GetRotateMatrix(&angle, &axis, &rotateMatrix);
 
     // set scale factor
-    factor.m_X = 0.5f;
-    factor.m_Y = 0.5f;
-    factor.m_Z = 0.5f;
+    factor.m_X = 0.02f;
+    factor.m_Y = 0.02f;
+    factor.m_Z = 0.02f;
 
     GetScaleMatrix(&factor, &scaleMatrix);
 

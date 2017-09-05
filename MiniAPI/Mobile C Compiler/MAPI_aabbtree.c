@@ -1,5 +1,5 @@
 /*****************************************************************************
- * ==> Aligned-Axis collision detection demo --------------------------------*
+ * ==> Aligned-Axis bounding box collision detection demo -------------------*
  *****************************************************************************
  * Description : Collision detection with aligned-axis bounding box tree.    *
  *               Tap anywhere on the sphere to select a polygon              *
@@ -49,7 +49,7 @@ int                g_IndexCount           = 0;
 MC_AABBNode*       g_pAABBRoot            = 0;
 MC_Polygon*        g_pCollidePolygons     = 0;
 int                g_CollidePolygonsCount = 0;
-float              g_Radius               = 5.0f;
+float              g_Radius               = 1.0f;
 float              g_RayX                 = 0.0f;
 float              g_RayY                 = 0.0f;
 GLuint             g_PositionSlot         = 0;
@@ -58,29 +58,20 @@ MG_Size            g_View;
 MV_VertexFormat    g_VertexFormat;
 float              g_PolygonArray[21];
 //------------------------------------------------------------------------------
-void ApplyOrtho(float maxX, float maxY) const
+void ApplyMatrix(float w, float h) const
 {
     // get orthogonal matrix
-    float left  = -5.0f;
-    float right =  5.0f;
-    float near  =  1.0f;
-    float far   =  20.0f;
+    const float near   = 1.0f;
+    const float far    = 20.0f;
+    const float fov    = 45.0f;
+    const float aspect = (GLfloat)w/(GLfloat)h;
 
-    // screen ratio was modified since CCR version 1.1
-    #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-        float bottom = -5.0f * 1.12f;
-        float top    =  5.0f * 1.12f;
-    #else
-        float bottom = -5.0f * 1.24f;
-        float top    =  5.0f * 1.24f;
-    #endif
-
-    MG_Matrix ortho;
-    GetOrtho(&left, &right, &bottom, &top, &near, &far, &ortho);
+    MG_Matrix matrix;
+    GetPerspective(&fov, &aspect, &near, &far, &matrix);
 
     // connect projection matrix to shader
     GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
-    glUniformMatrix4fv(projectionUniform, 1, 0, &ortho.m_Table[0][0]);
+    glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
@@ -194,11 +185,12 @@ void on_GLES2_Final()
 //------------------------------------------------------------------------------
 void on_GLES2_Size(int view_w, int view_h)
 {
-    g_View.m_Width  = view_w;
-    g_View.m_Height = view_h;
+    // get view size. NOTE the first time, received value is 2x higher
+    g_View.m_Width  = view_w * (g_View.m_Width  ? 2.0f : 1.0f);
+    g_View.m_Height = view_h * (g_View.m_Height ? 2.0f : 1.0f);
 
     glViewport(0, 0, view_w, view_h);
-    ApplyOrtho(2.0f, 2.0f);
+    ApplyMatrix(view_w, view_h);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
@@ -213,10 +205,8 @@ void on_GLES2_Render()
     unsigned    i;
     unsigned    j;
     int         stride;
-    float       xAngle;
-    MG_Vector3  r;
-    MG_Matrix   xRotateMatrix;
-    MG_Matrix   yRotateMatrix;
+    MG_Vector3  t;
+    MG_Matrix   translateMatrix;
     MG_Matrix   modelViewMatrix;
     GLvoid*     pCoords;
     GLvoid*     pColors;
@@ -227,19 +217,28 @@ void on_GLES2_Render()
     glClearDepthf(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // set translation
+    t.m_X =  0.0f;
+    t.m_Y =  0.0f;
+    t.m_Z = -4.0f;
+
+    GetTranslateMatrix(&t, &translateMatrix);
+
+    // build view matrix
     GetIdentity(&modelViewMatrix);
+    MatrixMultiply(&modelViewMatrix, &translateMatrix, &modelViewMatrix);
 
     // connect model view matrix to shader
     GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // set ray in 3d world
-    ray.m_Pos.m_X =  g_RayX;
-    ray.m_Pos.m_Y =  g_RayY;
-    ray.m_Pos.m_Z = -10.0f;
-    ray.m_Dir.m_X =  0.0f;
-    ray.m_Dir.m_Y =  0.0f;
-    ray.m_Dir.m_Z =  1.0f;
+    ray.m_Pos.m_X = g_RayX;
+    ray.m_Pos.m_Y = g_RayY;
+    ray.m_Pos.m_Z = 0.0f;
+    ray.m_Dir.m_X = 0.0f;
+    ray.m_Dir.m_Y = 0.0f;
+    ray.m_Dir.m_Z = 1.0f;
 
     // calculate inverted ray dir. NOTE in C language, a division by 0 in this context
     // means infinity, that is needed, so don't worry about ray.m_Dir equals to 0
@@ -348,12 +347,13 @@ void on_GLES2_TouchBegin(float x, float y)
 //------------------------------------------------------------------------------
 void on_GLES2_TouchEnd(float x, float y)
 {
-    const float maxX = 10.0f;
-    const float maxY = 10.0f;
+    // calculate screen center
+    const float centerX = g_View.m_Width  / 2.0f;
+    const float centerY = g_View.m_Height / 2.0f;
 
-    // convert screen coordinates to ray world coordinate
-    g_RayX = ((x * maxX) / g_View.m_Width) - 5.0f;
-    g_RayY = 5.0f - ((y * maxY) / g_View.m_Height);
+    // convert screen coordinates to ray world coordinate and get ray position
+    g_RayX =  ((x - centerX) * (g_Radius * 2.2f)) / g_View.m_Width;
+    g_RayY = -((y - centerY) * (g_Radius * 2.2f)) / g_View.m_Height;
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)

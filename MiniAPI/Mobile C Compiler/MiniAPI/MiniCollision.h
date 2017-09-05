@@ -1001,6 +1001,7 @@ int GetPolygonsFromVB(const float*       pVB,
                             unsigned*    pPolygonsCount)
 {
     unsigned i;
+    unsigned index;
 
     // no data to extract from?
     if (!length)
@@ -1033,12 +1034,13 @@ int GetPolygonsFromVB(const float*       pVB,
         {
             // calculate length to read in triangle strip buffer
             const unsigned stripLength = (length - (stride * 2));
+                           index       = 0;
 
             // iterate through source vertices
             for (i = 0; i < stripLength; i += stride)
             {
                 // extract polygon from source buffer, revert odd polygons
-                if (!i || i % 2)
+                if (!index || !(index % 2))
                     AddPolygon(pVB,
                                i,
                                i +  stride,
@@ -1052,6 +1054,8 @@ int GetPolygonsFromVB(const float*       pVB,
                                i + (stride * 2),
                                pPolygons,
                                pPolygonsCount);
+
+                ++index;
             }
 
             return 1;

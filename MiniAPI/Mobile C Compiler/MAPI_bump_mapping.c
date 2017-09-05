@@ -99,31 +99,21 @@ const char* g_pFSDiffuseBumpMap =
     "    vec3  color   = diffuse * texture2D(qr_sColorMap, qr_fTexCoord).rgb;"
     "    gl_FragColor  = vec4(color, 1.0);"
     "}";
-
 //------------------------------------------------------------------------------
-void ApplyOrtho(float maxX, float maxY) const
+void ApplyMatrix(float w, float h) const
 {
     // get orthogonal matrix
-    float left  = -5.0f;
-    float right =  5.0f;
-    float near  =  1.0f;
-    float far   =  20.0f;
+    const float near   = 1.0f;
+    const float far    = 20.0f;
+    const float fov    = 45.0f;
+    const float aspect = (GLfloat)w/(GLfloat)h;
 
-    // screen ratio was modified since CCR version 1.1
-    #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-        float bottom = -5.0f * 1.12f;
-        float top    =  5.0f * 1.12f;
-    #else
-        float bottom = -5.0f * 1.24f;
-        float top    =  5.0f * 1.24f;
-    #endif
-
-    MG_Matrix ortho;
-    GetOrtho(&left, &right, &bottom, &top, &near, &far, &ortho);
+    MG_Matrix matrix;
+    GetPerspective(&fov, &aspect, &near, &far, &matrix);
 
     // connect projection matrix to shader
     GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
-    glUniformMatrix4fv(projectionUniform, 1, 0, &ortho.m_Table[0][0]);
+    glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
@@ -204,11 +194,12 @@ void on_GLES2_Final()
 //------------------------------------------------------------------------------
 void on_GLES2_Size(int view_w, int view_h)
 {
-    g_View.m_Width  = view_w;
-    g_View.m_Height = view_h;
+    // get view size. NOTE the first time, received value is 2x higher
+    g_View.m_Width  = view_w * (g_View.m_Width  ? 2.0f : 1.0f);
+    g_View.m_Height = view_h * (g_View.m_Height ? 2.0f : 1.0f);
 
     glViewport(0, 0, view_w, view_h);
-    ApplyOrtho(2.0f, 2.0f);
+    ApplyMatrix(view_w, view_h);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
@@ -234,7 +225,7 @@ void on_GLES2_Render()
     // populate surface translation vector
     t.m_X =  0.0f;
     t.m_Y =  0.0f;
-    t.m_Z = -10.0f;
+    t.m_Z = -15.0f;
 
     // get translation matrix
     GetTranslateMatrix(&t, &modelViewMatrix);
