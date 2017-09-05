@@ -7,7 +7,7 @@
  *               to copy or redistribute this file, modify it, or use it for *
  *               your own projects, commercial or not                        *
  *****************************************************************************/
-
+
 #ifndef MiniCommonH
 #define MiniCommonH
 

@@ -178,7 +178,7 @@ void on_GLES2_Final()
         g_pIndexes = 0;
     }
 
-    // delete vertexes
+    // delete vertices
     if (g_pVertexBuffer)
     {
         free(g_pVertexBuffer);
@@ -293,7 +293,7 @@ void on_GLES2_Render()
     // iterate through vertex fan buffers to draw
     for (int i = 0; i < g_IndexCount; ++i)
     {
-        // get next vertexes fan buffer
+        // get next vertices fan buffer
         pCoords = &g_pVertexBuffer[g_pIndexes[i].m_Start];
         pColors = &g_pVertexBuffer[g_pIndexes[i].m_Start + 3];
 
@@ -323,7 +323,7 @@ void on_GLES2_Render()
         g_PolygonArray[15] = pPolygonsToDraw[i].m_v[2].m_Y;
         g_PolygonArray[16] = pPolygonsToDraw[i].m_v[2].m_Z;
 
-        // get next vertexes fan buffer
+        // get next vertices fan buffer
         pCoords = &g_PolygonArray[0];
         pColors = &g_PolygonArray[3];
 

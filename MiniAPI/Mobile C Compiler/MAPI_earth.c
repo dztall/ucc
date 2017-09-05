@@ -157,7 +157,7 @@ void on_GLES2_Final()
         g_pIndexes = 0;
     }
 
-    // delete vertexes
+    // delete vertices
     if (g_pVertexBuffer)
     {
         free(g_pVertexBuffer);
@@ -259,7 +259,7 @@ void on_GLES2_Render()
     // iterate through vertex fan buffers to draw
     for (int i = 0; i < g_IndexCount; ++i)
     {
-        // get next vertexes fan buffer
+        // get next vertices fan buffer
         pCoords    = &g_pVertexBuffer[g_pIndexes[i].m_Start];
         pTexCoords = &g_pVertexBuffer[g_pIndexes[i].m_Start + 3];
         pColors    = &g_pVertexBuffer[g_pIndexes[i].m_Start + 5];

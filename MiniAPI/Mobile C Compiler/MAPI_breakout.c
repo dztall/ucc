@@ -765,7 +765,7 @@ void on_GLES2_Render()
     // iterate through vertex fan buffers to draw
     for (i = 0; (unsigned)i < g_BallIndexCount; ++i)
     {
-        // get next vertexes fan buffer
+        // get next vertices fan buffer
         pCoords = &g_pBallVertices[g_pBallIndexes[i].m_Start];
         pColors = &g_pBallVertices[g_pBallIndexes[i].m_Start + 3];
 

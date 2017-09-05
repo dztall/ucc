@@ -55,7 +55,7 @@ int CreateSurface(const float*           pWidth,
 
     *pVertexCount = 4;
 
-    // generate vertexes
+    // generate vertices
     if (!(*pVertices))
         *pVertices = (float*)malloc(*pVertexCount * sizeof(float) * pVertexFormat->m_Stride);
     else
@@ -213,7 +213,7 @@ void CreateSphere(const float*           pRadius,
         // calculate new vertex buffer length
         *pVertexCount += fanLength;
 
-        // generate vertexes
+        // generate vertices
         if (!(*pVertices))
             *pVertices = (float*)malloc(*pVertexCount * sizeof(float));
         else

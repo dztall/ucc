@@ -1015,7 +1015,7 @@ int GetPolygonsFromVB(const float*       pVB,
             // calculate iteration step
             const unsigned step = (stride * 3);
 
-            // iterate through source vertexes
+            // iterate through source vertices
             for (i = 0; i < length; i += step)
                 // extract polygon from source buffer
                 AddPolygon(pVB,
@@ -1034,7 +1034,7 @@ int GetPolygonsFromVB(const float*       pVB,
             // calculate length to read in triangle strip buffer
             const unsigned stripLength = (length - (stride * 2));
 
-            // iterate through source vertexes
+            // iterate through source vertices
             for (i = 0; i < stripLength; i += stride)
             {
                 // extract polygon from source buffer, revert odd polygons
@@ -1063,7 +1063,7 @@ int GetPolygonsFromVB(const float*       pVB,
             // calculate length to read in triangle fan buffer
             const unsigned fanLength = (length - stride);
 
-            // iterate through source vertexes
+            // iterate through source vertices
             for (i = stride; i < fanLength; i += stride)
                 // extract polygon from source buffer
                 AddPolygon(pVB,
@@ -1082,10 +1082,10 @@ int GetPolygonsFromVB(const float*       pVB,
             // calculate iteration step
             const unsigned step = (stride * 4);
 
-            // iterate through source vertexes
+            // iterate through source vertices
             for (i = 0; i < length; i += step)
             {
-                // calculate vertexes position
+                // calculate vertices position
                 const unsigned v1 = i;
                 const unsigned v2 = i +  stride;
                 const unsigned v3 = i + (stride * 2);
@@ -1108,10 +1108,10 @@ int GetPolygonsFromVB(const float*       pVB,
             // calculate length to read in triangle strip buffer
             const unsigned stripLength = (length - (stride * 2));
 
-            // iterate through source vertexes
+            // iterate through source vertices
             for (i = 0; i < stripLength; i += step)
             {
-                // calculate vertexes position
+                // calculate vertices position
                 const unsigned v1 = i;
                 const unsigned v2 = i +  stride;
                 const unsigned v3 = i + (stride * 2);

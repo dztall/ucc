@@ -7,7 +7,7 @@
  *               to copy or redistribute this file, modify it, or use it for *
  *               your own projects, commercial or not                        *
  *****************************************************************************/
-
+
 #ifndef MiniShaderH
 #define MiniShaderH
 
@@ -81,6 +81,43 @@ const char* g_pFSTextured =
     "void main(void)"
     "{"
     "    gl_FragColor = qr_fColor * texture2D(qr_sColorMap, qr_fTexCoord);"
+    "}";
+
+/**
+* Vertex shader program containing slots for position, color, texture and alpha blending value
+*/
+const char* g_pVSTexAlpha =
+    "precision mediump float;"
+    "attribute vec4  qr_vPosition;"
+    "attribute vec4  qr_vColor;"
+    "attribute vec2  qr_vTexCoord;"
+    "uniform   mat4  qr_uProjection;"
+    "uniform   mat4  qr_uModelview;"
+    "uniform   float qr_uAlpha;"
+    "varying   vec4  qr_fColor;"
+    "varying   vec2  qr_fTexCoord;"
+    "varying   float qr_fAlpha;"
+    "void main(void)"
+    "{"
+    "    qr_fColor    = qr_vColor;"
+    "    qr_fTexCoord = qr_vTexCoord;"
+    "    qr_fAlpha    = qr_uAlpha;"
+    "    gl_Position  = qr_uProjection * qr_uModelview * qr_vPosition;"
+    "}";
+
+/**
+* Fragment shader program containing slots for position, color, texture and alpha blending value
+*/
+const char* g_pFSTexAlpha =
+    "precision mediump float;"
+    "uniform sampler2D  qr_sColorMap;"
+    "varying lowp vec4  qr_fColor;"
+    "varying      vec2  qr_fTexCoord;"
+    "varying      float qr_fAlpha;"
+    "void main(void)"
+    "{"
+    "vec4 color   = qr_fColor * texture2D(qr_sColorMap, qr_fTexCoord);"
+    "gl_FragColor = vec4(color.x, color.y, color.z, qr_fAlpha);"
     "}";
 
 //-----------------------------------------------------------------------------
