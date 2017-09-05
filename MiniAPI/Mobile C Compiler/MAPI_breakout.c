@@ -5,9 +5,8 @@
  * Developer   : Jean-Milost Reymond                                         *
  *****************************************************************************/
 
-// supported platforms check (for now, only supports iOS and Android devices.
-// NOTE Android support is theorical, never tested on a such device)
-#if !defined(IOS) && !defined(ANDROID)
+// supported platforms check. NOTE iOS only, but may works on other platforms
+#if !defined(_OS_IOS_)
     #error "Not supported platform!"
 #endif
 
@@ -17,15 +16,9 @@
 #include <math.h>
 #include <time.h>
 
-// OpenGL
-#ifdef ANDROID
-    #include <gles2/gl2.h>
-    #include <gles2/gl2ext.h>
-#endif
-#ifdef IOS
-    #include <OpenGLES/ES2/gl.h>
-    #include <OpenGLES/ES2/glext.h>
-#endif
+// opengl
+#include <gles2.h>
+#include <gles2ext.h>
 
 // mini API
 #include "MiniAPI/MiniGeometry.h"
@@ -896,7 +889,7 @@ void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
         return;
 
     // calculate bar next position
-    g_Bar.m_Geometry.m_Pos.m_X += (x - prev_x) / 10.0f;
+    g_Bar.m_Geometry.m_Pos.m_X += (x - prev_x) / 25.0f;
     g_Bar.m_Geometry.m_Pos.m_Y  = g_Screen.m_Bottom + 1.0f;
 
     // is bar out of bounds?

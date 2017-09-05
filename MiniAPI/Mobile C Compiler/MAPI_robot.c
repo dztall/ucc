@@ -5,9 +5,8 @@
  * Developer   : Jean-Milost Reymond                                         *
  *****************************************************************************/
 
-// supported platforms check (for now, only supports iOS and Android devices.
-// NOTE Android support is theorical, never tested on a such device)
-#if !defined(IOS) && !defined(ANDROID)
+// supported platforms check. NOTE iOS only, but may works on other platforms
+#if !defined(_OS_IOS_)
     #error "Not supported platform!"
 #endif
 
@@ -17,14 +16,9 @@
 #include <math.h>
 #include <time.h>
 
-#ifdef ANDROID
-    #include <gles2/gl2.h>
-    #include <gles2/gl2ext.h>
-#endif
-#ifdef IOS
-    #include <OpenGLES/ES2/gl.h>
-    #include <OpenGLES/ES2/glext.h>
-#endif
+// opengl
+#include <gles2.h>
+#include <gles2ext.h>
 
 // NOTE the md2 model was found on this site:
 // http://leileilol.mancubus.net/garyacordsucks/64.246.6.138/_gcsgames.com/GCSenemy/md2.htm
@@ -67,11 +61,11 @@ const unsigned int g_FPS            = 15;
 const unsigned int g_AnimIndex      = 0; // Can only be 0 (robot walks) or 1 (robot dies)
 QR_MD2Animation    g_Animation[2];
 //------------------------------------------------------------------------------
-void ApplyMatrix(float w, float h) const
+void ApplyMatrix(float w, float h)
 {
-    // get orthogonal matrix
+    // calculate matrix items
     const float near   = 1.0f;
-    const float far    = 20.0f;
+    const float far    = 100.0f;
     const float fov    = 45.0f;
     const float aspect = (GLfloat)w/(GLfloat)h;
 
@@ -250,7 +244,7 @@ void on_GLES2_Render()
     stride = g_pModel->m_pVertexFormat->m_Stride;
 
     // get current frame
-    pFrame = &g_pModel->m_pFrame[g_Animation[g_AnimIndex].m_Range[0] + g_MeshIndex];
+    pFrame = &g_pModel->m_pFrame[(int)(g_Animation[g_AnimIndex].m_Range[0] + g_MeshIndex)];
 
     // iterate through vertices to draw
     for (unsigned int i = 0; i < pFrame->m_MeshCount; ++i)

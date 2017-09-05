@@ -5,9 +5,8 @@
  * Developer   : Jean-Milost Reymond                                         *
  *****************************************************************************/
 
-// supported platforms check (for now, only supports iOS and Android devices.
-// NOTE Android support is theorical, never tested on a such device)
-#if !defined(IOS) && !defined(ANDROID)
+// supported platforms check. NOTE iOS only, but may works on other platforms
+#if !defined(_OS_IOS_)
     #error "Not supported platform!"
 #endif
 
@@ -17,14 +16,9 @@
 #include <math.h>
 #include <time.h>
 
-#ifdef ANDROID
-    #include <gles2/gl2.h>
-    #include <gles2/gl2ext.h>
-#endif
-#ifdef IOS
-    #include <OpenGLES/ES2/gl.h>
-    #include <OpenGLES/ES2/glext.h>
-#endif
+// opengl
+#include <gles2.h>
+#include <gles2ext.h>
 
 // mini API
 #include "MiniAPI/MiniGeometry.h"
@@ -63,9 +57,9 @@ GLuint             g_TexCoordSlot   = 0;
 GLuint             g_TexSamplerSlot = 0;
 MV_VertexFormat    g_VertexFormat;
 //------------------------------------------------------------------------------
-void ApplyMatrix(float w, float h) const
+void ApplyMatrix(float w, float h)
 {
-    // get orthogonal matrix
+    // calculate matrix items
     const float near   = 1.0f;
     const float far    = 20.0f;
     const float fov    = 45.0f;

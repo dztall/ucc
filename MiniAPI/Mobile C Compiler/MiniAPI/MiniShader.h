@@ -119,7 +119,6 @@ const char* g_pFSTexAlpha =
     "vec4 color   = qr_fColor * texture2D(qr_sColorMap, qr_fTexCoord);"
     "gl_FragColor = vec4(color.x, color.y, color.z, qr_fAlpha);"
     "}";
-
 //-----------------------------------------------------------------------------
 // Shader compilation and linking
 //-----------------------------------------------------------------------------
@@ -133,7 +132,7 @@ const char* g_pFSTexAlpha =
 *@return compiled shader program identifier
 *@note This function logs the errors returned by OpenGL shader compiler
 */
-GLuint CreateAndCompileShader(const char* pSource, GLenum shaderType) const
+GLuint CreateAndCompileShader(const char* pSource, GLenum shaderType)
 {
     GLuint shaderHandle;
     GLint  compileSuccess;
@@ -166,7 +165,7 @@ GLuint CreateAndCompileShader(const char* pSource, GLenum shaderType) const
 *@note This function logs the errors returned by OpenGL shader compiler
 *@note Program should be deleted when useless by calling glDeleteProgram()
 */
-GLuint CompileShaders(const char* pVShader,const char* pFShader) const
+GLuint CompileShaders(const char* pVShader,const char* pFShader)
 {
     GLuint programHandle;
     GLuint vertexShader;

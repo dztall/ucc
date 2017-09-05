@@ -6,9 +6,8 @@
  * Developer   : Jean-Milost Reymond                                         *
  *****************************************************************************/
 
-// supported platforms check (for now, only supports iOS and Android devices.
-// NOTE Android support is theorical, never tested on a such device)
-#if !defined(IOS) && !defined(ANDROID)
+// supported platforms check. NOTE iOS only, but may works on other platforms
+#if !defined(_OS_IOS_)
     #error "Not supported platform!"
 #endif
 
@@ -18,14 +17,9 @@
 #include <math.h>
 #include <time.h>
 
-#ifdef ANDROID
-    #include <gles2/gl2.h>
-    #include <gles2/gl2ext.h>
-#endif
-#ifdef IOS
-    #include <OpenGLES/ES2/gl.h>
-    #include <OpenGLES/ES2/glext.h>
-#endif
+// opengl
+#include <gles2.h>
+#include <gles2ext.h>
 
 // mini API
 #include "MiniAPI/MiniGeometry.h"
@@ -58,9 +52,9 @@ MG_Size            g_View;
 MV_VertexFormat    g_VertexFormat;
 float              g_PolygonArray[21];
 //------------------------------------------------------------------------------
-void ApplyMatrix(float w, float h) const
+void ApplyMatrix(float w, float h)
 {
-    // get orthogonal matrix
+    // calculate matrix items
     const float near   = 1.0f;
     const float far    = 20.0f;
     const float fov    = 45.0f;
@@ -90,6 +84,9 @@ void on_GLES2_Init(int view_w, int view_h)
                                       g_Renderbuffer);
         #endif
     #endif
+
+    g_View.m_Width  = 0.0f;
+    g_View.m_Height = 0.0f;
 
     // compile, link and use shaders
     g_ShaderProgram = CompileShaders(g_pVSColored, g_pFSColored);
@@ -185,9 +182,9 @@ void on_GLES2_Final()
 //------------------------------------------------------------------------------
 void on_GLES2_Size(int view_w, int view_h)
 {
-    // get view size. NOTE the first time, received value is 2x higher
-    g_View.m_Width  = view_w * (g_View.m_Width  ? 2.0f : 1.0f);
-    g_View.m_Height = view_h * (g_View.m_Height ? 2.0f : 1.0f);
+    // get view size
+    g_View.m_Width  = view_w;
+    g_View.m_Height = view_h;
 
     glViewport(0, 0, view_w, view_h);
     ApplyMatrix(view_w, view_h);

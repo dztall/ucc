@@ -5,25 +5,20 @@
  * Developer   : Jean-Milost Reymond                                         *
  *****************************************************************************/
 
-// supported platforms check (for now, only supports iOS and Android devices.
-// NOTE Android support is theorical, never tested on a such device)
-#if !defined(IOS) && !defined(ANDROID)
+// supported platforms check. NOTE iOS only, but may works on other platforms
+#if !defined(_OS_IOS_)
     #error "Not supported platform!"
 #endif
+
 // std
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <time.h>
 
-#ifdef ANDROID
-    #include <gles2/gl2.h>
-    #include <gles2/gl2ext.h>
-#endif
-#ifdef IOS
-    #include <OpenGLES/ES2/gl.h>
-    #include <OpenGLES/ES2/glext.h>
-#endif
+// opengl
+#include <gles2.h>
+#include <gles2ext.h>
 
 // mini API
 #include "MiniAPI/MiniGeometry.h"
@@ -92,7 +87,7 @@ const char* g_pFSPlasma =
     "    gl_FragColor        = vec4(col * 0.5 + 0.5, 1);"
     "}";
 //------------------------------------------------------------------------------
-void ApplyOrtho(float maxX, float maxY) const
+void ApplyOrtho(float maxX, float maxY)
 {
     // get orthogonal matrix
     float left  = -5.0f;
