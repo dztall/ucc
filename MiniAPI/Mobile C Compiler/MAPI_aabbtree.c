@@ -12,7 +12,7 @@
 #endif
 
 #ifdef CCR_FORCE_LLVM_INTERPRETER
-#error "Clang/LLVM on iOS does not support function pointer yet. Consider using CPP built-in compiler."
+    #error "Clang/LLVM on iOS does not support function pointer yet. Consider using CPP built-in compiler."
 #endif
 
 // std
@@ -33,7 +33,7 @@
 #include "MiniAPI/MiniShader.h"
 
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
-#include <ccr.h>
+    #include <ccr.h>
 #endif
 
 //------------------------------------------------------------------------------
@@ -58,6 +58,7 @@ GLuint             g_PositionSlot         = 0;
 GLuint             g_ColorSlot            = 0;
 MG_Size            g_View;
 MV_VertexFormat    g_VertexFormat;
+MG_Matrix          g_ProjectionMatrix;
 float              g_PolygonArray[21];
 //------------------------------------------------------------------------------
 void ApplyMatrix(float w, float h)
@@ -68,12 +69,11 @@ void ApplyMatrix(float w, float h)
     const float fov    = 45.0f;
     const float aspect = (GLfloat)w/(GLfloat)h;
 
-    MG_Matrix matrix;
-    GetPerspective(&fov, &aspect, &near, &far, &matrix);
+    GetPerspective(&fov, &aspect, &near, &far, &g_ProjectionMatrix);
 
     // connect projection matrix to shader
     GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
-    glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
+    glUniformMatrix4fv(projectionUniform, 1, 0, &g_ProjectionMatrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
@@ -163,9 +163,13 @@ void on_GLES2_Final()
     if (g_pAABBRoot)
         ReleaseTree(g_pAABBRoot);
 
+    g_pAABBRoot = 0;
+
     // delete collide polygons
     if (g_pCollidePolygons)
         ReleasePolygons(g_pCollidePolygons);
+
+    g_pCollidePolygons = 0;
 
     // delete buffer index table
     if (g_pIndexes)
@@ -210,9 +214,14 @@ void on_GLES2_Render()
     unsigned    i;
     unsigned    j;
     int         stride;
+    float       determinant;
     MG_Vector3  t;
+    MG_Vector3  rayPos;
+    MG_Vector3  rayDir;
     MG_Matrix   translateMatrix;
     MG_Matrix   modelViewMatrix;
+    MG_Matrix   projModMatrix;
+    MG_Matrix   invProjModMatrix;
     GLvoid*     pCoords;
     GLvoid*     pColors;
     MG_Ray      ray;
@@ -238,12 +247,17 @@ void on_GLES2_Render()
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // set ray in 3d world
-    ray.m_Pos.m_X = g_RayX;
-    ray.m_Pos.m_Y = g_RayY;
-    ray.m_Pos.m_Z = 0.0f;
-    ray.m_Dir.m_X = 0.0f;
-    ray.m_Dir.m_Y = 0.0f;
-    ray.m_Dir.m_Z = 1.0f;
+    rayPos.m_X = g_RayX;
+    rayPos.m_Y = g_RayY;
+    rayPos.m_Z = 0.0f;
+    rayDir.m_X = 0.0f;
+    rayDir.m_Y = 0.0f;
+    rayDir.m_Z = 1.0f;
+
+    MatrixMultiply(&g_ProjectionMatrix, &modelViewMatrix, &projModMatrix);
+    Inverse(&projModMatrix, &invProjModMatrix, &determinant);
+    ApplyMatrixToVector(&invProjModMatrix, &rayPos, &ray.m_Pos);
+    ApplyMatrixToVector(&invProjModMatrix, &rayDir, &ray.m_Dir);
 
     // calculate inverted ray dir. NOTE in C language, a division by 0 in this context
     // means infinity, that is needed, so don't worry about ray.m_Dir equals to 0
@@ -352,37 +366,45 @@ void on_GLES2_TouchBegin(float x, float y)
 //------------------------------------------------------------------------------
 void on_GLES2_TouchEnd(float x, float y)
 {
+    float factor;
+
+    // this factor is required to adapt the received coordinates to viewport
+    if (g_View.m_Width > g_View.m_Height)
+        factor = 5.7f;
+    else
+        factor = 6.2f;
+
     // calculate screen center
     const float centerX = g_View.m_Width  / 2.0f;
     const float centerY = g_View.m_Height / 2.0f;
 
     // convert screen coordinates to ray world coordinate and get ray position
-    g_RayX =  ((x - centerX) * (g_Radius * 2.2f)) / g_View.m_Width;
-    g_RayY = -((y - centerY) * (g_Radius * 2.2f)) / g_View.m_Height;
+    g_RayX =  ((x - centerX) * (g_Radius * factor)) / g_View.m_Width;
+    g_RayY = -((y - centerY) * (g_Radius * factor)) / g_View.m_Height;
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
 {}
 //------------------------------------------------------------------------------
-
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
-int main()
-{
-	ccrSet_GLES2_Init_Callback(on_GLES2_Init);
-	ccrSet_GLES2_Final_Callback(on_GLES2_Final);
-	ccrSet_GLES2_Size_Callback(on_GLES2_Size);
-	ccrSet_GLES2_Update_Callback(on_GLES2_Update);
-	ccrSet_GLES2_Render_Callback(on_GLES2_Render);
-	ccrSet_GLES2_TouchBegin_Callback(on_GLES2_TouchBegin);
-	ccrSet_GLES2_TouchMove_Callback(on_GLES2_TouchMove);
-	ccrSet_GLES2_TouchEnd_Callback(on_GLES2_TouchEnd);
+    int main()
+    {
+        ccrSet_GLES2_Init_Callback(on_GLES2_Init);
+        ccrSet_GLES2_Final_Callback(on_GLES2_Final);
+        ccrSet_GLES2_Size_Callback(on_GLES2_Size);
+        ccrSet_GLES2_Update_Callback(on_GLES2_Update);
+        ccrSet_GLES2_Render_Callback(on_GLES2_Render);
+        ccrSet_GLES2_TouchBegin_Callback(on_GLES2_TouchBegin);
+        ccrSet_GLES2_TouchMove_Callback(on_GLES2_TouchMove);
+        ccrSet_GLES2_TouchEnd_Callback(on_GLES2_TouchEnd);
 
-	ccrBegin_GLES2_Drawing();
+        ccrBegin_GLES2_Drawing();
 
-	while(ccrGetEvent(false)!=CCR_EVENT_QUIT);
+        while (ccrGetEvent(false) != CCR_EVENT_QUIT);
 
-	ccrEnd_GLES2_Drawing();
+        ccrEnd_GLES2_Drawing();
 
-	return 0;
-}
+        return 0;
+    }
 #endif
+//------------------------------------------------------------------------------

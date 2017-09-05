@@ -12,7 +12,7 @@
 #endif
 
 #ifdef CCR_FORCE_LLVM_INTERPRETER
-#error "Clang/LLVM on iOS does not support function pointer yet. Consider using CPP built-in compiler."
+    #error "Clang/LLVM on iOS does not support function pointer yet. Consider using CPP built-in compiler."
 #endif
 
 // std
@@ -32,7 +32,7 @@
 #include "MiniAPI/MiniShader.h"
 
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
-#include <ccr.h>
+    #include <ccr.h>
 #endif
 
 // NOTE the texture was found here: http://opengameart.org/content/stone-texture-bump
@@ -147,7 +147,7 @@ void on_GLES2_Init(int view_w, int view_h)
                   &g_pSurfaceVB,
                   &g_SurfaceVertexCount);
 
-    // load earth texture
+    // load wall texture and his bump map
     g_TextureIndex = LoadTexture(STONE_TEXTURE_FILE);
     g_BumpMapIndex = LoadTexture(STONE_BUMPMAP_FILE);
 
@@ -182,6 +182,16 @@ void on_GLES2_Final()
         free(g_pSurfaceVB);
         g_pSurfaceVB = 0;
     }
+
+	if (g_TextureIndex != GL_INVALID_VALUE)
+        glDeleteTextures(1, &g_TextureIndex);
+
+    g_TextureIndex = GL_INVALID_VALUE;
+
+	if (g_BumpMapIndex != GL_INVALID_VALUE)
+        glDeleteTextures(1, &g_BumpMapIndex);
+
+    g_BumpMapIndex = GL_INVALID_VALUE;
 
     // delete shader program
     if (g_ShaderProgram)
@@ -261,7 +271,7 @@ void on_GLES2_Render()
     glVertexAttribPointer(g_ColorSlot,    4, GL_FLOAT, GL_FALSE, stride * sizeof(float), pColors);
 
     // draw it
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, g_SurfaceVertexCount);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchBegin(float x, float y)
@@ -282,25 +292,25 @@ void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
                 2.0f);
 }
 //------------------------------------------------------------------------------
-
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
-int main()
-{
-	ccrSet_GLES2_Init_Callback(on_GLES2_Init);
-	ccrSet_GLES2_Final_Callback(on_GLES2_Final);
-	ccrSet_GLES2_Size_Callback(on_GLES2_Size);
-	ccrSet_GLES2_Update_Callback(on_GLES2_Update);
-	ccrSet_GLES2_Render_Callback(on_GLES2_Render);
-	ccrSet_GLES2_TouchBegin_Callback(on_GLES2_TouchBegin);
-	ccrSet_GLES2_TouchMove_Callback(on_GLES2_TouchMove);
-	ccrSet_GLES2_TouchEnd_Callback(on_GLES2_TouchEnd);
+    int main()
+    {
+        ccrSet_GLES2_Init_Callback(on_GLES2_Init);
+        ccrSet_GLES2_Final_Callback(on_GLES2_Final);
+        ccrSet_GLES2_Size_Callback(on_GLES2_Size);
+        ccrSet_GLES2_Update_Callback(on_GLES2_Update);
+        ccrSet_GLES2_Render_Callback(on_GLES2_Render);
+        ccrSet_GLES2_TouchBegin_Callback(on_GLES2_TouchBegin);
+        ccrSet_GLES2_TouchMove_Callback(on_GLES2_TouchMove);
+        ccrSet_GLES2_TouchEnd_Callback(on_GLES2_TouchEnd);
 
-	ccrBegin_GLES2_Drawing();
+        ccrBegin_GLES2_Drawing();
 
-	while(ccrGetEvent(false)!=CCR_EVENT_QUIT);
+        while (ccrGetEvent(false) != CCR_EVENT_QUIT);
 
-	ccrEnd_GLES2_Drawing();
+        ccrEnd_GLES2_Drawing();
 
-	return 0;
-}
+        return 0;
+    }
 #endif
+//------------------------------------------------------------------------------

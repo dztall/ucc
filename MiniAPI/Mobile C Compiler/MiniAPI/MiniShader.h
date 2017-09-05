@@ -119,6 +119,7 @@ const char* g_pFSTexAlpha =
     "vec4 color   = qr_fColor * texture2D(qr_sColorMap, qr_fTexCoord);"
     "gl_FragColor = vec4(color.x, color.y, color.z, qr_fAlpha);"
     "}";
+
 //-----------------------------------------------------------------------------
 // Shader compilation and linking
 //-----------------------------------------------------------------------------

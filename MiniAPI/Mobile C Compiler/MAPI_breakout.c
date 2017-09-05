@@ -11,7 +11,7 @@
 #endif
 
 #ifdef CCR_FORCE_LLVM_INTERPRETER
-#error "Clang/LLVM on iOS does not support function pointer yet. Consider using CPP built-in compiler."
+    #error "Clang/LLVM on iOS does not support function pointer yet. Consider using CPP built-in compiler."
 #endif
 
 // std
@@ -34,7 +34,7 @@
 // define ENABLE_SOUND to use first sound API, ENABLE_SOUND_OPENAL to use OpenAL,
 // or comment line below disable sound
 #ifdef _OS_IOS_
-#define ENABLE_SOUND_OPENAL
+    #define ENABLE_SOUND_OPENAL
 #endif
 
 #ifdef ENABLE_SOUND_OPENAL
@@ -42,12 +42,12 @@
 #endif
 
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
-#include <ccr.h>
+    #include <ccr.h>
 #endif
 
 #if defined(ENABLE_SOUND) || defined(ENABLE_SOUND_OPENAL)
-#define BALL_REBOUND_SOUND_FILE "Resources/ball_rebound.wav"
-#define BAR_EXPLODE_SOUND_FILE  "Resources/bar_explode.wav"
+    #define BALL_REBOUND_SOUND_FILE "Resources/ball_rebound.wav"
+    #define BAR_EXPLODE_SOUND_FILE  "Resources/bar_explode.wav"
 #endif
 
 //------------------------------------------------------------------------------
@@ -910,25 +910,25 @@ void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
         g_Bar.m_Geometry.m_Pos.m_X = g_Screen.m_Left + (g_Bar.m_Geometry.m_Size.m_Width / 2.0f);
 }
 //------------------------------------------------------------------------------
-
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
-int main()
-{
-	ccrSet_GLES2_Init_Callback(on_GLES2_Init);
-	ccrSet_GLES2_Final_Callback(on_GLES2_Final);
-	ccrSet_GLES2_Size_Callback(on_GLES2_Size);
-	ccrSet_GLES2_Update_Callback(on_GLES2_Update);
-	ccrSet_GLES2_Render_Callback(on_GLES2_Render);
-	ccrSet_GLES2_TouchBegin_Callback(on_GLES2_TouchBegin);
-	ccrSet_GLES2_TouchMove_Callback(on_GLES2_TouchMove);
-	ccrSet_GLES2_TouchEnd_Callback(on_GLES2_TouchEnd);
+    int main()
+    {
+        ccrSet_GLES2_Init_Callback(on_GLES2_Init);
+        ccrSet_GLES2_Final_Callback(on_GLES2_Final);
+        ccrSet_GLES2_Size_Callback(on_GLES2_Size);
+        ccrSet_GLES2_Update_Callback(on_GLES2_Update);
+        ccrSet_GLES2_Render_Callback(on_GLES2_Render);
+        ccrSet_GLES2_TouchBegin_Callback(on_GLES2_TouchBegin);
+        ccrSet_GLES2_TouchMove_Callback(on_GLES2_TouchMove);
+        ccrSet_GLES2_TouchEnd_Callback(on_GLES2_TouchEnd);
 
-	ccrBegin_GLES2_Drawing();
+        ccrBegin_GLES2_Drawing();
 
-	while(ccrGetEvent(false)!=CCR_EVENT_QUIT);
+        while (ccrGetEvent(false) != CCR_EVENT_QUIT);
 
-	ccrEnd_GLES2_Drawing();
+        ccrEnd_GLES2_Drawing();
 
-	return 0;
-}
+        return 0;
+    }
 #endif
+//------------------------------------------------------------------------------

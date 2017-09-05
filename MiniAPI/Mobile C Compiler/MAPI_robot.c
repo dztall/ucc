@@ -11,7 +11,7 @@
 #endif
 
 #ifdef CCR_FORCE_LLVM_INTERPRETER
-#error "Clang/LLVM on iOS does not support function pointer yet. Consider using CPP built-in compiler."
+    #error "Clang/LLVM on iOS does not support function pointer yet. Consider using CPP built-in compiler."
 #endif
 
 // std
@@ -34,7 +34,7 @@
 #include "MiniAPI/MiniShader.h"
 
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
-#include <ccr.h>
+    #include <ccr.h>
 #endif
 
 //------------------------------------------------------------------------------
@@ -139,8 +139,12 @@ void on_GLES2_Init(int view_w, int view_h)
 void on_GLES2_Final()
 {
     ReleaseMD2Model(g_pModel);
+    g_pModel = 0;
 
-    glDeleteTextures(1, &g_TextureIndex);
+    if (g_TextureIndex != GL_INVALID_VALUE)
+        glDeleteTextures(1, &g_TextureIndex);
+
+    g_TextureIndex = GL_INVALID_VALUE;
 
     // delete shader program
     if (g_ShaderProgram)
@@ -287,25 +291,25 @@ void on_GLES2_TouchEnd(float x, float y)
 void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
 {}
 //------------------------------------------------------------------------------
-
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
-int main()
-{
-	ccrSet_GLES2_Init_Callback(on_GLES2_Init);
-	ccrSet_GLES2_Final_Callback(on_GLES2_Final);
-	ccrSet_GLES2_Size_Callback(on_GLES2_Size);
-	ccrSet_GLES2_Update_Callback(on_GLES2_Update);
-	ccrSet_GLES2_Render_Callback(on_GLES2_Render);
-	ccrSet_GLES2_TouchBegin_Callback(on_GLES2_TouchBegin);
-	ccrSet_GLES2_TouchMove_Callback(on_GLES2_TouchMove);
-	ccrSet_GLES2_TouchEnd_Callback(on_GLES2_TouchEnd);
+    int main()
+    {
+        ccrSet_GLES2_Init_Callback(on_GLES2_Init);
+        ccrSet_GLES2_Final_Callback(on_GLES2_Final);
+        ccrSet_GLES2_Size_Callback(on_GLES2_Size);
+        ccrSet_GLES2_Update_Callback(on_GLES2_Update);
+        ccrSet_GLES2_Render_Callback(on_GLES2_Render);
+        ccrSet_GLES2_TouchBegin_Callback(on_GLES2_TouchBegin);
+        ccrSet_GLES2_TouchMove_Callback(on_GLES2_TouchMove);
+        ccrSet_GLES2_TouchEnd_Callback(on_GLES2_TouchEnd);
 
-	ccrBegin_GLES2_Drawing();
+        ccrBegin_GLES2_Drawing();
 
-	while(ccrGetEvent(false)!=CCR_EVENT_QUIT);
+        while (ccrGetEvent(false) != CCR_EVENT_QUIT);
 
-	ccrEnd_GLES2_Drawing();
+        ccrEnd_GLES2_Drawing();
 
-	return 0;
-}
+        return 0;
+    }
 #endif
+//------------------------------------------------------------------------------

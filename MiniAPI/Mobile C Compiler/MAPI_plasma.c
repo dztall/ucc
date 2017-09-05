@@ -11,7 +11,7 @@
 #endif
 
 #ifdef CCR_FORCE_LLVM_INTERPRETER
-#error "Clang/LLVM on iOS does not support function pointer yet. Consider using CPP built-in compiler."
+    #error "Clang/LLVM on iOS does not support function pointer yet. Consider using CPP built-in compiler."
 #endif
 
 // std
@@ -31,7 +31,7 @@
 #include "MiniAPI/MiniShader.h"
 
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
-#include <ccr.h>
+    #include <ccr.h>
 #endif
 
 //------------------------------------------------------------------------------
@@ -100,8 +100,8 @@ void ApplyOrtho(float maxX, float maxY)
     // get orthogonal matrix
     float left  = -5.0f;
     float right =  5.0f;
-    float near  =  1.0f;
-    float far   =  20.0f;
+    float near  = -1.0f;
+    float far   =  1.0f;
 
     // screen ratio was modified since CCR version 1.1
     #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
@@ -210,7 +210,6 @@ void on_GLES2_Update(float timeStep_sec)
 //------------------------------------------------------------------------------
 void on_GLES2_Render()
 {
-    int        stride;
     MG_Vector3 t;
     MG_Matrix  modelViewMatrix;
     GLvoid*    pCoords;
@@ -220,13 +219,10 @@ void on_GLES2_Render()
     glClearDepthf(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // calculate vertex stride
-    stride = g_VertexFormat.m_Stride;
-
     // populate surface translation vector
     t.m_X =  0.0f;
     t.m_Y =  0.0f;
-    t.m_Z = -10.0f;
+    t.m_Z = -1.0f;
 
     // get translation matrix
     GetTranslateMatrix(&t, &modelViewMatrix);
@@ -245,7 +241,7 @@ void on_GLES2_Render()
     glVertexAttribPointer(g_PositionSlot, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), pCoords);
 
     // draw it
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, g_SurfaceVertexCount);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchBegin(float x, float y)
@@ -257,25 +253,25 @@ void on_GLES2_TouchEnd(float x, float y)
 void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
 {}
 //------------------------------------------------------------------------------
-
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
-int main()
-{
-	ccrSet_GLES2_Init_Callback(on_GLES2_Init);
-	ccrSet_GLES2_Final_Callback(on_GLES2_Final);
-	ccrSet_GLES2_Size_Callback(on_GLES2_Size);
-	ccrSet_GLES2_Update_Callback(on_GLES2_Update);
-	ccrSet_GLES2_Render_Callback(on_GLES2_Render);
-	ccrSet_GLES2_TouchBegin_Callback(on_GLES2_TouchBegin);
-	ccrSet_GLES2_TouchMove_Callback(on_GLES2_TouchMove);
-	ccrSet_GLES2_TouchEnd_Callback(on_GLES2_TouchEnd);
+    int main()
+    {
+        ccrSet_GLES2_Init_Callback(on_GLES2_Init);
+        ccrSet_GLES2_Final_Callback(on_GLES2_Final);
+        ccrSet_GLES2_Size_Callback(on_GLES2_Size);
+        ccrSet_GLES2_Update_Callback(on_GLES2_Update);
+        ccrSet_GLES2_Render_Callback(on_GLES2_Render);
+        ccrSet_GLES2_TouchBegin_Callback(on_GLES2_TouchBegin);
+        ccrSet_GLES2_TouchMove_Callback(on_GLES2_TouchMove);
+        ccrSet_GLES2_TouchEnd_Callback(on_GLES2_TouchEnd);
 
-	ccrBegin_GLES2_Drawing();
+        ccrBegin_GLES2_Drawing();
 
-	while(ccrGetEvent(false)!=CCR_EVENT_QUIT);
+        while (ccrGetEvent(false) != CCR_EVENT_QUIT);
 
-	ccrEnd_GLES2_Drawing();
+        ccrEnd_GLES2_Drawing();
 
-	return 0;
-}
+        return 0;
+    }
 #endif
+//------------------------------------------------------------------------------
