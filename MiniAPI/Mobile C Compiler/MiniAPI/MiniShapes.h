@@ -174,12 +174,12 @@ void CreateSphere(const float*           pRadius,
     CalculateStride(pVertexFormat);
 
     // initialize basic values
-    majorStep       = (pi          / slices);
-    minorStep       = ((2.0f * pi) / stacks);
-    *pVertices      = 0;
-    *pVertexCount   = 0;
-    *pIndexes       = 0;
-    *pIndexCount    = 0;
+    majorStep     = (pi          / slices);
+    minorStep     = ((2.0f * pi) / stacks);
+    *pVertices    = 0;
+    *pVertexCount = 0;
+    *pIndexes     = 0;
+    *pIndexCount  = 0;
 
     // iterate through vertex slices
     for (i = 0; i <= slices; ++i)
@@ -308,6 +308,442 @@ void CreateSphere(const float*           pRadius,
                 index += 4;
             }
         }
+    }
+}
+
+//-----------------------------------------------------------------------------
+// Landscape creation functions
+//-----------------------------------------------------------------------------
+
+/**
+* Landscape model
+*/
+typedef struct
+{
+    float*       m_pVertexBuffer;
+    unsigned int m_VertexCount;
+} ML_Mesh;
+
+/**
+* Loads data to generate landscape from model image
+*@param pFileName - bitmap file name to load from
+*@param[out] pData - data to use to generate landscape
+*@param[out] width - landscape width, in bytes
+*@param[out] height - landscape height, in bytes
+*@return 1 on success, otherwise 0
+*@note For now only most common bitmaps are loaded, some bitmap types may be unsupported
+*/
+int LoadLandscape(const unsigned char* pFileName, unsigned char** pData, int* pWidth, int* pHeight)
+{
+    FILE*          pFile;
+    GLuint         index;
+    unsigned int   dataOffset;
+    unsigned int   headerSize;
+    unsigned int   x;
+    unsigned int   y;
+    unsigned int   bytesPerRow;
+    unsigned int   bitmapSize;
+    unsigned char  c;
+    unsigned short bpp;
+    unsigned short compressed;
+    unsigned char  intBuffer[4];
+    unsigned char  shortBuffer[2];
+
+    // open bitmap file
+    pFile = MINI_FILE_OPEN(pFileName, "rb");
+
+    // succeeded?
+    if (!pFile)
+        return 0;
+
+    // read bitmap signature
+    MINI_FILE_READ(&shortBuffer[0], sizeof(unsigned char), 2, pFile);
+
+    // is bitmap signature correct?
+    if (shortBuffer[0] != 'B' || shortBuffer[1] != 'M')
+        return 0;
+
+    // skip 8 next bytes
+    MINI_FILE_SEEK(pFile, 8, SEEK_CUR);
+
+    // read data offset
+    MINI_FILE_READ(&intBuffer[0], sizeof(unsigned char), 4, pFile);
+    dataOffset = (unsigned int)(((unsigned char)intBuffer[3] << 24) |
+                                ((unsigned char)intBuffer[2] << 16) |
+                                ((unsigned char)intBuffer[1] << 8)  |
+                                 (unsigned char)intBuffer[0]);
+
+    // read header size
+    MINI_FILE_READ(&intBuffer[0], sizeof(unsigned char), 4, pFile);
+    headerSize = (unsigned int)(((unsigned char)intBuffer[3] << 24) |
+                                ((unsigned char)intBuffer[2] << 16) |
+                                ((unsigned char)intBuffer[1] << 8)  |
+                                 (unsigned char)intBuffer[0]);
+
+    // search for bitmap type
+    switch (headerSize)
+    {
+        // V3
+        case 40:
+        {
+            // read bitmap width
+            MINI_FILE_READ(&intBuffer[0], sizeof(unsigned char), 4, pFile);
+            *pWidth = (unsigned int)(((unsigned char)intBuffer[3] << 24) |
+                                     ((unsigned char)intBuffer[2] << 16) |
+                                     ((unsigned char)intBuffer[1] << 8)  |
+                                      (unsigned char)intBuffer[0]);
+
+            // read bitmap height
+            MINI_FILE_READ(&intBuffer[0], sizeof(unsigned char), 4, pFile);
+            *pHeight = (unsigned int)(((unsigned char)intBuffer[3] << 24) |
+                                      ((unsigned char)intBuffer[2] << 16) |
+                                      ((unsigned char)intBuffer[1] << 8)  |
+                                       (unsigned char)intBuffer[0]);
+
+            // skip next 2 bytes
+            MINI_FILE_SEEK(pFile, 2, SEEK_CUR);
+
+            // read bitmap bit per pixels
+            MINI_FILE_READ(&shortBuffer[0], sizeof(unsigned char), 2, pFile);
+            bpp = (unsigned short)(((unsigned char)shortBuffer[1] << 8) |
+                                    (unsigned char)shortBuffer[0]);
+
+            // is bpp supported?
+            if (bpp != 24)
+                return 0;
+
+            // read bitmap compressed flag
+            MINI_FILE_READ(&shortBuffer[0], sizeof(unsigned char), 2, pFile);
+            compressed = (unsigned short)(((unsigned char)shortBuffer[1] << 8) |
+                                           (unsigned char)shortBuffer[0]);
+
+            // is compressed?
+            if (compressed)
+                return 0;
+
+            break;
+        }
+
+        // OS/2 V1
+        case 12:
+        {
+            // read bitmap width
+            MINI_FILE_READ(&shortBuffer[0], sizeof(unsigned char), 2, pFile);
+            *pWidth = (unsigned int)(((unsigned char)shortBuffer[1] << 8) |
+                                      (unsigned char)shortBuffer[0]);
+
+            // read bitmap height
+            MINI_FILE_READ(&shortBuffer[0], sizeof(unsigned char), 2, pFile);
+            *pHeight = (unsigned int)(((unsigned char)shortBuffer[1] << 8) |
+                                       (unsigned char)shortBuffer[0]);
+
+            // skip next 2 bytes
+            MINI_FILE_SEEK(pFile, 2, SEEK_CUR);
+
+            // read bitmap bit per pixels
+            MINI_FILE_READ(&shortBuffer[0], sizeof(unsigned char), 2, pFile);
+            bpp = (unsigned short)(((unsigned char)shortBuffer[1] << 8) |
+                                    (unsigned char)shortBuffer[0]);
+
+            // is bpp supported?
+            if (bpp != 24)
+                return 0;
+
+            break;
+        }
+
+        // Windows V4
+        case 108:
+        {
+            // read bitmap width
+            MINI_FILE_READ(&shortBuffer[0], sizeof(unsigned char), 2, pFile);
+            *pWidth = (unsigned int)(((unsigned char)shortBuffer[1] << 8) |
+                                      (unsigned char)shortBuffer[0]);
+
+            // skip next 2 bytes
+            MINI_FILE_SEEK(pFile, 2, SEEK_CUR);
+
+            // read bitmap height
+            MINI_FILE_READ(&shortBuffer[0], sizeof(unsigned char), 2, pFile);
+            *pHeight = (unsigned int)(((unsigned char)shortBuffer[1] << 8) |
+                                       (unsigned char)shortBuffer[0]);
+
+            // skip next 4 bytes
+            MINI_FILE_SEEK(pFile, 4, SEEK_CUR);
+
+            // read bitmap bit per pixels
+            MINI_FILE_READ(&shortBuffer[0], sizeof(unsigned char), 2, pFile);
+            bpp = (unsigned short)(((unsigned char)shortBuffer[1] << 8) |
+                                    (unsigned char)shortBuffer[0]);
+
+            // is bpp supported?
+            if (bpp != 24)
+                return 0;
+
+            break;
+        }
+
+        default:
+            // unsupported bitmap format
+            return 0;
+    }
+
+    bytesPerRow = (((*pWidth) * 3 + 3) / 4) * 4 - ((*pWidth) * 3 % 4);
+    bitmapSize  = bytesPerRow * (*pHeight);
+    *pData      = (unsigned char*)malloc(sizeof(unsigned char) * bitmapSize);
+
+    // read bitmap data
+    MINI_FILE_SEEK(pFile, dataOffset, SEEK_SET);
+    MINI_FILE_READ(*pData, sizeof(unsigned char), bitmapSize, pFile);
+
+    // close file
+    MINI_FILE_CLOSE(pFile);
+
+    return 1;
+}
+
+/**
+* Generates a landscape from a grayscale image
+*@param pData - image data
+*@param mapX - map width, same as image width in pixels
+*@param mapZ - map deep, same as image height in pixels
+*@param height - map height
+*@param scale - scale factor
+*@param[out] pMesh - mesh containing landscape
+*@param[out] pMeshSize - size of landscape mesh
+*/
+void GenerateLandscapeMesh(unsigned char* pData,
+                           int            mapX,
+                           int            mapZ,
+                           float          height,
+                           float          scale,
+                           MG_Vector3**   pMesh,
+                           unsigned int*  pMeshSize)
+{
+    int          x;
+    int          z;
+    unsigned int index;
+    float        scaleX;
+    float        scaleZ;
+
+    // calculate lansdcape data size and reserve memory for landscape mesh
+    *pMeshSize = mapX * mapZ;
+    *pMesh     = (MG_Vector3*)malloc(*pMeshSize * sizeof(MG_Vector3));
+
+    // calculate scaling factor on x and z axis
+    scaleX = -(((mapX - 1) * scale) / 2.0f);
+    scaleZ =  (((mapZ - 1) * scale) / 2.0f);
+
+    // loop through heightfield points and calculate coordinates for each point
+    for (z = 0; z < mapZ; ++z)
+        for (x = 0; x < mapX; ++x)
+        {
+            // calculate vertex index
+            index = (z * mapZ) + x;
+
+            // calculate landscape vertex
+            (*pMesh)[index].m_X = scaleX + ((float)x * scale);
+            (*pMesh)[index].m_Y = ((float)pData[index * 3] / 255.0f) * height;
+            (*pMesh)[index].m_Z = scaleZ - ((float)z * scale);
+        }
+}
+
+/**
+* Creates a landscape mesh from a grayscale image
+*@param pData - data image to use to generate landscape
+*@param mapX - map width, same as image width in pixels
+*@param mapZ - map deep, same as image height in pixels
+*@param height - map height
+*@param scale - scale factor
+*@param pVertexFormat - landscape mesh vertex format
+*@param color - landscape mesh color
+*p@aram[out] pMesh - mesh containing landscape
+*/
+void CreateLandscape(unsigned char*   pData,
+                     int              mapX,
+                     int              mapZ,
+                     float            height,
+                     float            scale,
+                     MV_VertexFormat* pVertexFormat,
+                     unsigned int     color,
+                     ML_Mesh**        pMesh)
+{
+    int          x;
+    int          z;
+    unsigned int index;
+    unsigned int offset;
+    unsigned int landscapeSize;
+    MG_Vector3*  pLandscape;
+    MG_Vector3   v1;
+    MG_Vector3   v2;
+    MG_Vector3   v3;
+    MG_Vector3   v4;
+    MG_Vector3   n1;
+    MG_Vector3   n2;
+    MG_Vector2   uv1;
+    MG_Vector2   uv2;
+    MG_Vector2   uv3;
+    MG_Vector2   uv4;
+    MG_Plane     p1;
+    MG_Plane     p2;
+
+    // by default stride is equals to 3 (for vertex XYZ position)
+    pVertexFormat->m_Stride = 3;
+
+    // do include normals?
+    if (pVertexFormat->m_UseNormals)
+        pVertexFormat->m_Stride += 3;
+
+    // do include textures?
+    if (pVertexFormat->m_UseTextures)
+        pVertexFormat->m_Stride += 2;
+
+    // do include colors?
+    if (pVertexFormat->m_UseColors)
+        pVertexFormat->m_Stride += 4;
+
+    // generate landscape XYZ vertex from grayscale image
+    GenerateLandscapeMesh(pData,
+                          mapX,
+                          mapZ,
+                          height,
+                          scale,
+                          &pLandscape,
+                          &landscapeSize);
+
+    // create landscape mesh
+    *pMesh = (ML_Mesh*)malloc(sizeof(ML_Mesh));
+    (*pMesh)->m_pVertexBuffer = 0;
+    (*pMesh)->m_VertexCount   = 0;
+
+    // loop through landscape XYZ vertices and generate mesh polygons
+    for (z = 0; z < mapZ - 1; ++z)
+        for (x = 0; x < mapX - 1; ++x)
+        {
+            // polygons are generated in the following order:
+            // v1 -- v2
+            //     /
+            //    /
+            // v3 -- v4
+
+            // calculate vertex index
+            index = (z * mapZ) + x;
+
+            // calculate first vertex
+            v1.m_X = pLandscape[index].m_X;
+            v1.m_Y = pLandscape[index].m_Y;
+            v1.m_Z = pLandscape[index].m_Z;
+
+            // calculate second vertex
+            v2.m_X = pLandscape[index + 1].m_X;
+            v2.m_Y = pLandscape[index + 1].m_Y;
+            v2.m_Z = pLandscape[index + 1].m_Z;
+
+            // calculate next vertex index
+            index = ((z + 1) * mapZ) + x;
+
+            // calculate third vertex
+            v3.m_X = pLandscape[index].m_X;
+            v3.m_Y = pLandscape[index].m_Y;
+            v3.m_Z = pLandscape[index].m_Z;
+
+            // calculate fourth vertex
+            v4.m_X = pLandscape[index + 1].m_X;
+            v4.m_Y = pLandscape[index + 1].m_Y;
+            v4.m_Z = pLandscape[index + 1].m_Z;
+
+            // do include normals?
+            if (pVertexFormat->m_UseNormals)
+            {
+                // calculate polygons planes
+                PlaneFromPoints(&v1, &v2, &v3, &p1);
+                PlaneFromPoints(&v2, &v3, &v4, &p2);
+
+                // get first normal
+                n1.m_X = p1.m_A;
+                n1.m_Y = p1.m_B;
+                n1.m_Z = p1.m_C;
+
+                // get second normal
+                n2.m_X = p2.m_A;
+                n2.m_Y = p2.m_B;
+                n2.m_Z = p2.m_C;
+            }
+
+            // do include colors?
+            if (pVertexFormat->m_UseColors)
+            {
+                // generate texture coordinates
+                uv1.m_X = 0.0f;
+                uv1.m_Y = 0.0f;
+                uv2.m_X = 1.0f;
+                uv2.m_Y = 0.0f;
+                uv3.m_X = 0.0f;
+                uv3.m_Y = 1.0f;
+                uv4.m_X = 1.0f;
+                uv4.m_Y = 1.0f;
+            }
+
+            // add first polygon first vertex to buffer
+            AddVertexToVB(pVertexFormat,
+                          &v1,
+                          &n1,
+                          &uv1,
+                          color,
+                          &(*pMesh)->m_pVertexBuffer,
+                          &(*pMesh)->m_VertexCount);
+
+            // add first polygon second vertex to buffer
+            AddVertexToVB(pVertexFormat,
+                          &v2,
+                          &n1,
+                          &uv2,
+                          color,
+                          &(*pMesh)->m_pVertexBuffer,
+                          &(*pMesh)->m_VertexCount);
+
+            // add first polygon third vertex to buffer
+            AddVertexToVB(pVertexFormat,
+                          &v3,
+                          &n1,
+                          &uv3,
+                          color,
+                          &(*pMesh)->m_pVertexBuffer,
+                          &(*pMesh)->m_VertexCount);
+
+            // add second polygon first vertex to buffer
+            AddVertexToVB(pVertexFormat,
+                          &v2,
+                          &n2,
+                          &uv2,
+                          color,
+                          &(*pMesh)->m_pVertexBuffer,
+                          &(*pMesh)->m_VertexCount);
+
+            // add second polygon second vertex to buffer
+            AddVertexToVB(pVertexFormat,
+                          &v3,
+                          &n2,
+                          &uv3,
+                          color,
+                          &(*pMesh)->m_pVertexBuffer,
+                          &(*pMesh)->m_VertexCount);
+
+            // add second polygon third vertex to buffer
+            AddVertexToVB(pVertexFormat,
+                          &v4,
+                          &n2,
+                          &uv4,
+                          color,
+                          &(*pMesh)->m_pVertexBuffer,
+                          &(*pMesh)->m_VertexCount);
+        }
+
+    // delete landscape XYZ vertices (no longer used as copied in mesh)
+    if (pLandscape)
+    {
+        free(pLandscape);
+        pLandscape = 0;
     }
 }
 

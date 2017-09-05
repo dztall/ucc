@@ -1,4 +1,4 @@
-/*****************************************************************************
+﻿/*****************************************************************************
  * ==> Breakout game --------------------------------------------------------*
  *****************************************************************************
  * Description : Simple breakout game.                                       *
@@ -6,8 +6,12 @@
  *****************************************************************************/
 
 // supported platforms check. NOTE iOS only, but may works on other platforms
-#if !defined(_OS_IOS_)
+#if !defined(_OS_IOS_) && !defined(_OS_ANDROID_) && !defined(_OS_WINDOWS_)
     #error "Not supported platform!"
+#endif
+
+#ifdef CCR_FORCE_LLVM_INTERPRETER
+#error "Clang/LLVM on iOS does not support function pointer yet. Consider using CPP built-in compiler."
 #endif
 
 // std
@@ -29,20 +33,21 @@
 
 // define ENABLE_SOUND to use first sound API, ENABLE_SOUND_OPENAL to use OpenAL,
 // or comment line below disable sound
+#ifdef _OS_IOS_
 #define ENABLE_SOUND_OPENAL
+#endif
 
 #ifdef ENABLE_SOUND_OPENAL
     #include "MiniAPI/MiniPlayer.h"
 #endif
 
+#if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
+#include <ccr.h>
+#endif
+
 #if defined(ENABLE_SOUND) || defined(ENABLE_SOUND_OPENAL)
-    #ifdef ANDROID
-        #define BALL_REBOUND_SOUND_FILE "/sdcard/C++ Compiler/samples/ball_rebound.wav"
-        #define BAR_EXPLODE_SOUND_FILE  "/sdcard/C++ Compiler/samples/bar_explode.wav"
-    #else
-        #define BALL_REBOUND_SOUND_FILE "Resources/ball_rebound.wav"
-        #define BAR_EXPLODE_SOUND_FILE  "Resources/bar_explode.wav"
-    #endif
+#define BALL_REBOUND_SOUND_FILE "Resources/ball_rebound.wav"
+#define BAR_EXPLODE_SOUND_FILE  "Resources/bar_explode.wav"
 #endif
 
 //------------------------------------------------------------------------------
@@ -129,8 +134,10 @@ const int level5[15] =
     0, 1, 1, 1, 0,
 };
 //------------------------------------------------------------------------------
-#ifndef ANDROID
-    GLuint g_Renderbuffer, g_Framebuffer;
+#if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
+    #ifndef _OS_ANDROID_
+        GLuint g_Renderbuffer, g_Framebuffer;
+    #endif
 #endif
 QR_Screen              g_Screen;
 QR_Ball                g_Ball;
@@ -220,17 +227,20 @@ void on_GLES2_Init(int view_w, int view_h)
     unsigned int   barSoundFileLen;
     unsigned char* pBallSndBuffer;
     unsigned char* pBarSndBuffer;
-
-    #ifndef ANDROID
-        // generate and bind in memory frame buffers to render to
-        glGenRenderbuffers(1, &g_Renderbuffer);
-        glBindRenderbuffer(GL_RENDERBUFFER, g_Renderbuffer);
-        glGenFramebuffers(1,&g_Framebuffer);
-        glBindFramebuffer(GL_FRAMEBUFFER, g_Framebuffer);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER,
-                                  GL_COLOR_ATTACHMENT0,
-                                  GL_RENDERBUFFER,
-                                  g_Renderbuffer);
+    
+    // renderer buffers should no more be generated since CCR version 1.1
+    #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
+        #ifndef _OS_ANDROID_
+            // generate and bind in memory frame buffers to render to
+            glGenRenderbuffers(1, &g_Renderbuffer);
+            glBindRenderbuffer(GL_RENDERBUFFER, g_Renderbuffer);
+            glGenFramebuffers(1,&g_Framebuffer);
+            glBindFramebuffer(GL_FRAMEBUFFER, g_Framebuffer);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER,
+                                      GL_COLOR_ATTACHMENT0,
+                                      GL_RENDERBUFFER,
+                                      g_Renderbuffer);
+        #endif
     #endif
 
     // compile, link and use shaders
@@ -900,9 +910,25 @@ void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
         g_Bar.m_Geometry.m_Pos.m_X = g_Screen.m_Left + (g_Bar.m_Geometry.m_Size.m_Width / 2.0f);
 }
 //------------------------------------------------------------------------------
-#ifdef IOS
-    void on_GLES2_DeviceRotate(int orientation)
-    {}
-#endif
-//------------------------------------------------------------------------------
 
+#if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
+int main()
+{
+	ccrSet_GLES2_Init_Callback(on_GLES2_Init);
+	ccrSet_GLES2_Final_Callback(on_GLES2_Final);
+	ccrSet_GLES2_Size_Callback(on_GLES2_Size);
+	ccrSet_GLES2_Update_Callback(on_GLES2_Update);
+	ccrSet_GLES2_Render_Callback(on_GLES2_Render);
+	ccrSet_GLES2_TouchBegin_Callback(on_GLES2_TouchBegin);
+	ccrSet_GLES2_TouchMove_Callback(on_GLES2_TouchMove);
+	ccrSet_GLES2_TouchEnd_Callback(on_GLES2_TouchEnd);
+
+	ccrBegin_GLES2_Drawing();
+
+	while(ccrGetEvent(false)!=CCR_EVENT_QUIT);
+
+	ccrEnd_GLES2_Drawing();
+
+	return 0;
+}
+#endif

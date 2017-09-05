@@ -85,6 +85,75 @@ void CalculateStride(MV_VertexFormat* pVertexFormat)
 }
 
 /**
+* Adds a vertex to a vertex buffer
+*@param pVertexFormat - vertex format
+*@param pVertex - vertex to add
+*@param pNormal - normal to add
+*@param pUV - texture coordinate to add
+*@param color - vertex color
+*@param[out] pVB - vertex buffer to add to
+*@param[out] pVertexCount - vertex buffer count
+*/
+void AddVertexToVB(MV_VertexFormat* pVertexFormat,
+                   MG_Vector3*      pVertex,
+                   MG_Vector3*      pNormal,
+                   MG_Vector2*      pUV,
+                   unsigned int     color,
+                   float**          pVB,
+                   unsigned int*    pVertexCount)
+{
+    unsigned int offset = *pVertexCount;
+
+    // allocate memory for new vertex
+    if (!(*pVertexCount))
+        *pVB = (float*)malloc(pVertexFormat->m_Stride * sizeof(float));
+    else
+        *pVB = (float*)realloc(*pVB,
+                             ((*pVertexCount) + pVertexFormat->m_Stride) * sizeof(float));
+
+    // copy vertex from source
+    (*pVB)[offset]     = pVertex->m_X;
+    (*pVB)[offset + 1] = pVertex->m_Y;
+    (*pVB)[offset + 2] = pVertex->m_Z;
+
+    offset += 3;
+
+    // do include normals?
+    if (pVertexFormat->m_UseNormals)
+    {
+        // copy normal from source
+        (*pVB)[offset]     = pNormal->m_X;
+        (*pVB)[offset + 1] = pNormal->m_Y;
+        (*pVB)[offset + 2] = pNormal->m_Z;
+
+        offset += 3;
+    }
+
+    // do include texture coordinates?
+    if (pVertexFormat->m_UseTextures)
+    {
+        // copy texture coordinates from source
+        (*pVB)[offset]     = pUV->m_X;
+        (*pVB)[offset + 1] = pUV->m_Y;
+
+        offset += 2;
+    }
+
+    // do include colors?
+    if (pVertexFormat->m_UseColors)
+    {
+        // set color data
+        (*pVB)[offset]     = (float)((color >> 24) & 0xFF) / 255.0f;
+        (*pVB)[offset + 1] = (float)((color >> 16) & 0xFF) / 255.0f;
+        (*pVB)[offset + 2] = (float)((color >> 8)  & 0xFF) / 255.0f;
+        (*pVB)[offset + 3] = (float) (color        & 0xFF) / 255.0f;
+    }
+
+    // update vertex count
+    *pVertexCount += pVertexFormat->m_Stride;
+}
+
+/**
 * Loads texture from bitmap file
 *@param pFileName - bitmap file name to load from
 *@return newly generated texture index, GL_INVALID_VALUE on error

@@ -7,8 +7,12 @@
  *****************************************************************************/
 
 // supported platforms check. NOTE iOS only, but may works on other platforms
-#if !defined(_OS_IOS_)
+#if !defined(_OS_IOS_) && !defined(_OS_ANDROID_) && !defined(_OS_WINDOWS_)
     #error "Not supported platform!"
+#endif
+
+#ifdef CCR_FORCE_LLVM_INTERPRETER
+#error "Clang/LLVM on iOS does not support function pointer yet. Consider using CPP built-in compiler."
 #endif
 
 // std
@@ -28,10 +32,14 @@
 #include "MiniAPI/MiniCollision.h"
 #include "MiniAPI/MiniShader.h"
 
+#if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
+#include <ccr.h>
+#endif
+
 //------------------------------------------------------------------------------
 // renderer buffers should no more be generated since CCR version 1.1
 #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-    #ifndef ANDROID
+    #ifndef _OS_ANDROID_
         GLuint g_Renderbuffer, g_Framebuffer;
     #endif
 #endif
@@ -72,7 +80,7 @@ void on_GLES2_Init(int view_w, int view_h)
 {
     // renderer buffers should no more be generated since CCR version 1.1
     #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-        #ifndef ANDROID
+        #ifndef _OS_ANDROID_
             // generate and bind in memory frame buffers to render to
             glGenRenderbuffers(1, &g_Renderbuffer);
             glBindRenderbuffer(GL_RENDERBUFFER, g_Renderbuffer);
@@ -356,8 +364,25 @@ void on_GLES2_TouchEnd(float x, float y)
 void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
 {}
 //------------------------------------------------------------------------------
-#ifdef IOS
-    void on_GLES2_DeviceRotate(int orientation)
-    {}
+
+#if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
+int main()
+{
+	ccrSet_GLES2_Init_Callback(on_GLES2_Init);
+	ccrSet_GLES2_Final_Callback(on_GLES2_Final);
+	ccrSet_GLES2_Size_Callback(on_GLES2_Size);
+	ccrSet_GLES2_Update_Callback(on_GLES2_Update);
+	ccrSet_GLES2_Render_Callback(on_GLES2_Render);
+	ccrSet_GLES2_TouchBegin_Callback(on_GLES2_TouchBegin);
+	ccrSet_GLES2_TouchMove_Callback(on_GLES2_TouchMove);
+	ccrSet_GLES2_TouchEnd_Callback(on_GLES2_TouchEnd);
+
+	ccrBegin_GLES2_Drawing();
+
+	while(ccrGetEvent(false)!=CCR_EVENT_QUIT);
+
+	ccrEnd_GLES2_Drawing();
+
+	return 0;
+}
 #endif
-//------------------------------------------------------------------------------

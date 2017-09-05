@@ -566,7 +566,7 @@ int CreateMesh(MM_MD2Header*       pHeader,
                 offset += 3;
 
                 // do include normals?
-                 if ((*pMD2Model)->m_pVertexFormat->m_UseNormals)
+                if ((*pMD2Model)->m_pVertexFormat->m_UseNormals)
                 {
                     // calculate normal index in table
                     normalIndex = pFrames[index].m_pVertex[pCurGlCmds[2]].m_NormalIndex * 3;
@@ -580,7 +580,7 @@ int CreateMesh(MM_MD2Header*       pHeader,
                 }
 
                 // do include texture coordinates?
-                 if ((*pMD2Model)->m_pVertexFormat->m_UseTextures)
+                if ((*pMD2Model)->m_pVertexFormat->m_UseTextures)
                 {
                     // copy texture coordinates from source
                     pMdlMesh->m_pVertexBuffer[offset]     = ((float*)pCurGlCmds)[0];
