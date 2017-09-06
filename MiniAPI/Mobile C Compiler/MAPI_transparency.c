@@ -1,10 +1,14 @@
 /*****************************************************************************
  * ==> Transparency demo ----------------------------------------------------*
  *****************************************************************************
- * Description : A transparency effect, swipe left/right to accelerate or    *
- *               decelerate rotation, swipe up/down to increase or decrease  *
- *               transparency                                                *
+ * Description : A transparency effect, swipe left/right to increase or      *
+ *               decrease the rotation speed, swipe up/down to increase or   *
+ *               decrease the transparency                                   *
  * Developer   : Jean-Milost Reymond                                         *
+ * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
+ *               it for your own projects, commercial or not. This file is   *
+ *               provided "as is", without ANY WARRANTY OF ANY KIND          *
  *****************************************************************************/
 
 // supported platforms check. NOTE iOS only, but may works on other platforms
@@ -27,10 +31,12 @@
 #include <gles2ext.h>
 
 // mini API
+#include "MiniAPI/MiniCommon.h"
 #include "MiniAPI/MiniGeometry.h"
 #include "MiniAPI/MiniVertex.h"
 #include "MiniAPI/MiniShapes.h"
 #include "MiniAPI/MiniShader.h"
+#include "MiniAPI/MiniRenderer.h"
 
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
     #include <ccr.h>
@@ -46,13 +52,14 @@
         GLuint g_Renderbuffer, g_Framebuffer;
     #endif
 #endif
+MINI_Shader        g_Shader;
 GLuint             g_ShaderProgram      = 0;
 float*             g_pSphereVB          = 0;
-int                g_SphereVertexCount  = 0;
-MV_Index*          g_pSphereIndexes     = 0;
-int                g_SphereIndexCount   = 0;
+unsigned int       g_SphereVertexCount  = 0;
+MINI_Index*        g_pSphereIndexes     = 0;
+unsigned int       g_SphereIndexCount   = 0;
 float*             g_pSurfaceVB         = 0;
-int                g_SurfaceVertexCount = 0;
+unsigned int       g_SurfaceVertexCount = 0;
 const float        g_SurfaceWidth       = 20.0f;
 const float        g_SurfaceHeight      = 20.0f;
 const float        g_SphereRadius       = 1.0f;
@@ -64,24 +71,21 @@ float              g_Interval           = 0.0f;
 const unsigned int g_FPS                = 15;
 GLuint             g_GlassTextureIndex  = GL_INVALID_VALUE;
 GLuint             g_CloudTextureIndex  = GL_INVALID_VALUE;
-GLuint             g_PositionSlot       = 0;
-GLuint             g_ColorSlot          = 0;
-GLuint             g_TexCoordSlot       = 0;
 GLuint             g_TexSamplerSlot     = 0;
 GLuint             g_AlphaSlot          = 0;
 GLuint             g_ModelviewUniform   = 0;
-MV_VertexFormat    g_VertexFormat;
+MINI_VertexFormat  g_VertexFormat;
 //------------------------------------------------------------------------------
 void ApplyMatrix(float w, float h)
 {
     // calculate matrix items
-    const float near   = 1.0f;
-    const float far    = 20.0f;
+    const float zNear  = 1.0f;
+    const float zFar   = 20.0f;
     const float fov    = 45.0f;
-    const float aspect = (GLfloat)w/(GLfloat)h;
+    const float aspect = w / h;
 
-    MG_Matrix matrix;
-    GetPerspective(&fov, &aspect, &near, &far, &matrix);
+    MINI_Matrix matrix;
+    miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
     GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
@@ -105,44 +109,44 @@ void on_GLES2_Init(int view_w, int view_h)
         #endif
     #endif
 
-    // compile, link and use shaders
-    g_ShaderProgram = CompileShaders(g_pVSTexAlpha, g_pFSTexAlpha);
+    // compile, link and use shader
+    g_ShaderProgram = miniCompileShaders(miniGetVSTexAlpha(), miniGetFSTexAlpha());
     glUseProgram(g_ShaderProgram);
+
+    // get shader attributes
+    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram,  "qr_vPosition");
+    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram,  "qr_vColor");
+    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram,  "qr_vTexCoord");
+    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram,  "qr_sColorMap");
+    g_AlphaSlot             = glGetUniformLocation(g_ShaderProgram, "qr_uAlpha");
+    g_ModelviewUniform      = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
 
     g_VertexFormat.m_UseNormals  = 0;
     g_VertexFormat.m_UseTextures = 1;
     g_VertexFormat.m_UseColors   = 1;
 
     // generate surface
-    CreateSurface(&g_SurfaceWidth,
-                  &g_SurfaceHeight,
-                  0xFFFFFFFF,
-                  &g_VertexFormat,
-                  &g_pSurfaceVB,
-                  &g_SurfaceVertexCount);
+    miniCreateSurface(&g_SurfaceWidth,
+                      &g_SurfaceHeight,
+                      0xFFFFFFFF,
+                      &g_VertexFormat,
+                      &g_pSurfaceVB,
+                      &g_SurfaceVertexCount);
 
     // generate sphere
-    CreateSphere(&g_SphereRadius,
-                 10,
-                 24,
-                 0xFFFFFFFF,
-                 &g_VertexFormat,
-                 &g_pSphereVB,
-                 &g_SphereVertexCount,
-                 &g_pSphereIndexes,
-                 &g_SphereIndexCount);
+    miniCreateSphere(&g_SphereRadius,
+                     10,
+                     24,
+                     0xFFFFFFFF,
+                     &g_VertexFormat,
+                     &g_pSphereVB,
+                     &g_SphereVertexCount,
+                     &g_pSphereIndexes,
+                     &g_SphereIndexCount);
 
     // load textures
-    g_GlassTextureIndex = LoadTexture(GLASS_TEXTURE_FILE);
-    g_CloudTextureIndex = LoadTexture(CLOUD_TEXTURE_FILE);
-
-    // get shader attributes
-    g_PositionSlot     = glGetAttribLocation(g_ShaderProgram,  "qr_vPosition");
-    g_ColorSlot        = glGetAttribLocation(g_ShaderProgram,  "qr_vColor");
-    g_TexCoordSlot     = glGetAttribLocation(g_ShaderProgram,  "qr_vTexCoord");
-    g_TexSamplerSlot   = glGetAttribLocation(g_ShaderProgram,  "qr_sColorMap");
-    g_AlphaSlot        = glGetUniformLocation(g_ShaderProgram, "qr_uAlpha");
-    g_ModelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
+    g_GlassTextureIndex = miniLoadTexture(GLASS_TEXTURE_FILE);
+    g_CloudTextureIndex = miniLoadTexture(CLOUD_TEXTURE_FILE);
 
     // calculate frame interval
     g_Interval = 1000.0f / g_FPS;
@@ -218,24 +222,15 @@ void on_GLES2_Update(float timeStep_sec)
 //------------------------------------------------------------------------------
 void on_GLES2_Render()
 {
-    unsigned   i;
-    unsigned   j;
-    int        stride;
-    float      xAngle;
-    MG_Vector3 t;
-    MG_Vector3 r;
-    MG_Matrix  translateMatrix;
-    MG_Matrix  xRotateMatrix;
-    MG_Matrix  yRotateMatrix;
-    MG_Matrix  modelViewMatrix;
-    GLvoid*    pCoords;
-    GLvoid*    pTexCoords;
-    GLvoid*    pColors;
+    float        xAngle;
+    MINI_Vector3 t;
+    MINI_Vector3 r;
+    MINI_Matrix  translateMatrix;
+    MINI_Matrix  xRotateMatrix;
+    MINI_Matrix  yRotateMatrix;
+    MINI_Matrix  modelViewMatrix;
 
-    // clear scene background and depth buffer
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClearDepthf(1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    miniBeginScene(0.0f, 0.0f, 0.0f, 1.0f);
 
     // configure OpenGL to draw opaque objects (NOTE all opaque object should be drawn before,
     // because depth test should be deactivated later to allow alpha blending to work correctly)
@@ -244,16 +239,13 @@ void on_GLES2_Render()
     glCullFace(GL_BACK);
     glDisable(GL_BLEND);
 
-    // calculate vertex stride
-    stride = g_VertexFormat.m_Stride;
-
     // populate surface translation vector
     t.m_X =  0.0f;
     t.m_Y =  0.0f;
     t.m_Z = -10.0f;
 
     // get translation matrix
-    GetTranslateMatrix(&t, &modelViewMatrix);
+    miniGetTranslateMatrix(&t, &modelViewMatrix);
 
     // connect model view matrix to shader
     glUniformMatrix4fv(g_ModelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
@@ -264,11 +256,6 @@ void on_GLES2_Render()
 
     // bind cloud texture
     glBindTexture(GL_TEXTURE_2D, g_CloudTextureIndex);
-
-    // enable position and color slots
-    glEnableVertexAttribArray(g_PositionSlot);
-    glEnableVertexAttribArray(g_TexCoordSlot);
-    glEnableVertexAttribArray(g_ColorSlot);
 
     // set alpha transparency level to draw surface (NOTE surface doesn't use transparency)
     glUniform1f(g_AlphaSlot, 1.0f);
@@ -284,18 +271,11 @@ void on_GLES2_Render()
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
 
-    // get next vertices fan buffer
-    pCoords    = &g_pSurfaceVB[0];
-    pTexCoords = &g_pSurfaceVB[3];
-    pColors    = &g_pSurfaceVB[5];
-
-    // connect buffer to shader
-    glVertexAttribPointer(g_PositionSlot, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), pCoords);
-    glVertexAttribPointer(g_TexCoordSlot, 2, GL_FLOAT, GL_FALSE, 9 * sizeof(float), pTexCoords);
-    glVertexAttribPointer(g_ColorSlot,    4, GL_FLOAT, GL_FALSE, 9 * sizeof(float), pColors);
-
-    // draw it
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    // draw background image
+    miniDrawSurface(g_pSurfaceVB,
+                    g_SurfaceVertexCount,
+                    &g_VertexFormat,
+                    &g_Shader);
 
     // bind glass texture
     glBindTexture(GL_TEXTURE_2D, g_GlassTextureIndex);
@@ -306,7 +286,7 @@ void on_GLES2_Render()
     t.m_Z = -4.0f;
 
     // get translation matrix
-    GetTranslateMatrix(&t, &translateMatrix);
+    miniGetTranslateMatrix(&t, &translateMatrix);
 
     // set rotation on X axis
     r.m_X = 1.0f;
@@ -317,7 +297,7 @@ void on_GLES2_Render()
     xAngle = 1.57075;
 
     // calculate model view matrix (it's a rotation on the y axis)
-    GetRotateMatrix(&xAngle, &r, &xRotateMatrix);
+    miniGetRotateMatrix(&xAngle, &r, &xRotateMatrix);
 
     // set rotation on Y axis
     r.m_X = 0.0f;
@@ -325,11 +305,11 @@ void on_GLES2_Render()
     r.m_Z = 0.0f;
 
     // calculate model view matrix (it's a rotation on the y axis)
-    GetRotateMatrix(&g_Angle, &r, &yRotateMatrix);
+    miniGetRotateMatrix(&g_Angle, &r, &yRotateMatrix);
 
     // build model view matrix
-    MatrixMultiply(&xRotateMatrix,   &yRotateMatrix,   &modelViewMatrix);
-    MatrixMultiply(&modelViewMatrix, &translateMatrix, &modelViewMatrix);
+    miniMatrixMultiply(&xRotateMatrix,   &yRotateMatrix,   &modelViewMatrix);
+    miniMatrixMultiply(&modelViewMatrix, &translateMatrix, &modelViewMatrix);
 
     // connect model view matrix to shader
     glUniformMatrix4fv(g_ModelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
@@ -345,27 +325,15 @@ void on_GLES2_Render()
     glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // iterate through vertex fan buffers to draw
-    for (int i = 0; i < g_SphereIndexCount; ++i)
-    {
-        // get next vertices fan buffer
-        pCoords    = &g_pSphereVB[g_pSphereIndexes[i].m_Start];
-        pTexCoords = &g_pSphereVB[g_pSphereIndexes[i].m_Start + 3];
-        pColors    = &g_pSphereVB[g_pSphereIndexes[i].m_Start + 5];
+    // draw the transparent sphere
+    miniDrawSphere(g_pSphereVB,
+                   g_SphereVertexCount,
+                   g_pSphereIndexes,
+                   g_SphereIndexCount,
+                   &g_VertexFormat,
+                   &g_Shader);
 
-        // connect buffer to shader
-        glVertexAttribPointer(g_PositionSlot, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), pCoords);
-        glVertexAttribPointer(g_TexCoordSlot, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), pTexCoords);
-        glVertexAttribPointer(g_ColorSlot,    4, GL_FLOAT, GL_FALSE, stride * sizeof(float), pColors);
-
-        // draw it
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, g_pSphereIndexes[i].m_Length / stride);
-    }
-
-    // disconnect slots from shader
-    glDisableVertexAttribArray(g_PositionSlot);
-    glDisableVertexAttribArray(g_TexCoordSlot);
-    glDisableVertexAttribArray(g_ColorSlot);
+    miniEndScene();
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchBegin(float x, float y)

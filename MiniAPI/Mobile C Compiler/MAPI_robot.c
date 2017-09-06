@@ -1,8 +1,13 @@
 /*****************************************************************************
- * ==> MD2 (.md2) robot demo ------------------------------------------------*
+ * ==> Quake II (MD2) model demo --------------------------------------------*
  *****************************************************************************
- * Description : MD2 robot demo.                                             *
+ * Description : A Quake II (MD2) model showing a robot. Tap on the left or  *
+ *               right to change the animation                               *
  * Developer   : Jean-Milost Reymond                                         *
+ * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
+ *               it for your own projects, commercial or not. This file is   *
+ *               provided "as is", without ANY WARRANTY OF ANY KIND          *
  *****************************************************************************/
 
 // supported platforms check. NOTE iOS only, but may works on other platforms
@@ -30,8 +35,11 @@
 #define MD2_TEXTURE_FILE "Resources/chipskin.bmp"
 
 // mini API
+#include "MiniAPI/MiniCommon.h"
+#include "MiniAPI/MiniVertex.h"
 #include "MiniAPI/MiniModels.h"
 #include "MiniAPI/MiniShader.h"
+#include "MiniAPI/MiniRenderer.h"
 
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
     #include <ccr.h>
@@ -41,7 +49,7 @@
 typedef struct
 {
     float m_Range[2];
-} QR_MD2Animation;
+} MINI_MD2Animation;
 //------------------------------------------------------------------------------
 // renderer buffers should no more be generated since CCR version 1.1
 #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
@@ -49,8 +57,9 @@ typedef struct
         GLuint g_Framebuffer, g_Renderbuffer;
     #endif
 #endif
-MV_VertexFormat    g_ModelFormat;
-MM_MD2Model*       g_pModel         = 0;
+MINI_Shader        g_Shader;
+MINI_VertexFormat  g_ModelFormat;
+MINI_MD2Model*     g_pModel         = 0;
 unsigned int       g_MeshIndex      = 0;
 GLuint             g_ShaderProgram  = 0;
 GLuint             g_TextureIndex   = GL_INVALID_VALUE;
@@ -60,20 +69,21 @@ GLuint             g_TexCoordSlot   = 0;
 GLuint             g_TexSamplerSlot = 0;
 float              g_Time           = 0.0f;
 float              g_Interval       = 0.0f;
+float              g_ScreenWidth    = 0.0f;
 const unsigned int g_FPS            = 15;
-const unsigned int g_AnimIndex      = 0; // Can only be 0 (robot walks) or 1 (robot dies)
-QR_MD2Animation    g_Animation[2];
+unsigned int       g_AnimIndex      = 0; // can only be 0 (robot walks) or 1 (robot dies)
+MINI_MD2Animation  g_Animation[2];
 //------------------------------------------------------------------------------
 void ApplyMatrix(float w, float h)
 {
     // calculate matrix items
-    const float near   = 1.0f;
-    const float far    = 100.0f;
+    const float zNear  = 1.0f;
+    const float zFar   = 100.0f;
     const float fov    = 45.0f;
-    const float aspect = (GLfloat)w/(GLfloat)h;
+    const float aspect = w / h;
 
-    MG_Matrix matrix;
-    GetPerspective(&fov, &aspect, &near, &far, &matrix);
+    MINI_Matrix matrix;
+    miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
     GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
@@ -98,24 +108,18 @@ void on_GLES2_Init(int view_w, int view_h)
         #endif
     #endif
 
-    // compile, link and use shaders
-    g_ShaderProgram = CompileShaders(g_pVSTextured, g_pFSTextured);
+    // get the screen width
+    g_ScreenWidth = view_w;
+
+    // compile, link and use shader
+    g_ShaderProgram = miniCompileShaders(miniGetVSTextured(), miniGetFSTextured());
     glUseProgram(g_ShaderProgram);
 
-    g_ModelFormat.m_UseNormals  = 0;
-    g_ModelFormat.m_UseTextures = 1;
-    g_ModelFormat.m_UseColors   = 1;
-
-    // load MD2 file and create mesh to draw
-    LoadMD2Model(MD2_FILE, &g_ModelFormat, 0xFFFFFFFF, &g_pModel);
-
-    // load MD2 texture
-    g_TextureIndex = LoadTexture(MD2_TEXTURE_FILE);
-
-    g_PositionSlot   = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_ColorSlot      = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
-    g_TexCoordSlot   = glGetAttribLocation(g_ShaderProgram, "qr_vTexCoord");
-    g_TexSamplerSlot = glGetAttribLocation(g_ShaderProgram, "qr_sColorMap");
+    // configure the shader slots
+    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
+    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
+    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram, "qr_vTexCoord");
+    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram, "qr_sColorMap");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -128,6 +132,16 @@ void on_GLES2_Init(int view_w, int view_h)
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
 
+    g_ModelFormat.m_UseNormals  = 0;
+    g_ModelFormat.m_UseTextures = 1;
+    g_ModelFormat.m_UseColors   = 1;
+
+    // load MD2 file and create mesh to draw
+    miniLoadMD2Model(MD2_FILE, &g_ModelFormat, 0xFFFFFFFF, &g_pModel);
+
+    // load MD2 texture
+    g_TextureIndex = miniLoadTexture(MD2_TEXTURE_FILE);
+
     // create MD2 animation list
     g_Animation[0].m_Range[0] = 0;  g_Animation[0].m_Range[1] = 20; // robot walks
     g_Animation[1].m_Range[0] = 21; g_Animation[1].m_Range[1] = 29; // robot dies
@@ -138,7 +152,7 @@ void on_GLES2_Init(int view_w, int view_h)
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
 {
-    ReleaseMD2Model(g_pModel);
+    miniReleaseMD2Model(g_pModel);
     g_pModel = 0;
 
     if (g_TextureIndex != GL_INVALID_VALUE)
@@ -156,6 +170,9 @@ void on_GLES2_Final()
 //------------------------------------------------------------------------------
 void on_GLES2_Size(int view_w, int view_h)
 {
+    // get the screen width
+    g_ScreenWidth = view_w;
+
     glViewport(0, 0, view_w, view_h);
     ApplyMatrix(view_w, view_h);
 }
@@ -164,7 +181,7 @@ void on_GLES2_Update(float timeStep_sec)
 {
     unsigned int frameCount = 0;
     unsigned int deltaRange = g_Animation[g_AnimIndex].m_Range[1] -
-            g_Animation[g_AnimIndex].m_Range[0];
+                              g_Animation[g_AnimIndex].m_Range[0];
 
     // calculate next time
     g_Time += (timeStep_sec * 1000.0f);
@@ -182,39 +199,24 @@ void on_GLES2_Update(float timeStep_sec)
 //------------------------------------------------------------------------------
 void on_GLES2_Render()
 {
-    MG_Vector3 t;
-    MG_Vector3 axis;
-    MG_Vector3 factor;
-    MG_Matrix  translateMatrix;
-    MG_Matrix  rotateMatrix;
-    MG_Matrix  scaleMatrix;
-    MG_Matrix  modelViewMatrix;
-    MM_Frame*  pFrame;
-    MM_Mesh*   pMesh;
-    float      angle;
-    float*     pVB;
-    GLvoid*    pCoords;
-    GLvoid*    pColors;
-    GLvoid*    pTexCoords;
-    GLsizei    stride;
-    GLint      modelviewUniform;
+    MINI_Vector3 t;
+    MINI_Vector3 axis;
+    MINI_Vector3 factor;
+    MINI_Matrix  translateMatrix;
+    MINI_Matrix  rotateMatrix;
+    MINI_Matrix  scaleMatrix;
+    MINI_Matrix  modelViewMatrix;
+    float        angle;
+    GLint        modelviewUniform;
 
-    // clear scene background and depth buffer
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClearDepthf(1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // enable position and color slots
-    glEnableVertexAttribArray(g_PositionSlot);
-    glEnableVertexAttribArray(g_TexCoordSlot);
-    glEnableVertexAttribArray(g_ColorSlot);
+    miniBeginScene(0.0f, 0.0f, 0.0f, 1.0f);
 
     // set translation
     t.m_X =  0.0f;
     t.m_Y =  0.0f;
     t.m_Z = -75.0f;
 
-    GetTranslateMatrix(&t, &translateMatrix);
+    miniGetTranslateMatrix(&t, &translateMatrix);
 
     // set rotation axis
     axis.m_X = 1.0f;
@@ -224,20 +226,20 @@ void on_GLES2_Render()
     // set rotation angle
     angle = 0.0f;
 
-    GetRotateMatrix(&angle, &axis, &rotateMatrix);
+    miniGetRotateMatrix(&angle, &axis, &rotateMatrix);
 
     // set scale factor
     factor.m_X = 0.02f;
     factor.m_Y = 0.02f;
     factor.m_Z = 0.02f;
 
-    GetScaleMatrix(&factor, &scaleMatrix);
+    miniGetScaleMatrix(&factor, &scaleMatrix);
 
     // calculate model view matrix
-    GetIdentity(&modelViewMatrix);
-    MatrixMultiply(&modelViewMatrix, &rotateMatrix,    &modelViewMatrix);
-    MatrixMultiply(&modelViewMatrix, &translateMatrix, &modelViewMatrix);
-    MatrixMultiply(&modelViewMatrix, &scaleMatrix,     &modelViewMatrix);
+    miniGetIdentity(&modelViewMatrix);
+    miniMatrixMultiply(&modelViewMatrix, &rotateMatrix,    &modelViewMatrix);
+    miniMatrixMultiply(&modelViewMatrix, &translateMatrix, &modelViewMatrix);
+    miniMatrixMultiply(&modelViewMatrix, &scaleMatrix,     &modelViewMatrix);
 
     // connect model view matrix to shader
     modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
@@ -247,46 +249,34 @@ void on_GLES2_Render()
     glActiveTexture(GL_TEXTURE0);
     glUniform1i(g_TexSamplerSlot, GL_TEXTURE0);
 
-     // calculate vertex stride
-    stride = g_pModel->m_pVertexFormat->m_Stride;
+    // draw the model
+    miniDrawMD2(g_pModel,
+                &g_Shader,
+                (int)(g_Animation[g_AnimIndex].m_Range[0] + g_MeshIndex));
 
-    // get current frame
-    pFrame = &g_pModel->m_pFrame[(int)(g_Animation[g_AnimIndex].m_Range[0] + g_MeshIndex)];
-
-    // iterate through vertices to draw
-    for (unsigned int i = 0; i < pFrame->m_MeshCount; ++i)
-    {
-        // get current vertices
-        pMesh = &pFrame->m_pMesh[i];
-        pVB   = &pMesh->m_pVertexBuffer[0];
-
-        pCoords    = &pVB[0];
-        pTexCoords = &pVB[3];
-        pColors    = &pVB[5];
-
-       // connect object to shader
-        glVertexAttribPointer(g_PositionSlot, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), pCoords);
-        glVertexAttribPointer(g_TexCoordSlot, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), pTexCoords);
-        glVertexAttribPointer(g_ColorSlot,    4, GL_FLOAT, GL_FALSE, stride * sizeof(float), pColors);
-
-        // draw vertices
-        if (pMesh->m_IsTriangleStrip)
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, pMesh->m_VertexCount);
-        else
-            glDrawArrays(GL_TRIANGLE_FAN, 0, pMesh->m_VertexCount);
-    }
-
-    // disconnect slots from shader
-    glDisableVertexAttribArray(g_PositionSlot);
-    glDisableVertexAttribArray(g_TexCoordSlot);
-    glDisableVertexAttribArray(g_ColorSlot);
+    miniEndScene();
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchBegin(float x, float y)
 {}
 //------------------------------------------------------------------------------
 void on_GLES2_TouchEnd(float x, float y)
-{}
+{
+    if (x > g_ScreenWidth * 0.5f)
+    {
+        ++g_AnimIndex;
+
+        if (g_AnimIndex > 1)
+            g_AnimIndex = 0;
+    }
+    else
+    {
+        if (g_AnimIndex == 0)
+            g_AnimIndex = 2;
+
+        --g_AnimIndex;
+    }
+}
 //------------------------------------------------------------------------------
 void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
 {}

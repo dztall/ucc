@@ -1,8 +1,13 @@
 /*****************************************************************************
  * ==> Landscape generator demo ---------------------------------------------*
  *****************************************************************************
- * Description : A landscape generator based on a grayscale image            *
+ * Description : A landscape generator based on a grayscale image, swipe to  *
+ *               left or right to increase or decrease the rotation speed    *
  * Developer   : Jean-Milost Reymond                                         *
+ * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
+ *               it for your own projects, commercial or not. This file is   *
+ *               provided "as is", without ANY WARRANTY OF ANY KIND          *
  *****************************************************************************/
 
 // supported platforms check. NOTE iOS only, but may works on other platforms
@@ -25,10 +30,12 @@
 #include <gles2ext.h>
 
 // mini API
+#include "MiniAPI/MiniCommon.h"
 #include "MiniAPI/MiniGeometry.h"
 #include "MiniAPI/MiniVertex.h"
 #include "MiniAPI/MiniModels.h"
 #include "MiniAPI/MiniShader.h"
+#include "MiniAPI/MiniRenderer.h"
 
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
     #include <ccr.h>
@@ -44,6 +51,7 @@
         GLuint g_Renderbuffer, g_Framebuffer;
     #endif
 #endif
+MINI_Shader        g_Shader;
 GLuint             g_ShaderProgram  = 0;
 float              g_MapHeight      = 3.0f;
 float              g_MapScale       = 0.2f;
@@ -53,23 +61,20 @@ float              g_Time           = 0.0f;
 float              g_Interval       = 0.0f;
 const unsigned int g_FPS            = 15;
 GLuint             g_TextureIndex   = GL_INVALID_VALUE;
-GLuint             g_PositionSlot   = 0;
-GLuint             g_ColorSlot      = 0;
-GLuint             g_TexCoordSlot   = 0;
 GLuint             g_TexSamplerSlot = 0;
-ML_Mesh*           g_pLandscapeMesh = 0;
-MV_VertexFormat    g_VertexFormat;
+MINI_Mesh*         g_pLandscapeMesh = 0;
+MINI_VertexFormat  g_VertexFormat;
 //------------------------------------------------------------------------------
 void ApplyMatrix(float w, float h)
 {
     // calculate matrix items
-    const float near   = 1.0f;
-    const float far    = 100.0f;
+    const float zNear  = 1.0f;
+    const float zFar   = 100.0f;
     const float fov    = 45.0f;
-    const float aspect = (GLfloat)w/(GLfloat)h;
+    const float aspect = w / h;
 
-    MG_Matrix matrix;
-    GetPerspective(&fov, &aspect, &near, &far, &matrix);
+    MINI_Matrix matrix;
+    miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
     GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
@@ -97,39 +102,15 @@ void on_GLES2_Init(int view_w, int view_h)
         #endif
     #endif
 
-    // compile, link and use shaders
-    g_ShaderProgram = CompileShaders(g_pVSTextured, g_pFSTextured);
+    // compile, link and use shader
+    g_ShaderProgram = miniCompileShaders(miniGetVSTextured(), miniGetFSTextured());
     glUseProgram(g_ShaderProgram);
 
-    // load landscape data from grayscale image model
-    LoadLandscape(LANDSCAPE_DATA_FILE, &pData, &landscapeWidth, &landscapeHeight);
-
-    g_VertexFormat.m_UseNormals  = 0;
-    g_VertexFormat.m_UseTextures = 1;
-    g_VertexFormat.m_UseColors   = 1;
-
-    // generate landscape
-    CreateLandscape(pData,
-                    landscapeWidth,
-                    landscapeHeight,
-                    g_MapHeight,
-                    g_MapScale,
-                    &g_VertexFormat,
-                    0xFFFFFFFF,
-                    &g_pLandscapeMesh);
-
-    // landscape image data will no longer be used
-    if (pData)
-        free(pData);
-
-    // load landscape texture
-    g_TextureIndex = LoadTexture(LANDSCAPE_TEXTURE_FILE);
-
     // get shader attributes
-    g_PositionSlot   = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_ColorSlot      = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
-    g_TexCoordSlot   = glGetAttribLocation(g_ShaderProgram, "qr_vTexCoord");
-    g_TexSamplerSlot = glGetAttribLocation(g_ShaderProgram, "qr_sColorMap");
+    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
+    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
+    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram, "qr_vTexCoord");
+    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram, "qr_sColorMap");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -143,18 +124,39 @@ void on_GLES2_Init(int view_w, int view_h)
     glFrontFace(GL_CCW);
     glDisable(GL_CULL_FACE);
 
+    // load landscape data from grayscale image model
+    miniLoadLandscape(LANDSCAPE_DATA_FILE, &pData, &landscapeWidth, &landscapeHeight);
+
+    g_VertexFormat.m_UseNormals  = 0;
+    g_VertexFormat.m_UseTextures = 1;
+    g_VertexFormat.m_UseColors   = 1;
+
+    // generate landscape
+    miniCreateLandscape(pData,
+                        landscapeWidth,
+                        landscapeHeight,
+                        g_MapHeight,
+                        g_MapScale,
+                        &g_VertexFormat,
+                        0xFFFFFFFF,
+                        &g_pLandscapeMesh);
+
+    // landscape image data will no longer be used
+    if (pData)
+        free(pData);
+
+    // load landscape texture
+    g_TextureIndex = miniLoadTexture(LANDSCAPE_TEXTURE_FILE);
+
     // calculate frame interval
     g_Interval = 1000.0f / g_FPS;
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
 {
-    // delete landscape mesh
-    if (g_pLandscapeMesh)
-    {
-        free(g_pLandscapeMesh);
-        g_pLandscapeMesh = 0;
-    }
+    // delete the landscape
+    miniReleaseLandscape(g_pLandscapeMesh);
+    g_pLandscapeMesh = 0;
 
     if (g_TextureIndex != GL_INVALID_VALUE)
         glDeleteTextures(1, &g_TextureIndex);
@@ -198,38 +200,30 @@ void on_GLES2_Update(float timeStep_sec)
 //------------------------------------------------------------------------------
 void on_GLES2_Render()
 {
-    int        stride;
-    MG_Vector3 t;
-    MG_Vector3 r;
-    MG_Matrix  translateMatrix;
-    MG_Matrix  yRotateMatrix;
-    MG_Matrix  modelViewMatrix;
-    GLvoid*    pCoords;
-    GLvoid*    pTexCoords;
-    GLvoid*    pColors;
+    MINI_Vector3 t;
+    MINI_Vector3 r;
+    MINI_Matrix  translateMatrix;
+    MINI_Matrix  yRotateMatrix;
+    MINI_Matrix  modelViewMatrix;
 
-    // clear scene background and depth buffer
-    glClearColor(0.1f, 0.65f, 0.9f, 1.0f);
-    glClearDepthf(1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    miniBeginScene(0.1f, 0.65f, 0.9f, 1.0f);
 
     // set translation
     t.m_X =  0.0f;
     t.m_Y = -2.0f;
     t.m_Z = -5.0f;
 
-    GetTranslateMatrix(&t, &translateMatrix);
+    miniGetTranslateMatrix(&t, &translateMatrix);
 
     // set rotation on Y axis
     r.m_X = 0.0f;
     r.m_Y = 1.0f;
     r.m_Z = 0.0f;
 
-    // calculate model view matrix (it's a rotation on the y axis)
-    GetRotateMatrix(&g_Angle, &r, &yRotateMatrix);
+    miniGetRotateMatrix(&g_Angle, &r, &yRotateMatrix);
 
     // build model view matrix
-    MatrixMultiply(&yRotateMatrix, &translateMatrix, &modelViewMatrix);
+    miniMatrixMultiply(&yRotateMatrix, &translateMatrix, &modelViewMatrix);
 
     // connect model view matrix to shader
     GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
@@ -239,31 +233,12 @@ void on_GLES2_Render()
     glActiveTexture(GL_TEXTURE0);
     glUniform1i(g_TexSamplerSlot, GL_TEXTURE0);
 
-    // calculate vertex stride
-    stride = g_VertexFormat.m_Stride;
+    // draw the landscape
+    miniDrawLandscape(g_pLandscapeMesh,
+                      &g_VertexFormat,
+                      &g_Shader);
 
-    // enable position and color slots
-    glEnableVertexAttribArray(g_PositionSlot);
-    glEnableVertexAttribArray(g_TexCoordSlot);
-    glEnableVertexAttribArray(g_ColorSlot);
-
-    // get next vertices fan buffer
-    pCoords    = &g_pLandscapeMesh->m_pVertexBuffer[0];
-    pTexCoords = &g_pLandscapeMesh->m_pVertexBuffer[3];
-    pColors    = &g_pLandscapeMesh->m_pVertexBuffer[5];
-
-    // connect buffer to shader
-    glVertexAttribPointer(g_PositionSlot, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), pCoords);
-    glVertexAttribPointer(g_TexCoordSlot, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), pTexCoords);
-    glVertexAttribPointer(g_ColorSlot,    4, GL_FLOAT, GL_FALSE, stride * sizeof(float), pColors);
-
-    // draw it
-    glDrawArrays(GL_TRIANGLES, 0, g_pLandscapeMesh->m_VertexCount / stride);
-
-    // disconnect slots from shader
-    glDisableVertexAttribArray(g_PositionSlot);
-    glDisableVertexAttribArray(g_TexCoordSlot);
-    glDisableVertexAttribArray(g_ColorSlot);
+    miniEndScene();
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchBegin(float x, float y)

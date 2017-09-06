@@ -3,6 +3,10 @@
  *****************************************************************************
  * Description : An old school plasma effect that use shader for calculation *
  * Developer   : Jean-Milost Reymond                                         *
+ * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
+ *               it for your own projects, commercial or not. This file is   *
+ *               provided "as is", without ANY WARRANTY OF ANY KIND          *
  *****************************************************************************/
 
 // supported platforms check. NOTE iOS only, but may works on other platforms
@@ -25,10 +29,12 @@
 #include <gles2ext.h>
 
 // mini API
+#include "MiniAPI/MiniCommon.h"
 #include "MiniAPI/MiniGeometry.h"
 #include "MiniAPI/MiniVertex.h"
 #include "MiniAPI/MiniShapes.h"
 #include "MiniAPI/MiniShader.h"
+#include "MiniAPI/MiniRenderer.h"
 
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
     #include <ccr.h>
@@ -41,17 +47,17 @@
         GLuint g_Renderbuffer, g_Framebuffer;
     #endif
 #endif
-GLuint             g_ShaderProgram      = 0;
-float*             g_pSurfaceVB         = 0;
-int                g_SurfaceVertexCount = 0;
-const float        g_SurfaceWidth       = 10.0f;
-const float        g_SurfaceHeight      = 12.5f;
-const float        g_MaxTime            = 12.0f * M_PI;
-float              g_Time               = 0.0f;
-GLuint             g_PositionSlot       = 0;
-GLuint             g_TimeSlot           = 0;
-GLuint             g_SizeSlot           = 0;
-MV_VertexFormat    g_VertexFormat;
+MINI_Shader       g_Shader;
+GLuint            g_ShaderProgram      = 0;
+float*            g_pSurfaceVB         = 0;
+unsigned int      g_SurfaceVertexCount = 0;
+const float       g_SurfaceWidth       = 10.0f;
+const float       g_SurfaceHeight      = 12.5f;
+const float       g_MaxTime            = 12.0f * M_PI;
+float             g_Time               = 0.0f;
+GLuint            g_TimeSlot           = 0;
+GLuint            g_SizeSlot           = 0;
+MINI_VertexFormat g_VertexFormat;
 //------------------------------------------------------------------------------
 // plasma vertex shader program
 const char* g_pVSPlasma =
@@ -100,8 +106,8 @@ void ApplyOrtho(float maxX, float maxY)
     // get orthogonal matrix
     float left  = -5.0f;
     float right =  5.0f;
-    float near  = -1.0f;
-    float far   =  1.0f;
+    float zNear = -1.0f;
+    float zFar  =  1.0f;
 
     // screen ratio was modified since CCR version 1.1
     #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
@@ -112,8 +118,8 @@ void ApplyOrtho(float maxX, float maxY)
         float top    =  5.0f * 1.24f;
     #endif
 
-    MG_Matrix ortho;
-    GetOrtho(&left, &right, &bottom, &top, &near, &far, &ortho);
+    MINI_Matrix ortho;
+    miniGetOrtho(&left, &right, &bottom, &top, &zNear, &zFar, &ortho);
 
     // connect projection matrix to shader
     GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
@@ -137,26 +143,14 @@ void on_GLES2_Init(int view_w, int view_h)
         #endif
     #endif
 
-    // compile, link and use shaders
-    g_ShaderProgram = CompileShaders(g_pVSPlasma, g_pFSPlasma);
+    // compile, link and use shader
+    g_ShaderProgram = miniCompileShaders(g_pVSPlasma, g_pFSPlasma);
     glUseProgram(g_ShaderProgram);
 
-    g_VertexFormat.m_UseNormals  = 0;
-    g_VertexFormat.m_UseTextures = 0;
-    g_VertexFormat.m_UseColors   = 0;
-
-    // generate surface
-    CreateSurface(&g_SurfaceWidth,
-                  &g_SurfaceHeight,
-                  0xFFFFFFFF,
-                  &g_VertexFormat,
-                  &g_pSurfaceVB,
-                  &g_SurfaceVertexCount);
-
     // get shader attributes
-    g_PositionSlot = glGetAttribLocation(g_ShaderProgram,  "qr_vPosition");
-    g_TimeSlot     = glGetUniformLocation(g_ShaderProgram, "qr_uTime");
-    g_SizeSlot     = glGetUniformLocation(g_ShaderProgram, "qr_uSize");
+    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram,  "qr_vPosition");
+    g_TimeSlot            = glGetUniformLocation(g_ShaderProgram, "qr_uTime");
+    g_SizeSlot            = glGetUniformLocation(g_ShaderProgram, "qr_uSize");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -168,6 +162,18 @@ void on_GLES2_Init(int view_w, int view_h)
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
+
+    g_VertexFormat.m_UseNormals  = 0;
+    g_VertexFormat.m_UseTextures = 0;
+    g_VertexFormat.m_UseColors   = 0;
+
+    // generate surface
+    miniCreateSurface(&g_SurfaceWidth,
+                      &g_SurfaceHeight,
+                      0xFFFFFFFF,
+                      &g_VertexFormat,
+                      &g_pSurfaceVB,
+                      &g_SurfaceVertexCount);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
@@ -210,14 +216,10 @@ void on_GLES2_Update(float timeStep_sec)
 //------------------------------------------------------------------------------
 void on_GLES2_Render()
 {
-    MG_Vector3 t;
-    MG_Matrix  modelViewMatrix;
-    GLvoid*    pCoords;
+    MINI_Vector3 t;
+    MINI_Matrix  modelViewMatrix;
 
-    // clear scene background and depth buffer
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClearDepthf(1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    miniBeginScene(0.0f, 0.0f, 0.0f, 1.0f);
 
     // populate surface translation vector
     t.m_X =  0.0f;
@@ -225,23 +227,19 @@ void on_GLES2_Render()
     t.m_Z = -1.0f;
 
     // get translation matrix
-    GetTranslateMatrix(&t, &modelViewMatrix);
+    miniGetTranslateMatrix(&t, &modelViewMatrix);
 
     // connect model view matrix to shader
     GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
-    // enable position and color slots
-    glEnableVertexAttribArray(g_PositionSlot);
+    // draw the plasma
+    miniDrawSurface(g_pSurfaceVB,
+                    g_SurfaceVertexCount,
+                    &g_VertexFormat,
+                    &g_Shader);
 
-    // get next vertices fan buffer
-    pCoords = &g_pSurfaceVB[0];
-
-    // connect buffer to shader
-    glVertexAttribPointer(g_PositionSlot, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), pCoords);
-
-    // draw it
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, g_SurfaceVertexCount);
+    miniEndScene();
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchBegin(float x, float y)

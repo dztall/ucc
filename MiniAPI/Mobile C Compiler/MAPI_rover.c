@@ -1,8 +1,13 @@
 /*****************************************************************************
  * ==> Rover demo -----------------------------------------------------------*
  *****************************************************************************
- * Description : Rover demo                                                  *
+ * Description : A simple rover model, swipe to left or right to increase or *
+ *               decrease the rotation speed                                 *
  * Developer   : Jean-Milost Reymond                                         *
+ * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
+ *               it for your own projects, commercial or not. This file is   *
+ *               provided "as is", without ANY WARRANTY OF ANY KIND          *
  *****************************************************************************/
 
 // supported platforms check. NOTE iOS only, but may works on other platforms
@@ -25,8 +30,12 @@
 #include <gles2ext.h>
 
 // mini API
+#include "MiniAPI/MiniCommon.h"
+#include "MiniAPI/MiniGeometry.h"
+#include "MiniAPI/MiniVertex.h"
 #include "MiniAPI/MiniModels.h"
 #include "MiniAPI/MiniShader.h"
+#include "MiniAPI/MiniRenderer.h"
 
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
     #include <ccr.h>
@@ -39,27 +48,30 @@
         GLuint g_Framebuffer, g_Renderbuffer;
     #endif
 #endif
-MV_VertexFormat g_VertexFormat;
-float*          g_pVertices     = 0;
-unsigned        g_VertexCount   = 0;
-MR_MdlCmds*     g_pMdlCmds      = 0;
-MV_Index*       g_pIndexes      = 0;
-unsigned        g_IndexCount    = 0;
-GLuint          g_ShaderProgram = 0;
-GLuint          g_PositionSlot  = 0;
-GLuint          g_ColorSlot     = 0;
-float           g_Angle         = 0.0f;
+MINI_Shader        g_Shader;
+MINI_VertexFormat  g_VertexFormat;
+float*             g_pVertices     = 0;
+unsigned           g_VertexCount   = 0;
+MINI_MdlCmds*      g_pMdlCmds      = 0;
+MINI_Index*        g_pIndexes      = 0;
+unsigned           g_IndexCount    = 0;
+GLuint             g_ShaderProgram = 0;
+float              g_Angle         = 0.0f;
+float              g_Time          = 0.0f;
+float              g_Interval      = 0.0f;
+float              g_RotationSpeed = 0.1f;
+const unsigned int g_FPS           = 15;
 //------------------------------------------------------------------------------
 void ApplyMatrix(float w, float h)
 {
     // calculate matrix items
-    const float near   = 1.0f;
-    const float far    = 100.0f;
+    const float zNear  = 1.0f;
+    const float zFar   = 100.0f;
     const float fov    = 45.0f;
-    const float aspect = (GLfloat)w/(GLfloat)h;
+    const float aspect = w / h;
 
-    MG_Matrix matrix;
-    GetPerspective(&fov, &aspect, &near, &far, &matrix);
+    MINI_Matrix matrix;
+    miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
     GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
@@ -84,20 +96,12 @@ void on_GLES2_Init(int view_w, int view_h)
         #endif
     #endif
 
-    // create the rover
-    CreateRover(&g_VertexFormat,
-                &g_pVertices,
-                &g_VertexCount,
-                &g_pMdlCmds,
-                &g_pIndexes,
-                &g_IndexCount);
-
-    // compile, link and use shaders
-    g_ShaderProgram = CompileShaders(g_pVSColored, g_pFSColored);
+    // compile, link and use shader
+    g_ShaderProgram = miniCompileShaders(miniGetVSColored(), miniGetFSColored());
     glUseProgram(g_ShaderProgram);
 
-    g_PositionSlot = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_ColorSlot    = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
+    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
+    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -109,6 +113,17 @@ void on_GLES2_Init(int view_w, int view_h)
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
+
+    // create the rover
+    miniCreateRover(&g_VertexFormat,
+                    &g_pVertices,
+                    &g_VertexCount,
+                    &g_pMdlCmds,
+                    &g_pIndexes,
+                    &g_IndexCount);
+
+    // calculate frame interval
+    g_Interval = 1000.0f / g_FPS;
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
@@ -150,43 +165,48 @@ void on_GLES2_Size(int view_w, int view_h)
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
 {
-    g_Angle += 0.02f;
+    unsigned int frameCount = 0;
+
+    // calculate next time
+    g_Time += (timeStep_sec * 1000.0f);
+
+    // count frames to skip
+    while (g_Time > g_Interval)
+    {
+        g_Time -= g_Interval;
+        ++frameCount;
+    }
+
+    // calculate next rotation angle
+    g_Angle += (g_RotationSpeed * frameCount);
+
+    // is rotating angle out of bounds?
+    while (g_Angle >= 6.28f)
+        g_Angle -= 6.28f;
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Render()
 {
-    MG_Vector3 t;
-    MG_Vector3 axis;
-    MG_Vector3 factor;
-    MG_Matrix  translateMatrix;
-    MG_Matrix  rotateMatrixX;
-    MG_Matrix  rotateMatrixY;
-    MG_Matrix  scaleMatrix;
-    MG_Matrix  modelViewMatrix;
-    float      angleX;
-    float      angleY;
-    GLvoid*    pCoords;
-    GLvoid*    pColors;
-    GLsizei    stride;
-    GLint      modelviewUniform;
+    MINI_Vector3 t;
+    MINI_Vector3 axis;
+    MINI_Vector3 factor;
+    MINI_Matrix  translateMatrix;
+    MINI_Matrix  rotateMatrixX;
+    MINI_Matrix  rotateMatrixY;
+    MINI_Matrix  scaleMatrix;
+    MINI_Matrix  modelViewMatrix;
+    float        angleX;
+    float        angleY;
+    GLint        modelviewUniform;
 
-    glEnable(GL_DEPTH_TEST);
-
-    // enable position and color slots
-    glEnableVertexAttribArray(g_PositionSlot);
-    glEnableVertexAttribArray(g_ColorSlot);
-
-    // clear scene background and depth buffer
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClearDepthf(1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    miniBeginScene(0.0f, 0.0f, 0.0f, 1.0f);
 
     // set translation
     t.m_X =   0.0f;
     t.m_Y =   0.0f;
     t.m_Z = -10.0f;
 
-    GetTranslateMatrix(&t, &translateMatrix);
+    miniGetTranslateMatrix(&t, &translateMatrix);
 
     // set rotation axis
     axis.m_X = 1.0f;
@@ -196,7 +216,7 @@ void on_GLES2_Render()
     // set rotation angle
     angleX = 0.0f;
 
-    GetRotateMatrix(&angleX, &axis, &rotateMatrixX);
+    miniGetRotateMatrix(&angleX, &axis, &rotateMatrixX);
 
     // set rotation axis
     axis.m_X = 0.0f;
@@ -205,63 +225,34 @@ void on_GLES2_Render()
 
     angleY = g_Angle;
 
-    GetRotateMatrix(&angleY, &axis, &rotateMatrixY);
+    miniGetRotateMatrix(&angleY, &axis, &rotateMatrixY);
 
     // set scale factor
     factor.m_X = 1.0f;
     factor.m_Y = 1.0f;
     factor.m_Z = 1.0f;
 
-    GetScaleMatrix(&factor, &scaleMatrix);
+    miniGetScaleMatrix(&factor, &scaleMatrix);
 
     // calculate model view matrix
-    MatrixMultiply(&rotateMatrixY,   &rotateMatrixX,   &modelViewMatrix);
-    MatrixMultiply(&modelViewMatrix, &translateMatrix, &modelViewMatrix);
-    MatrixMultiply(&modelViewMatrix, &scaleMatrix,     &modelViewMatrix);
+    miniMatrixMultiply(&rotateMatrixY,   &rotateMatrixX,   &modelViewMatrix);
+    miniMatrixMultiply(&modelViewMatrix, &translateMatrix, &modelViewMatrix);
+    miniMatrixMultiply(&modelViewMatrix, &scaleMatrix,     &modelViewMatrix);
 
     // connect model view matrix to shader
     modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
-    // calculate vertex stride
-    stride = g_VertexFormat.m_Stride;
+    // draw the rover model
+    miniDrawRover(g_pVertices,
+                  g_VertexCount,
+                  g_pMdlCmds,
+                  g_pIndexes,
+                  g_IndexCount,
+                  &g_VertexFormat,
+                  &g_Shader);
 
-    // iterate through vertex fan buffers to draw
-    for (int i = 0; i < g_IndexCount; ++i)
-    {
-        // get next vertices fan buffer
-        pCoords = &g_pVertices[g_pIndexes[i].m_Start];
-        pColors = &g_pVertices[g_pIndexes[i].m_Start + 3];
-
-        // connect buffer to shader
-        glVertexAttribPointer(g_PositionSlot, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), pCoords);
-        glVertexAttribPointer(g_ColorSlot,    4, GL_FLOAT, GL_FALSE, stride * sizeof(float), pColors);
-
-        // configure culling
-        if (g_pMdlCmds[i].m_CullMode == 0)
-        {
-            // disabled
-            glDisable(GL_CULL_FACE);
-            glCullFace(GL_NONE);
-        }
-        else
-        {
-            // enabled
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_BACK);
-            glFrontFace(GL_CCW);
-        }
-
-        // draw it
-        if (g_pMdlCmds[i].m_GLCmd == 0)
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, g_pIndexes[i].m_Length / stride);
-        else
-            glDrawArrays(GL_TRIANGLE_FAN, 0, g_pIndexes[i].m_Length / stride);
-    }
-
-    // disconnect slots from shader
-    glDisableVertexAttribArray(g_PositionSlot);
-    glDisableVertexAttribArray(g_ColorSlot);
+    miniEndScene();
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchBegin(float x, float y)
@@ -271,7 +262,10 @@ void on_GLES2_TouchEnd(float x, float y)
 {}
 //------------------------------------------------------------------------------
 void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
-{}
+{
+    // increase or decrease rotation speed
+    g_RotationSpeed += (x - prev_x) * 0.001f;
+}
 //------------------------------------------------------------------------------
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
     int main()

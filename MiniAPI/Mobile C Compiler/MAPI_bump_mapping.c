@@ -2,8 +2,12 @@
  * ==> Bump mapping demo ----------------------------------------------------*
  *****************************************************************************
  * Description : A bump mapped stone wall with diffuse light, swipe on       *
- *               screen to modify diffuse light properties                   *
+ *               screen to modify the light position                         *
  * Developer   : Jean-Milost Reymond                                         *
+ * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
+ *               it for your own projects, commercial or not. This file is   *
+ *               provided "as is", without ANY WARRANTY OF ANY KIND          *
  *****************************************************************************/
 
 // supported platforms check. NOTE iOS only, but may works on other platforms
@@ -26,10 +30,12 @@
 #include <gles2ext.h>
 
 // mini API
+#include "MiniAPI/MiniCommon.h"
 #include "MiniAPI/MiniGeometry.h"
 #include "MiniAPI/MiniVertex.h"
 #include "MiniAPI/MiniShapes.h"
 #include "MiniAPI/MiniShader.h"
+#include "MiniAPI/MiniRenderer.h"
 
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
     #include <ccr.h>
@@ -46,21 +52,19 @@
         GLuint g_Renderbuffer, g_Framebuffer;
     #endif
 #endif
-GLuint             g_ShaderProgram      = 0;
-float*             g_pSurfaceVB         = 0;
-int                g_SurfaceVertexCount = 0;
-const float        g_SurfaceWidth       = 10.0f;
-const float        g_SurfaceHeight      = 12.5f;
-GLuint             g_TextureIndex       = GL_INVALID_VALUE;
-GLuint             g_BumpMapIndex       = GL_INVALID_VALUE;
-GLuint             g_PositionSlot       = 0;
-GLuint             g_ColorSlot          = 0;
-GLuint             g_TexCoordSlot       = 0;
-GLuint             g_LightPos           = 0;
-GLuint             g_TexSamplerSlot     = 0;
-GLuint             g_BumpMapSamplerSlot = 0;
-MG_Size            g_View;
-MV_VertexFormat    g_VertexFormat;
+MINI_Shader       g_Shader;
+GLuint            g_ShaderProgram      = 0;
+float*            g_pSurfaceVB         = 0;
+unsigned          g_SurfaceVertexCount = 0;
+const float       g_SurfaceWidth       = 10.0f;
+const float       g_SurfaceHeight      = 12.5f;
+GLuint            g_TextureIndex       = GL_INVALID_VALUE;
+GLuint            g_BumpMapIndex       = GL_INVALID_VALUE;
+GLuint            g_LightPos           = 0;
+GLuint            g_TexSamplerSlot     = 0;
+GLuint            g_BumpMapSamplerSlot = 0;
+MINI_Size         g_View;
+MINI_VertexFormat g_VertexFormat;
 //------------------------------------------------------------------------------
 const char* g_pVSDiffuseBumpMap =
     "precision mediump float;"
@@ -93,7 +97,7 @@ const char* g_pFSDiffuseBumpMap =
     "void main(void)"
     "{"
     "    vec3  normal  = normalize(texture2D(qr_sBumpMap, qr_fTexCoord).rgb * 2.0 - 1.0);"
-    "    float diffuse = max(dot(normal, qr_fLightPos), 0.0);"
+    "    float diffuse = clamp(dot(normal, qr_fLightPos), 0.0, 2.5);"
     "    vec3  color   = diffuse * texture2D(qr_sColorMap, qr_fTexCoord).rgb;"
     "    gl_FragColor  = vec4(color, 1.0);"
     "}";
@@ -101,13 +105,13 @@ const char* g_pFSDiffuseBumpMap =
 void ApplyMatrix(float w, float h)
 {
     // calculate matrix items
-    const float near   = 1.0f;
-    const float far    = 100.0f;
+    const float zNear  = 1.0f;
+    const float zFar   = 100.0f;
     const float fov    = 45.0f;
-    const float aspect = (GLfloat)w/(GLfloat)h;
+    const float aspect = w / h;
 
-    MG_Matrix matrix;
-    GetPerspective(&fov, &aspect, &near, &far, &matrix);
+    MINI_Matrix matrix;
+    miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
     GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
@@ -131,33 +135,20 @@ void on_GLES2_Init(int view_w, int view_h)
         #endif
     #endif
 
-    // compile, link and use shaders
-    g_ShaderProgram = CompileShaders(g_pVSDiffuseBumpMap, g_pFSDiffuseBumpMap);
+    // compile, link and use shader
+    g_ShaderProgram = miniCompileShaders(g_pVSDiffuseBumpMap, g_pFSDiffuseBumpMap);
     glUseProgram(g_ShaderProgram);
 
-    g_VertexFormat.m_UseNormals  = 0;
-    g_VertexFormat.m_UseTextures = 1;
-    g_VertexFormat.m_UseColors   = 1;
-
-    // generate surface
-    CreateSurface(&g_SurfaceWidth,
-                  &g_SurfaceHeight,
-                  0xFFFFFFFF,
-                  &g_VertexFormat,
-                  &g_pSurfaceVB,
-                  &g_SurfaceVertexCount);
-
-    // load wall texture and his bump map
-    g_TextureIndex = LoadTexture(STONE_TEXTURE_FILE);
-    g_BumpMapIndex = LoadTexture(STONE_BUMPMAP_FILE);
-
     // get shader attributes
-    g_PositionSlot       = glGetAttribLocation(g_ShaderProgram,  "qr_vPosition");
-    g_ColorSlot          = glGetAttribLocation(g_ShaderProgram,  "qr_vColor");
-    g_TexCoordSlot       = glGetAttribLocation(g_ShaderProgram,  "qr_vTexCoord");
-    g_LightPos           = glGetUniformLocation(g_ShaderProgram, "qr_vLightPos");
-    g_TexSamplerSlot     = glGetUniformLocation(g_ShaderProgram, "qr_sColorMap");
-    g_BumpMapSamplerSlot = glGetUniformLocation(g_ShaderProgram, "qr_sBumpMap");
+    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram,  "qr_vPosition");
+    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram,  "qr_vColor");
+    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram,  "qr_vTexCoord");
+    g_LightPos              = glGetUniformLocation(g_ShaderProgram, "qr_vLightPos");
+    g_TexSamplerSlot        = glGetUniformLocation(g_ShaderProgram, "qr_sColorMap");
+    g_BumpMapSamplerSlot    = glGetUniformLocation(g_ShaderProgram, "qr_sBumpMap");
+
+    // notify shader about default light position
+    glUniform3f(g_LightPos, 0.0f, 0.0f, 2.0f);
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -170,8 +161,21 @@ void on_GLES2_Init(int view_w, int view_h)
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
 
-    // notify shader about default light position
-    glUniform3f(g_LightPos, 0.0f, 0.0f, 2.0f);
+    g_VertexFormat.m_UseNormals  = 0;
+    g_VertexFormat.m_UseTextures = 1;
+    g_VertexFormat.m_UseColors   = 1;
+
+    // generate surface
+    miniCreateSurface(&g_SurfaceWidth,
+                      &g_SurfaceHeight,
+                      0xFFFFFFFF,
+                      &g_VertexFormat,
+                      &g_pSurfaceVB,
+                      &g_SurfaceVertexCount);
+
+    // load wall texture and his bump map
+    g_TextureIndex = miniLoadTexture(STONE_TEXTURE_FILE);
+    g_BumpMapIndex = miniLoadTexture(STONE_BUMPMAP_FILE);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
@@ -215,17 +219,11 @@ void on_GLES2_Update(float timeStep_sec)
 //------------------------------------------------------------------------------
 void on_GLES2_Render()
 {
-    int        stride;
-    MG_Vector3 t;
-    MG_Matrix  modelViewMatrix;
-    GLvoid*    pCoords;
-    GLvoid*    pTexCoords;
-    GLvoid*    pColors;
+    int          stride;
+    MINI_Vector3 t;
+    MINI_Matrix  modelViewMatrix;
 
-    // clear scene background and depth buffer
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClearDepthf(1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    miniBeginScene(0.0f, 0.0f, 0.0f, 1.0f);
 
     // calculate vertex stride
     stride = g_VertexFormat.m_Stride;
@@ -236,16 +234,11 @@ void on_GLES2_Render()
     t.m_Z = -15.0f;
 
     // get translation matrix
-    GetTranslateMatrix(&t, &modelViewMatrix);
+    miniGetTranslateMatrix(&t, &modelViewMatrix);
 
     // connect model view matrix to shader
     GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
-
-    // enable position, texture and color slots
-    glEnableVertexAttribArray(g_PositionSlot);
-    glEnableVertexAttribArray(g_TexCoordSlot);
-    glEnableVertexAttribArray(g_ColorSlot);
 
     // enable OpenGL texturing engine
     glEnable(GL_TEXTURE_2D);
@@ -260,18 +253,13 @@ void on_GLES2_Render()
     glUniform1i(g_BumpMapSamplerSlot, 1);
     glBindTexture(GL_TEXTURE_2D, g_BumpMapIndex);
 
-    // get next vertices buffer
-    pCoords    = &g_pSurfaceVB[0];
-    pTexCoords = &g_pSurfaceVB[3];
-    pColors    = &g_pSurfaceVB[5];
+    // draw the bump mapped image
+    miniDrawSurface(g_pSurfaceVB,
+                    g_SurfaceVertexCount,
+                    &g_VertexFormat,
+                    &g_Shader);
 
-    // connect buffer to shader
-    glVertexAttribPointer(g_PositionSlot, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), pCoords);
-    glVertexAttribPointer(g_TexCoordSlot, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), pTexCoords);
-    glVertexAttribPointer(g_ColorSlot,    4, GL_FLOAT, GL_FALSE, stride * sizeof(float), pColors);
-
-    // draw it
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, g_SurfaceVertexCount);
+    miniEndScene();
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchBegin(float x, float y)

@@ -1,8 +1,12 @@
-﻿/*****************************************************************************
+/*****************************************************************************
  * ==> Breakout game --------------------------------------------------------*
  *****************************************************************************
- * Description : Simple breakout game.                                       *
+ * Description : A simple breakout game                                      *
  * Developer   : Jean-Milost Reymond                                         *
+ * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
+ *               it for your own projects, commercial or not. This file is   *
+ *               provided "as is", without ANY WARRANTY OF ANY KIND          *
  *****************************************************************************/
 
 // supported platforms check. NOTE iOS only, but may works on other platforms
@@ -25,109 +29,94 @@
 #include <gles2ext.h>
 
 // mini API
+#include "MiniAPI/MiniCommon.h"
 #include "MiniAPI/MiniGeometry.h"
 #include "MiniAPI/MiniVertex.h"
 #include "MiniAPI/MiniShapes.h"
 #include "MiniAPI/MiniCollision.h"
 #include "MiniAPI/MiniShader.h"
-
-// define ENABLE_SOUND to use first sound API, ENABLE_SOUND_OPENAL to use OpenAL,
-// or comment line below disable sound
-#ifdef _OS_IOS_
-    #define ENABLE_SOUND_OPENAL
-#endif
-
-#ifdef ENABLE_SOUND_OPENAL
-    #include "MiniAPI/MiniPlayer.h"
-#endif
+#include "MiniAPI/MiniRenderer.h"
+#include "MiniAPI/MiniPlayer.h"
 
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
     #include <ccr.h>
 #endif
 
-#if defined(ENABLE_SOUND) || defined(ENABLE_SOUND_OPENAL)
-    #define BALL_REBOUND_SOUND_FILE "Resources/ball_rebound.wav"
-    #define BAR_EXPLODE_SOUND_FILE  "Resources/bar_explode.wav"
-#endif
+// resources
+#define BALL_REBOUND_SOUND_FILE "Resources/ball_rebound.wav"
+#define BAR_EXPLODE_SOUND_FILE  "Resources/bar_explode.wav"
 
 //------------------------------------------------------------------------------
-typedef struct
-{
-    float   m_Left;
-    float   m_Right;
-    float   m_Top;
-    float   m_Bottom;
-    MG_Size m_Size;
-    int     m_OriginalWidth;
-    int     m_OriginalHeight;
-    int     m_IsVertical;
-} QR_Screen;
+#define M_BALL_VELOCITY_X 0.005f
+#define M_BALL_VELOCITY_Y 0.005f
 //------------------------------------------------------------------------------
 typedef struct
 {
-    MG_Rect            m_Geometry;
-    MG_Vector2         m_L;
-    MG_Vector2         m_R;
-    int                m_Exploding;
-    MG_Vector2         m_ExpLOffset;
-    MG_Vector2         m_ExpROffset;
-    #ifdef ENABLE_SOUND
-        int            m_SoundID;
-    #elif defined(ENABLE_SOUND_OPENAL)
-        ALuint         m_bufferID;
-        ALuint         m_SoundID;
-    #endif
-} QR_Bar;
+    float m_Left;
+    float m_Right;
+    float m_Top;
+    float m_Bottom;
+    float m_BarY;
+    float m_Width;
+} MINI_Screen;
 //------------------------------------------------------------------------------
 typedef struct
 {
-    MG_Circle          m_Geometry;
-    MG_Vector2         m_Offset;
-    MG_Vector2         m_Inc;
-    MG_Vector2         m_Max;
-    #ifdef ENABLE_SOUND
-        int            m_SoundID;
-    #elif defined(ENABLE_SOUND_OPENAL)
-        ALuint         m_bufferID;
-        ALuint         m_SoundID;
-    #endif
-} QR_Ball;
+    MINI_Rect    m_Geometry;
+    MINI_Vector2 m_L;
+    MINI_Vector2 m_R;
+    int          m_Exploding;
+    MINI_Vector2 m_ExpLOffset;
+    MINI_Vector2 m_ExpROffset;
+    ALuint       m_bufferID;
+    ALuint       m_SoundID;
+} MINI_Bar;
 //------------------------------------------------------------------------------
 typedef struct
 {
-    MG_Rect m_Geometry;
-    int     m_Visible;
-} QR_Block;
+    MINI_Circle  m_Geometry;
+    MINI_Vector2 m_Offset;
+    MINI_Vector2 m_Inc;
+    MINI_Vector2 m_Max;
+    ALuint       m_bufferID;
+    ALuint       m_SoundID;
+} MINI_Ball;
 //------------------------------------------------------------------------------
-const int level1[15] =
+typedef struct
+{
+    MINI_Rect m_Geometry;
+    int       m_Visible;
+} MINI_Block;
+//------------------------------------------------------------------------------
+const int g_Level1[15] =
 {
     1, 1, 1, 1, 1,
     1, 1, 1, 1, 1,
     1, 1, 1, 1, 1,
 };
 //------------------------------------------------------------------------------
-const int level2[15] =
+const int g_Level2[15] =
 {
     1, 0, 0, 0, 0,
     1, 1, 1, 0, 0,
     1, 1, 1, 1, 1,
 };
 //------------------------------------------------------------------------------
-const int level3[15] =
+const int g_Level3[15] =
 {
     0, 0, 1, 0, 0,
     0, 1, 1, 1, 0,
     1, 1, 1, 1, 1,
 };
 //------------------------------------------------------------------------------
-const int level4[15] =
+const int g_Level4[15] =
 {
     1, 0, 0, 0, 1,
     0, 1, 1, 1, 0,
     1, 0, 0, 0, 1,
 };
 //------------------------------------------------------------------------------
-const int level5[15] =
+const int g_Level5[15] =
 {
     0, 1, 1, 1, 0,
     1, 0, 0, 0, 1,
@@ -139,75 +128,68 @@ const int level5[15] =
         GLuint g_Renderbuffer, g_Framebuffer;
     #endif
 #endif
-QR_Screen              g_Screen;
-QR_Ball                g_Ball;
-QR_Bar                 g_Bar;
-QR_Block               g_Blocks[15];
-float*                 g_pBarVertices       = 0;
-int                    g_BarVerticesCount   = 0;
-float*                 g_pBlockVertices     = 0;
-int                    g_BlockVerticesCount = 0;
-float*                 g_pBallVertices      = 0;
-MV_Index*              g_pBallIndexes       = 0;
-unsigned               g_BallVerticesCount  = 0;
-unsigned               g_BallIndexCount     = 0;
-int                    g_BlockColumns       = 5;
-int                    g_BlockLines         = 3;
-int                    g_Level              = 0;
-float                  g_ScreenWidth        = 24.0f;
-float                  g_ScreenHeight       = 36.0f;
-MV_VertexFormat        g_VertexFormat;
-GLuint                 g_ShaderProgram;
-GLuint                 g_PositionSlot;
-GLuint                 g_ColorSlot;
-#ifdef ENABLE_SOUND_OPENAL
-    static ALCdevice*  g_pOpenALDevice  = 0;
-    static ALCcontext* g_pOpenALContext = 0;
-#endif
+MINI_Shader        g_Shader;
+MINI_Screen        g_Screen;
+MINI_Ball          g_Ball;
+MINI_Bar           g_Bar;
+MINI_Block         g_Blocks[15];
+float*             g_pBarVertices       = 0;
+int                g_BarVerticesCount   = 0;
+float*             g_pBlockVertices     = 0;
+int                g_BlockVerticesCount = 0;
+float*             g_pBallVertices      = 0;
+MINI_Index*        g_pBallIndexes       = 0;
+unsigned           g_BallVerticesCount  = 0;
+unsigned           g_BallIndexCount     = 0;
+int                g_BlockColumns       = 5;
+int                g_BlockLines         = 3;
+int                g_Level              = 0;
+static ALCdevice*  g_pOpenALDevice      = 0;
+static ALCcontext* g_pOpenALContext     = 0;
+MINI_VertexFormat  g_VertexFormat;
+GLuint             g_ShaderProgram;
 //------------------------------------------------------------------------------
-void GetScreen(float*     pWidth,
-               float*     pHeight,
-               int        originalWidth,
-               int        originalHeight,
-               QR_Screen* pScreen)
+void GetScreen(float* pWidth, float* pHeight, MINI_Screen* pScreen)
 {
-    // populate screen object
-    pScreen->m_OriginalWidth  = originalWidth;
-    pScreen->m_OriginalHeight = originalHeight;
+    float width;
+    float height;
 
-    // is screen oriented horizontally or vertically?
-    if (originalWidth > originalHeight)
+    // transform the width and height to keep the correct aspect ratio
+    if (width >= height)
     {
-        // oriented horizontally
-        pScreen->m_Left       = -(*pHeight / 2.0f);
-        pScreen->m_Right      =  (*pHeight / 2.0f);
-        pScreen->m_Top        =  (*pWidth  / 2.0f);
-        pScreen->m_Bottom     = -(*pWidth  / 2.0f);
-        pScreen->m_IsVertical = 0;
+        width            = *pWidth  / *pHeight;
+        height           = *pHeight / *pHeight;
+        pScreen->m_Width = *pHeight;
     }
     else
     {
-        // oriented vertically
-        pScreen->m_Left       = -(*pWidth  / 2.0f);
-        pScreen->m_Right      =  (*pWidth  / 2.0f);
-        pScreen->m_Top        =  (*pHeight / 2.0f);
-        pScreen->m_Bottom     = -(*pHeight / 2.0f);
-        pScreen->m_IsVertical = 1;
+        width            = *pWidth  / *pWidth;
+        height           = *pHeight / *pWidth;
+        pScreen->m_Width = *pWidth;
     }
+
+    // calculate the screen bounds (in the OpenGL view)
+    pScreen->m_Left   = -(width  * 0.5f);
+    pScreen->m_Right  =  (width  * 0.5f);
+    pScreen->m_Top    =  (height * 0.5f);
+    pScreen->m_Bottom = -(height * 0.5f);
+ 
+    // calculate bar start y position
+    pScreen->m_BarY = pScreen->m_Bottom + 0.05f;
 }
 //------------------------------------------------------------------------------
-void ApplyOrtho(QR_Screen* pScreen, float* pNear, float* pFar)
+void ApplyOrtho(MINI_Screen* pScreen, float* pNear, float* pFar)
 {
-    MG_Matrix ortho;
+    MINI_Matrix ortho;
 
     // get orthogonal projection matrix
-    GetOrtho(&pScreen->m_Left,
-             &pScreen->m_Right,
-             &pScreen->m_Bottom,
-             &pScreen->m_Top,
-             pNear,
-             pFar,
-             &ortho);
+    miniGetOrtho(&pScreen->m_Left,
+                 &pScreen->m_Right,
+                 &pScreen->m_Bottom,
+                 &pScreen->m_Top,
+                 pNear,
+                 pFar,
+                 &ortho);
 
     // connect projection matrix to shader
     GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
@@ -227,7 +209,9 @@ void on_GLES2_Init(int view_w, int view_h)
     unsigned int   barSoundFileLen;
     unsigned char* pBallSndBuffer;
     unsigned char* pBarSndBuffer;
-    
+    float          w = view_w;
+    float          h = view_h;
+
     // renderer buffers should no more be generated since CCR version 1.1
     #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
         #ifndef _OS_ANDROID_
@@ -243,51 +227,47 @@ void on_GLES2_Init(int view_w, int view_h)
         #endif
     #endif
 
-    // compile, link and use shaders
-    g_ShaderProgram = CompileShaders(g_pVSColored, g_pFSColored);
+    // compile, link and use shader
+    g_ShaderProgram = miniCompileShaders(miniGetVSColored(), miniGetFSColored());
     glUseProgram(g_ShaderProgram);
 
+    // get vertex and color slots
+    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
+    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
+
     // configure screen
-    GetScreen(&g_ScreenWidth, &g_ScreenHeight, view_w, view_h, &g_Screen);
+    GetScreen(&w, &h, &g_Screen);
 
     // initialize ball data
     g_Ball.m_Geometry.m_Pos.m_X = 0.0f;
     g_Ball.m_Geometry.m_Pos.m_Y = 0.0f;
-    g_Ball.m_Geometry.m_Radius  = 0.5f;
-    g_Ball.m_Offset.m_X         = 0.2f;
-    g_Ball.m_Offset.m_Y         = 0.2f;
-    g_Ball.m_Inc.m_X            = 0.02;
-    g_Ball.m_Inc.m_Y            = 0.03f;
-    g_Ball.m_Max.m_X            = 1.0f;
-    g_Ball.m_Max.m_Y            = 1.0f;
-    #ifdef ENABLE_SOUND
-        g_Ball.m_SoundID        = -1;
-    #elif defined(ENABLE_SOUND_OPENAL)
-        g_Ball.m_SoundID        = g_OpenALErrorID;
-    #endif
+    g_Ball.m_Geometry.m_Radius  = 0.015f;
+    g_Ball.m_Offset.m_X         = M_BALL_VELOCITY_X;
+    g_Ball.m_Offset.m_Y         = M_BALL_VELOCITY_Y;
+    g_Ball.m_Inc.m_X            = 0.001;
+    g_Ball.m_Inc.m_Y            = 0.0015f;
+    g_Ball.m_Max.m_X            = 0.3f;
+    g_Ball.m_Max.m_Y            = 0.3f;
+    g_Ball.m_SoundID            = M_OPENAL_ERROR_ID;
 
     // initialize bar data
     g_Bar.m_Geometry.m_Pos.m_X       = 0.0f;
     g_Bar.m_Geometry.m_Pos.m_Y       = g_Screen.m_Bottom + g_Ball.m_Max.m_Y;
-    g_Bar.m_Geometry.m_Size.m_Width  = 2.0;
-    g_Bar.m_Geometry.m_Size.m_Height = 0.4f;
+    g_Bar.m_Geometry.m_Size.m_Width  = 0.06f;
+    g_Bar.m_Geometry.m_Size.m_Height = 0.0125f;
     g_Bar.m_R.m_X                    = 0.0f;
     g_Bar.m_R.m_Y                    = 0.0f;
     g_Bar.m_L.m_X                    = 0.0f;
     g_Bar.m_L.m_Y                    = 0.0f;
-    g_Bar.m_ExpROffset.m_X           = 0.3f;
-    g_Bar.m_ExpROffset.m_Y           = 0.4f;
-    g_Bar.m_ExpLOffset.m_X           = 0.3f;
-    g_Bar.m_ExpLOffset.m_Y           = 0.5f;
-    #ifdef ENABLE_SOUND
-        g_Bar.m_SoundID              = -1;
-    #elif defined(ENABLE_SOUND_OPENAL)
-        g_Bar.m_SoundID              = g_OpenALErrorID;
-    #endif
+    g_Bar.m_ExpROffset.m_X           = 0.01f;
+    g_Bar.m_ExpROffset.m_Y           = 0.0125f;
+    g_Bar.m_ExpLOffset.m_X           = 0.01f;
+    g_Bar.m_ExpLOffset.m_Y           = 0.015f;
+    g_Bar.m_SoundID                  = M_OPENAL_ERROR_ID;
 
     // calculate block width (block width * block count + inter space width * block count - 1)
-    blockWidth = (g_BlockColumns * 2.0f) + ((g_BlockColumns - 1) * 0.25f);
-    blockTop   =  g_Screen.m_Top - 5.0f;
+    blockWidth = (g_BlockColumns * 0.06f) + ((g_BlockColumns - 1) * 0.0075f);
+    blockTop   =  g_Screen.m_Top - 0.15f;
 
     // iterate through block lines
     for (j = 0; j < g_BlockLines; ++j)
@@ -297,11 +277,11 @@ void on_GLES2_Init(int view_w, int view_h)
         {
             index = (j * g_BlockColumns) + i;
 
-            g_Blocks[index].m_Geometry.m_Pos.m_X       = -(blockWidth / 2.0f) + 1.0f + (i * 2.25f);
-            g_Blocks[index].m_Geometry.m_Pos.m_Y       = blockTop - (j * 1.5f);
-            g_Blocks[index].m_Geometry.m_Size.m_Width  = 2.0;
-            g_Blocks[index].m_Geometry.m_Size.m_Height = 0.8f;
-            g_Blocks[index].m_Visible                  = 1;
+            g_Blocks[index].m_Geometry.m_Pos.m_X       = -(blockWidth * 0.5f) + 0.03f + (i * 0.065f);
+            g_Blocks[index].m_Geometry.m_Pos.m_Y       =   blockTop - (j * 0.045f);
+            g_Blocks[index].m_Geometry.m_Size.m_Width  =   0.06;
+            g_Blocks[index].m_Geometry.m_Size.m_Height =   0.0125f;
+            g_Blocks[index].m_Visible                  =   1;
         }
     }
 
@@ -311,28 +291,28 @@ void on_GLES2_Init(int view_w, int view_h)
     g_VertexFormat.m_UseColors   = 1;
 
     // generate sphere to draw
-    CreateSphere(&g_Ball.m_Geometry.m_Radius,
-                 20,
-                 50,
-                 0xFFFF00FF,
-                 &g_VertexFormat,
-                 &g_pBallVertices,
-                 &g_BallVerticesCount,
-                 &g_pBallIndexes,
-                 &g_BallIndexCount);
+    miniCreateSphere(&g_Ball.m_Geometry.m_Radius,
+                     20,
+                     50,
+                     0xFFFF00FF,
+                     &g_VertexFormat,
+                     &g_pBallVertices,
+                     &g_BallVerticesCount,
+                     &g_pBallIndexes,
+                     &g_BallIndexCount);
 
-    surfaceWidth  = 2.0f;
-    surfaceHeight = 0.4f;
+    surfaceWidth  = 0.06f;
+    surfaceHeight = 0.0125f;
 
-    CreateSurface(&surfaceWidth,
-                  &surfaceHeight,
-                  0xFF0033FF,
-                  &g_VertexFormat,
-                  &g_pBarVertices,
-                  &g_BarVerticesCount);
+    miniCreateSurface(&surfaceWidth,
+                      &surfaceHeight,
+                      0xFF0033FF,
+                      &g_VertexFormat,
+                      &g_pBarVertices,
+                      &g_BarVerticesCount);
 
-    surfaceWidth  = 2.0f;
-    surfaceHeight = 0.8f;
+    surfaceWidth  = 0.06f;
+    surfaceHeight = 0.025f;
 
     // update some colors
     g_pBarVertices[11] = 0.4f;
@@ -342,12 +322,12 @@ void on_GLES2_Init(int view_w, int view_h)
     g_pBarVertices[25] = 0.2f;
     g_pBarVertices[26] = 0.4f;
 
-    CreateSurface(&surfaceWidth,
-                  &surfaceHeight,
-                  0x0000FFFF,
-                  &g_VertexFormat,
-                  &g_pBlockVertices,
-                  &g_BlockVerticesCount);
+    miniCreateSurface(&surfaceWidth,
+                      &surfaceHeight,
+                      0x0000FFFF,
+                      &g_VertexFormat,
+                      &g_pBlockVertices,
+                      &g_BlockVerticesCount);
 
     // update some colors
     g_pBlockVertices[10] = 0.2f;
@@ -360,33 +340,28 @@ void on_GLES2_Init(int view_w, int view_h)
     g_pBlockVertices[25] = 0.5f;
     g_pBlockVertices[26] = 0.8f;
 
-    #ifdef ENABLE_SOUND
-        // load sound files
-        LoadSound(BALL_REBOUND_SOUND_FILE);
-        LoadSound(BAR_EXPLODE_SOUND_FILE);
-    #elif defined(ENABLE_SOUND_OPENAL)
-        InitializeOpenAL(&g_pOpenALDevice, &g_pOpenALContext);
+    miniInitializeOpenAL(&g_pOpenALDevice, &g_pOpenALContext);
 
-        // hard code file length values, not a good way but for now...
-        ballSoundFileLen = 57416;
-        barSoundFileLen  = 820644;
+    // hard code file length values, not a good way but for now...
+    ballSoundFileLen = 57416;
+    barSoundFileLen  = 820644;
 
-        // allocate buffers
-        pBallSndBuffer = (unsigned char*)calloc(ballSoundFileLen, sizeof(unsigned char));
-        pBarSndBuffer  = (unsigned char*)calloc(barSoundFileLen,  sizeof(unsigned char));
+    // allocate buffers
+    pBallSndBuffer = (unsigned char*)calloc(ballSoundFileLen, sizeof(unsigned char));
+    pBarSndBuffer  = (unsigned char*)calloc(barSoundFileLen,  sizeof(unsigned char));
 
-        // load ball sound file
-        LoadSoundBuffer(BALL_REBOUND_SOUND_FILE,
+    // load ball sound file
+    miniLoadSoundBuffer(BALL_REBOUND_SOUND_FILE,
                         ballSoundFileLen,
                         &pBallSndBuffer);
 
-        // load bar sound file and get length
-        LoadSoundBuffer(BAR_EXPLODE_SOUND_FILE,
+    // load bar sound file and get length
+    miniLoadSoundBuffer(BAR_EXPLODE_SOUND_FILE,
                         barSoundFileLen,
                         &pBarSndBuffer);
 
-        // create ball rebound sound file
-        CreateSound(g_pOpenALDevice,
+    // create ball rebound sound file
+    miniCreateSound(g_pOpenALDevice,
                     g_pOpenALContext,
                     pBallSndBuffer,
                     ballSoundFileLen,
@@ -394,8 +369,8 @@ void on_GLES2_Init(int view_w, int view_h)
                     &g_Ball.m_bufferID,
                     &g_Ball.m_SoundID);
 
-        // create bar explode sound file
-        CreateSound(g_pOpenALDevice,
+    // create bar explode sound file
+    miniCreateSound(g_pOpenALDevice,
                     g_pOpenALContext,
                     pBarSndBuffer,
                     barSoundFileLen,
@@ -403,14 +378,13 @@ void on_GLES2_Init(int view_w, int view_h)
                     &g_Bar.m_bufferID,
                     &g_Bar.m_SoundID);
 
-        // delete ball sound resource
-        if (pBallSndBuffer)
-            free(pBallSndBuffer);
+    // delete ball sound resource
+    if (pBallSndBuffer)
+        free(pBallSndBuffer);
 
-        // delete bar sound resource
-        if (pBarSndBuffer)
-            free(pBarSndBuffer);
-    #endif
+    // delete bar sound resource
+    if (pBarSndBuffer)
+        free(pBarSndBuffer);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
@@ -449,51 +423,42 @@ void on_GLES2_Final()
 
     g_ShaderProgram = 0;
 
-    #ifdef ENABLE_SOUND
-        // stop running ball rebound sound, if needed
-        if (g_Ball.m_SoundID != -1)
-            StopSound(g_Ball.m_SoundID);
+    // stop running ball rebound sound, if needed
+    if (miniIsSoundPlaying(g_Ball.m_SoundID))
+        miniStopSound(g_Ball.m_SoundID);
 
-        // stop running bar explode sound, if needed
-        if (g_Bar.m_SoundID != -1)
-            StopSound(g_Bar.m_SoundID);
+    // stop running bar explode sound, if needed
+    if (miniIsSoundPlaying(g_Bar.m_SoundID))
+        miniStopSound(g_Bar.m_SoundID);
 
-        // release sound interface
-        UnloadSound(BALL_REBOUND_SOUND_FILE);
-        UnloadSound(BAR_EXPLODE_SOUND_FILE);
-        UnloadAllSoundAndBGM();
-    #elif defined(ENABLE_SOUND_OPENAL)
-        // stop running ball rebound sound, if needed
-        if (IsSoundPlaying(g_Ball.m_SoundID))
-            StopSound(g_Ball.m_SoundID);
-
-        // stop running bar explode sound, if needed
-        if (IsSoundPlaying(g_Bar.m_SoundID))
-            StopSound(g_Bar.m_SoundID);
-
-        // release OpenAL interface
-        ReleaseSound(g_Ball.m_bufferID, g_Ball.m_SoundID);
-        ReleaseSound(g_Bar.m_bufferID,  g_Bar.m_SoundID);
-        ReleaseOpenAL(g_pOpenALDevice, g_pOpenALContext);
-    #endif
+    // release OpenAL interface
+    miniReleaseSound(g_Ball.m_bufferID, g_Ball.m_SoundID);
+    miniReleaseSound(g_Bar.m_bufferID,  g_Bar.m_SoundID);
+    miniReleaseOpenAL(g_pOpenALDevice, g_pOpenALContext);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Size(int view_w, int view_h)
 {
-    float screenNear;
-    float screenFar;
+    float zNear;
+    float zFar;
+    float w = view_w;
+    float h = view_h;
 
     // configure screen
-    GetScreen(&g_ScreenWidth, &g_ScreenHeight, view_w, view_h, &g_Screen);
+    GetScreen(&w, &h, &g_Screen);
 
-    // calculate bar start y position
-    g_Bar.m_Geometry.m_Pos.m_Y = g_Screen.m_Bottom + 1.0f;
-
-    screenNear = 1.0f;
-    screenFar  = 20.0f;
+    zNear = -1.0f;
+    zFar  =  1.0f;
 
     glViewport(0, 0, view_w, view_h);
-    ApplyOrtho(&g_Screen, &screenNear, &screenFar);
+    ApplyOrtho(&g_Screen, &zNear, &zFar);
+
+    // is bar out of bounds? (may happen after orientation changed)
+    if (g_Bar.m_Geometry.m_Pos.m_X >= g_Screen.m_Right - (g_Bar.m_Geometry.m_Size.m_Width * 0.5f))
+        g_Bar.m_Geometry.m_Pos.m_X = g_Screen.m_Right - (g_Bar.m_Geometry.m_Size.m_Width * 0.5f);
+    else
+    if (g_Bar.m_Geometry.m_Pos.m_X <= g_Screen.m_Left + (g_Bar.m_Geometry.m_Size.m_Width * 0.5f))
+        g_Bar.m_Geometry.m_Pos.m_X = g_Screen.m_Left + (g_Bar.m_Geometry.m_Size.m_Width * 0.5f);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
@@ -506,14 +471,17 @@ void on_GLES2_Update(float timeStep_sec)
     int rebuildLevel;
     int doPlaySound;
 
+    // set bar y position (may change if the screen change)
+    g_Bar.m_Geometry.m_Pos.m_Y = g_Screen.m_BarY;
+
     // is bar exploding?
     if (g_Bar.m_Exploding)
     {
         // move bar polygons
-        g_Bar.m_R.m_X += g_Bar.m_ExpROffset.m_X;
-        g_Bar.m_R.m_Y += g_Bar.m_ExpROffset.m_Y;
-        g_Bar.m_L.m_X -= g_Bar.m_ExpLOffset.m_X;
-        g_Bar.m_L.m_Y += g_Bar.m_ExpLOffset.m_Y;
+        g_Bar.m_R.m_X += g_Bar.m_ExpROffset.m_X * (timeStep_sec * 50.0f);
+        g_Bar.m_R.m_Y += g_Bar.m_ExpROffset.m_Y * (timeStep_sec * 50.0f);
+        g_Bar.m_L.m_X -= g_Bar.m_ExpLOffset.m_X * (timeStep_sec * 50.0f);
+        g_Bar.m_L.m_Y += g_Bar.m_ExpLOffset.m_Y * (timeStep_sec * 50.0f);
 
         // explosion ends?
         if (g_Bar.m_L.m_Y > g_Screen.m_Top)
@@ -527,21 +495,21 @@ void on_GLES2_Update(float timeStep_sec)
 
             // reset x offset velocity
             if (g_Ball.m_Offset.m_X < 0.0f)
-                g_Ball.m_Offset.m_X = -0.2f;
+                g_Ball.m_Offset.m_X = -M_BALL_VELOCITY_X;
             else
-                g_Ball.m_Offset.m_X = 0.2f;
+                g_Ball.m_Offset.m_X =  M_BALL_VELOCITY_X;
 
             // reset y offset velocity
             if (g_Ball.m_Offset.m_Y < 0.0f)
-                g_Ball.m_Offset.m_Y = -0.2f;
+                g_Ball.m_Offset.m_Y = -M_BALL_VELOCITY_Y;
             else
-                g_Ball.m_Offset.m_Y = 0.2f;
+                g_Ball.m_Offset.m_Y =  M_BALL_VELOCITY_Y;
         }
     }
 
     // move ball
-    g_Ball.m_Geometry.m_Pos.m_X += g_Ball.m_Offset.m_X;
-    g_Ball.m_Geometry.m_Pos.m_Y += g_Ball.m_Offset.m_Y;
+    g_Ball.m_Geometry.m_Pos.m_X += g_Ball.m_Offset.m_X * (timeStep_sec * 50.0f);
+    g_Ball.m_Geometry.m_Pos.m_Y += g_Ball.m_Offset.m_Y * (timeStep_sec * 50.0f);
 
     collisionX      = 0;
     collisionY      = 0;
@@ -559,22 +527,17 @@ void on_GLES2_Update(float timeStep_sec)
         allBlocksBroken = 0;
 
         // is ball in collision with block?
-        if (CircleRectIntersect(&g_Ball.m_Geometry, &g_Blocks[i].m_Geometry))
+        if (miniCircleRectIntersect(&g_Ball.m_Geometry, &g_Blocks[i].m_Geometry))
         {
             // break the block
             g_Blocks[i].m_Visible = 0;
 
-            // do rebound happen on the y axis?
-            if (g_Ball.m_Geometry.m_Pos.m_Y < g_Blocks[i].m_Geometry.m_Pos.m_Y ||
-                g_Ball.m_Geometry.m_Pos.m_Y > g_Blocks[i].m_Geometry.m_Pos.m_Y
-                        + g_Blocks[i].m_Geometry.m_Size.m_Height)
-                collisionY = 1;
-            else
-            // do rebound happen on the x axis?
-            if (g_Ball.m_Geometry.m_Pos.m_X < g_Blocks[i].m_Geometry.m_Pos.m_X ||
-                g_Ball.m_Geometry.m_Pos.m_X > g_Blocks[i].m_Geometry.m_Pos.m_X
-                        + g_Blocks[i].m_Geometry.m_Size.m_Width)
+            // rebound happened on the left or right edge?
+            if (g_Ball.m_Geometry.m_Pos.m_Y < g_Blocks[i].m_Geometry.m_Pos.m_Y &&
+                g_Ball.m_Geometry.m_Pos.m_Y > g_Blocks[i].m_Geometry.m_Pos.m_Y - g_Blocks[i].m_Geometry.m_Size.m_Height)
                 collisionX = 1;
+            else
+                collisionY = 1;
         }
     }
 
@@ -586,7 +549,7 @@ void on_GLES2_Update(float timeStep_sec)
         g_Ball.m_Geometry.m_Pos.m_X = g_Screen.m_Right;
         collisionX                  = 1;
 
-        // to avoid interference, rebuild level only if one edge is reached (this ball will never be
+        // to avoid interference, rebuild level only if one edge is reached (thus ball will never be
         // captured inside blocks)
         if (allBlocksBroken)
             rebuildLevel = 1;
@@ -597,14 +560,14 @@ void on_GLES2_Update(float timeStep_sec)
         g_Ball.m_Geometry.m_Pos.m_X = g_Screen.m_Left;
         collisionX                  = 1;
 
-        // to avoid interference, rebuild level only if one edge is reached (this ball will never be
+        // to avoid interference, rebuild level only if one edge is reached (thus ball will never be
         // captured inside blocks)
         if (allBlocksBroken)
             rebuildLevel = 1;
     }
 
     // ball was moving down and is colliding with bar?
-    if (g_Ball.m_Offset.m_Y < 0.0f && CircleRectIntersect(&g_Ball.m_Geometry, &g_Bar.m_Geometry))
+    if (g_Ball.m_Offset.m_Y < 0.0f && miniCircleRectIntersect(&g_Ball.m_Geometry, &g_Bar.m_Geometry))
     {
         collisionY = 1;
 
@@ -624,7 +587,7 @@ void on_GLES2_Update(float timeStep_sec)
             else
                 g_Ball.m_Offset.m_Y -= g_Ball.m_Inc.m_Y;
 
-        // to avoid interference, rebuild level only if one edge is reached (this ball will never be
+        // to avoid interference, rebuild level only if one edge is reached (thus ball will never be
         // captured inside blocks)
         if (allBlocksBroken)
             rebuildLevel = 1;
@@ -634,9 +597,9 @@ void on_GLES2_Update(float timeStep_sec)
     if (g_Ball.m_Geometry.m_Pos.m_Y >= g_Screen.m_Top)
     {
         g_Ball.m_Geometry.m_Pos.m_Y = g_Screen.m_Top;
-        collisionY            = 1;
+        collisionY                  = 1;
 
-        // to avoid interference, rebuild level only if one edge is reached (this ball will never be
+        // to avoid interference, rebuild level only if one edge is reached (thus ball will never be
         // captured inside blocks)
         if (allBlocksBroken)
             rebuildLevel = 1;
@@ -647,7 +610,7 @@ void on_GLES2_Update(float timeStep_sec)
         g_Ball.m_Geometry.m_Pos.m_Y = g_Screen.m_Bottom;
         collisionY                  = 1;
 
-        // to avoid interference, rebuild level only if one edge is reached (this ball will never be
+        // to avoid interference, rebuild level only if one edge is reached (thus ball will never be
         // captured inside blocks)
         if (allBlocksBroken)
             rebuildLevel = 1;
@@ -655,12 +618,7 @@ void on_GLES2_Update(float timeStep_sec)
         // bottom reached? Game over...
         g_Bar.m_Exploding = 1;
 
-        #ifdef ENABLE_SOUND
-            // play ball rebound sound
-            g_Bar.m_SoundID = PlaySound(BAR_EXPLODE_SOUND_FILE, false);
-        #elif defined(ENABLE_SOUND_OPENAL)
-            PlaySound(g_Bar.m_SoundID);
-        #endif
+        miniPlaySound(g_Bar.m_SoundID);
     }
 
     // rebuild level, if needed
@@ -678,23 +636,23 @@ void on_GLES2_Update(float timeStep_sec)
             switch (g_Level)
             {
                 case 0:
-                g_Blocks[i].m_Visible = level1[i];
+                g_Blocks[i].m_Visible = g_Level1[i];
                 break;
 
                 case 1:
-                g_Blocks[i].m_Visible = level2[i];
+                g_Blocks[i].m_Visible = g_Level2[i];
                 break;
 
                 case 2:
-                g_Blocks[i].m_Visible = level3[i];
+                g_Blocks[i].m_Visible = g_Level3[i];
                 break;
 
                 case 3:
-                g_Blocks[i].m_Visible = level4[i];
+                g_Blocks[i].m_Visible = g_Level4[i];
                 break;
 
                 case 4:
-                g_Blocks[i].m_Visible = level5[i];
+                g_Blocks[i].m_Visible = g_Level5[i];
                 break;
             }
     }
@@ -718,70 +676,38 @@ void on_GLES2_Update(float timeStep_sec)
             doPlaySound = 1;
     }
 
-    #ifdef ENABLE_SOUND
-        // play ball rebound sound
-        if (doPlaySound == 1)
-            g_Ball.m_SoundID = PlaySound(BALL_REBOUND_SOUND_FILE, false);
-    #elif defined(ENABLE_SOUND_OPENAL)
-        // play ball rebound sound
-        if (doPlaySound == 1)
-            PlaySound(g_Ball.m_SoundID);
-    #endif
+    // play ball rebound sound
+    if (doPlaySound == 1)
+        miniPlaySound(g_Ball.m_SoundID);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Render()
 {
-    MG_Vector3 t;
-    MG_Matrix  modelViewMatrix;
-    int        stride;
-    int        i;
-    GLvoid*    pCoords;
-    GLvoid*    pColors;
+    MINI_Vector3 t;
+    MINI_Matrix  modelViewMatrix;
+    int          i;
 
-    // clear scene background and depth buffer
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    miniBeginScene(0.0f, 0.0f, 0.0f, 1.0f);
 
     // set rotation axis
     t.m_X = g_Ball.m_Geometry.m_Pos.m_X;
     t.m_Y = g_Ball.m_Geometry.m_Pos.m_Y;
-    t.m_Z = -5.0f;
+    t.m_Z = 0.0f;
 
-    // calculate model view matrix (it's a rotation on the y axis)
-    GetTranslateMatrix(&t, &modelViewMatrix);
+    // calculate model view matrix
+    miniGetTranslateMatrix(&t, &modelViewMatrix);
 
     // connect model view matrix to shader
     GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
-    // get vertex and color slots
-    g_PositionSlot = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_ColorSlot    = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
-
-    // calculate vertex stride
-    stride = g_VertexFormat.m_Stride;
-
-    // enable position and color slots
-    glEnableVertexAttribArray(g_PositionSlot);
-    glEnableVertexAttribArray(g_ColorSlot);
-
-    // iterate through vertex fan buffers to draw
-    for (i = 0; (unsigned)i < g_BallIndexCount; ++i)
-    {
-        // get next vertices fan buffer
-        pCoords = &g_pBallVertices[g_pBallIndexes[i].m_Start];
-        pColors = &g_pBallVertices[g_pBallIndexes[i].m_Start + 3];
-
-        // connect buffer to shader
-        glVertexAttribPointer(g_PositionSlot, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), pCoords);
-        glVertexAttribPointer(g_ColorSlot,    4, GL_FLOAT, GL_FALSE, stride * sizeof(float), pColors);
-
-        // draw it
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, g_pBallIndexes[i].m_Length / stride);
-    }
-
-    // set bar z position
-    t.m_Z = -5.0f;
+    // draw the ball
+    miniDrawSphere(g_pBallVertices,
+                   g_BallVerticesCount,
+                   g_pBallIndexes,
+                   g_BallIndexCount,
+                   &g_VertexFormat,
+                   &g_Shader);
 
     // is bar currently exploding?
     if (!g_Bar.m_Exploding)
@@ -791,74 +717,61 @@ void on_GLES2_Render()
         t.m_Y = g_Bar.m_Geometry.m_Pos.m_Y;
 
         // get bar matrix
-        GetTranslateMatrix(&t, &modelViewMatrix);
+        miniGetTranslateMatrix(&t, &modelViewMatrix);
 
         // connect bar model view matrix to shader
         glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
-        // get bar polygon buffer
-        pCoords = &g_pBarVertices[0];
-        pColors = &g_pBarVertices[3];
-
-        // connect buffer to shader
-        glVertexAttribPointer(g_PositionSlot, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), pCoords);
-        glVertexAttribPointer(g_ColorSlot,    4, GL_FLOAT, GL_FALSE, stride * sizeof(float), pColors);
-
-        // draw it
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        // draw the bar
+        miniDrawSurface(g_pBarVertices,
+                        g_BarVerticesCount,
+                        &g_VertexFormat,
+                        &g_Shader);
     }
     else
     {
+        // connect vertex buffer slots to shader
+        glEnableVertexAttribArray(g_Shader.m_VertexSlot);
+        glEnableVertexAttribArray(g_Shader.m_ColorSlot);
+
         // set bar left vertex position
         t.m_X = g_Bar.m_Geometry.m_Pos.m_X + g_Bar.m_L.m_X;
         t.m_Y = g_Bar.m_Geometry.m_Pos.m_Y + g_Bar.m_L.m_Y;
 
         // get bar vertex matrix
-        GetTranslateMatrix(&t, &modelViewMatrix);
+        miniGetTranslateMatrix(&t, &modelViewMatrix);
 
         // connect bar model view matrix to shader
         glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
-        // get bar left polygon buffer
-        pCoords = &g_pBarVertices[0];
-        pColors = &g_pBarVertices[3];
-
-        // connect buffer to shader
-        glVertexAttribPointer(g_PositionSlot, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), pCoords);
-        glVertexAttribPointer(g_ColorSlot,    4, GL_FLOAT, GL_FALSE, stride * sizeof(float), pColors);
-
-        // draw it
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // draw the first polygon composing the broken bar
+        miniDrawBuffer(g_pBarVertices,
+                       3,
+                       E_Triangles,
+                       &g_VertexFormat,
+                       &g_Shader);
 
         // set bar right vertex position
         t.m_X = g_Bar.m_Geometry.m_Pos.m_X + g_Bar.m_R.m_X;
         t.m_Y = g_Bar.m_Geometry.m_Pos.m_Y + g_Bar.m_R.m_Y;
 
         // get bar vertex matrix
-        GetTranslateMatrix(&t, &modelViewMatrix);
+        miniGetTranslateMatrix(&t, &modelViewMatrix);
 
         // connect bar model view matrix to shader
         glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
-        // get bar right polygon buffer
-        pCoords = &g_pBarVertices[stride];
-        pColors = &g_pBarVertices[stride + 3];
+        // draw the second polygon composing the broken bar
+        miniDrawBuffer(g_pBarVertices + g_VertexFormat.m_Stride,
+                       3,
+                       E_Triangles,
+                       &g_VertexFormat,
+                       &g_Shader);
 
-        // connect buffer to shader
-        glVertexAttribPointer(g_PositionSlot, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), pCoords);
-        glVertexAttribPointer(g_ColorSlot,    4, GL_FLOAT, GL_FALSE, stride * sizeof(float), pColors);
-
-        // draw it
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // disconnect vertex buffer slots from shader
+        glDisableVertexAttribArray(g_Shader.m_VertexSlot);
+        glDisableVertexAttribArray(g_Shader.m_ColorSlot);
     }
-
-    // get block polygon buffer
-    pCoords = &g_pBlockVertices[0];
-    pColors = &g_pBlockVertices[3];
-
-    // connect buffer to shader
-    glVertexAttribPointer(g_PositionSlot, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), pCoords);
-    glVertexAttribPointer(g_ColorSlot,    4, GL_FLOAT, GL_FALSE, stride * sizeof(float), pColors);
 
     // iterate through blocks to draw
     for (i = 0; i < g_BlockColumns * g_BlockLines; ++i)
@@ -872,18 +785,19 @@ void on_GLES2_Render()
         t.m_Y = g_Blocks[i].m_Geometry.m_Pos.m_Y;
 
         // get block matrix
-        GetTranslateMatrix(&t, &modelViewMatrix);
+        miniGetTranslateMatrix(&t, &modelViewMatrix);
 
         // connect block model view matrix to shader
         glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
-        // draw it
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        // draw the block
+        miniDrawSurface(g_pBlockVertices,
+                        g_BlockVerticesCount,
+                        &g_VertexFormat,
+                        &g_Shader);
     }
 
-    // disconnect slots from shader
-    glDisableVertexAttribArray(g_PositionSlot);
-    glDisableVertexAttribArray(g_ColorSlot);
+    miniEndScene();
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchBegin(float x, float y)
@@ -899,15 +813,14 @@ void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
         return;
 
     // calculate bar next position
-    g_Bar.m_Geometry.m_Pos.m_X += (x - prev_x) / 25.0f;
-    g_Bar.m_Geometry.m_Pos.m_Y  = g_Screen.m_Bottom + 1.0f;
+    g_Bar.m_Geometry.m_Pos.m_X += (x - prev_x) / (g_Screen.m_Width);
 
     // is bar out of bounds?
-    if (g_Bar.m_Geometry.m_Pos.m_X >= g_Screen.m_Right - (g_Bar.m_Geometry.m_Size.m_Width / 2.0f))
-        g_Bar.m_Geometry.m_Pos.m_X = g_Screen.m_Right - (g_Bar.m_Geometry.m_Size.m_Width / 2.0f);
+    if (g_Bar.m_Geometry.m_Pos.m_X >= g_Screen.m_Right - (g_Bar.m_Geometry.m_Size.m_Width * 0.5f))
+        g_Bar.m_Geometry.m_Pos.m_X = g_Screen.m_Right - (g_Bar.m_Geometry.m_Size.m_Width * 0.5f);
     else
-    if (g_Bar.m_Geometry.m_Pos.m_X <= g_Screen.m_Left + (g_Bar.m_Geometry.m_Size.m_Width / 2.0f))
-        g_Bar.m_Geometry.m_Pos.m_X = g_Screen.m_Left + (g_Bar.m_Geometry.m_Size.m_Width / 2.0f);
+    if (g_Bar.m_Geometry.m_Pos.m_X <= g_Screen.m_Left + (g_Bar.m_Geometry.m_Size.m_Width * 0.5f))
+        g_Bar.m_Geometry.m_Pos.m_X = g_Screen.m_Left + (g_Bar.m_Geometry.m_Size.m_Width * 0.5f);
 }
 //------------------------------------------------------------------------------
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
