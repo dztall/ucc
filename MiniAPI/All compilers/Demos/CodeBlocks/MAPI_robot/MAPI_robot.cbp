@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="MAPI_robot" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/MAPI_robot" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/MAPI_robot" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add directory="../../Common/glew" />
+			<Add directory="../../../MiniAPI" />
+		</Compiler>
+		<Linker>
+			<Add library="../../Common/glew/glew32s.lib" />
+			<Add library="opengl32" />
+			<Add library="glu32" />
+			<Add library="gdi32" />
+		</Linker>
+		<Unit filename="../../../MiniAPI/MiniCommon.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../MiniAPI/MiniCommon.h" />
+		<Unit filename="../../../MiniAPI/MiniGeometry.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../MiniAPI/MiniGeometry.h" />
+		<Unit filename="../../../MiniAPI/MiniModels.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../MiniAPI/MiniModels.h" />
+		<Unit filename="../../../MiniAPI/MiniRenderer.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../MiniAPI/MiniRenderer.h" />
+		<Unit filename="../../../MiniAPI/MiniShader.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../MiniAPI/MiniShader.h" />
+		<Unit filename="../../../MiniAPI/MiniShapes.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../MiniAPI/MiniShapes.h" />
+		<Unit filename="../../../MiniAPI/MiniVertex.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../MiniAPI/MiniVertex.h" />
+		<Unit filename="main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="resources.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
+		<Unit filename="resources.rh" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
