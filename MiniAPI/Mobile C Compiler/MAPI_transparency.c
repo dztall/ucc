@@ -171,12 +171,12 @@ void on_GLES2_Final()
         g_pSurfaceVB = 0;
     }
 
-	if (g_GlassTextureIndex != GL_INVALID_VALUE)
+    if (g_GlassTextureIndex != GL_INVALID_VALUE)
         glDeleteTextures(1, &g_GlassTextureIndex);
 
     g_GlassTextureIndex = GL_INVALID_VALUE;
 
-	if (g_CloudTextureIndex != GL_INVALID_VALUE)
+    if (g_CloudTextureIndex != GL_INVALID_VALUE)
         glDeleteTextures(1, &g_CloudTextureIndex);
 
     g_CloudTextureIndex = GL_INVALID_VALUE;

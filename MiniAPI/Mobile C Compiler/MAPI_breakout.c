@@ -559,7 +559,7 @@ void on_GLES2_Update(float timeStep_sec)
         allBlocksBroken = 0;
 
         // is ball in collision with block?
-        if (CircleRectIntersects(&g_Ball.m_Geometry, &g_Blocks[i].m_Geometry))
+        if (CircleRectIntersect(&g_Ball.m_Geometry, &g_Blocks[i].m_Geometry))
         {
             // break the block
             g_Blocks[i].m_Visible = 0;
@@ -604,7 +604,7 @@ void on_GLES2_Update(float timeStep_sec)
     }
 
     // ball was moving down and is colliding with bar?
-    if (g_Ball.m_Offset.m_Y < 0.0f && CircleRectIntersects(&g_Ball.m_Geometry, &g_Bar.m_Geometry))
+    if (g_Ball.m_Offset.m_Y < 0.0f && CircleRectIntersect(&g_Ball.m_Geometry, &g_Bar.m_Geometry))
     {
         collisionY = 1;
 

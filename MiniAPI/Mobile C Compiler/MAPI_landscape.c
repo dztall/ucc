@@ -27,7 +27,7 @@
 // mini API
 #include "MiniAPI/MiniGeometry.h"
 #include "MiniAPI/MiniVertex.h"
-#include "MiniAPI/MiniShapes.h"
+#include "MiniAPI/MiniModels.h"
 #include "MiniAPI/MiniShader.h"
 
 #if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
@@ -156,7 +156,7 @@ void on_GLES2_Final()
         g_pLandscapeMesh = 0;
     }
 
-	if (g_TextureIndex != GL_INVALID_VALUE)
+    if (g_TextureIndex != GL_INVALID_VALUE)
         glDeleteTextures(1, &g_TextureIndex);
 
     g_TextureIndex = GL_INVALID_VALUE;

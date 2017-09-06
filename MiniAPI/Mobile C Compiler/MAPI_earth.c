@@ -153,7 +153,7 @@ void on_GLES2_Final()
         g_pVertexBuffer = 0;
     }
 
-	if (g_TextureIndex != GL_INVALID_VALUE)
+    if (g_TextureIndex != GL_INVALID_VALUE)
         glDeleteTextures(1, &g_TextureIndex);
 
     g_TextureIndex = GL_INVALID_VALUE;

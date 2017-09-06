@@ -59,6 +59,7 @@ GLuint             g_ColorSlot            = 0;
 MG_Size            g_View;
 MV_VertexFormat    g_VertexFormat;
 MG_Matrix          g_ProjectionMatrix;
+MG_Matrix          g_ViewMatrix;
 float              g_PolygonArray[21];
 //------------------------------------------------------------------------------
 void ApplyMatrix(float w, float h)
@@ -95,6 +96,8 @@ void on_GLES2_Init(int view_w, int view_h)
 
     g_View.m_Width  = 0.0f;
     g_View.m_Height = 0.0f;
+
+    GetIdentity(&g_ViewMatrix);
 
     // compile, link and use shaders
     g_ShaderProgram = CompileShaders(g_pVSColored, g_pFSColored);
@@ -219,9 +222,8 @@ void on_GLES2_Render()
     MG_Vector3  rayPos;
     MG_Vector3  rayDir;
     MG_Matrix   translateMatrix;
-    MG_Matrix   modelViewMatrix;
-    MG_Matrix   projModMatrix;
-    MG_Matrix   invProjModMatrix;
+    MG_Matrix   modelMatrix;
+    MG_Matrix   invModelMatrix;
     GLvoid*     pCoords;
     GLvoid*     pColors;
     MG_Ray      ray;
@@ -238,13 +240,13 @@ void on_GLES2_Render()
 
     GetTranslateMatrix(&t, &translateMatrix);
 
-    // build view matrix
-    GetIdentity(&modelViewMatrix);
-    MatrixMultiply(&modelViewMatrix, &translateMatrix, &modelViewMatrix);
+    // build model matrix
+    GetIdentity(&modelMatrix);
+    MatrixMultiply(&modelMatrix, &translateMatrix, &modelMatrix);
 
     // connect model view matrix to shader
     GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
-    glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
+    glUniformMatrix4fv(modelviewUniform, 1, 0, &modelMatrix.m_Table[0][0]);
 
     // set ray in 3d world
     rayPos.m_X = g_RayX;
@@ -254,10 +256,19 @@ void on_GLES2_Render()
     rayDir.m_Y = 0.0f;
     rayDir.m_Z = 1.0f;
 
-    MatrixMultiply(&g_ProjectionMatrix, &modelViewMatrix, &projModMatrix);
-    Inverse(&projModMatrix, &invProjModMatrix, &determinant);
-    ApplyMatrixToVector(&invProjModMatrix, &rayPos, &ray.m_Pos);
-    ApplyMatrixToVector(&invProjModMatrix, &rayDir, &ray.m_Dir);
+    Normalize(&rayDir, &rayDir);
+
+    // put the ray in the 3d world coordinates
+    Unproject(&g_ProjectionMatrix,
+              &g_ViewMatrix,
+              &rayPos,
+              &rayDir);
+
+    // put the ray in the model coordinates
+    Inverse(&modelMatrix, &invModelMatrix, &determinant);
+    ApplyMatrixToVector(&invModelMatrix, &rayPos, &ray.m_Pos);
+    ApplyMatrixToNormal(&invModelMatrix, &rayDir, &ray.m_Dir);
+    Normalize(&ray.m_Dir, &ray.m_Dir);
 
     // calculate inverted ray dir. NOTE in C language, a division by 0 in this context
     // means infinity, that is needed, so don't worry about ray.m_Dir equals to 0

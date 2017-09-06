@@ -3,9 +3,9 @@
  *****************************************************************************
  * Description : Minimal collision detection library                         *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015, this file is part of the Minimal API. You are free    *
- *               to copy or redistribute this file, modify it, or use it for *
- *               your own projects, commercial or not                        *
+ * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
+ *               it for your own projects, commercial or not                 *
  *****************************************************************************/
 
 #ifndef MiniCollisionH
@@ -440,12 +440,26 @@ int Inside(const MG_Vector3* pP,
 }
 
 /**
+* Checks if a rectangle intersects another rectangle
+*@param pFirstRect - first rectangle to check
+*@param pSecondRect - second rectangle to check against
+*@return 1 if rects intersect, otherwise 0
+*/
+int RectsIntersect(MG_Rect* pFirstRect, MG_Rect* pSecondRect)
+{
+    return !(pFirstRect->m_Pos.m_X                               <= pSecondRect->m_Pos.m_X + pSecondRect->m_Size.m_Width  && 
+             pFirstRect->m_Pos.m_X + pFirstRect->m_Size.m_Width  >= pSecondRect->m_Pos.m_X                                &&
+             pFirstRect->m_Pos.m_Y                               <= pSecondRect->m_Pos.m_Y + pSecondRect->m_Size.m_Height && 
+             pFirstRect->m_Pos.m_Y + pFirstRect->m_Size.m_Height >= pSecondRect->m_Pos.m_Y);
+}
+
+/**
 * Checks if a circle intersects a rectangle
 *@param pCircle - circle to check
 *@param pRect - rectangle to check against
 *@return 1 if shapes intersect, otherwise 0
 */
-int CircleRectIntersects(MG_Circle* pCircle, MG_Rect* pRect)
+int CircleRectIntersect(MG_Circle* pCircle, MG_Rect* pRect)
 {
     MG_Point circleDistance;
     float    cornerDistanceSq;

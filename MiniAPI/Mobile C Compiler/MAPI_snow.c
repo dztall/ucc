@@ -186,7 +186,7 @@ void on_GLES2_Update(float timeStep_sec)
         ++frameCount;
     }
 
-    startPos.m_X      =  0.0f; // between -4.4 to 4.4
+    startPos.m_X      =  0.0f; // between -2.2 to 2.2
     startPos.m_Y      =  2.0f;
     startPos.m_Z      = -3.0f; // between -1.0 to -5.0
     startDir.m_X      =  1.0f;
@@ -207,14 +207,14 @@ void on_GLES2_Update(float timeStep_sec)
                                         g_ParticleCount))
         {
             // initialize default values
-            pNewParticle->m_Position.m_X =  ((rand() % 44) - 22) / 10.0f; // between -2.2 to  2.2
-            pNewParticle->m_Position.m_Z = -((rand() % 40) + 10) / 10.0f; // between -1.0 to -5.0
-            pNewParticle->m_Velocity.m_X =  ((rand() % 4)  - 2)  / 100.0f;
-            pNewParticle->m_Velocity.m_Y =  ((rand() % 4)  + 2)  / 100.0f;
+            pNewParticle->m_Position.m_X =  ((rand() % 44) - 22.0f) * 0.1f; // between -2.2 to  2.2
+            pNewParticle->m_Position.m_Z = -((rand() % 40) + 10.0f) * 0.1f; // between -1.0 to -5.0
+            pNewParticle->m_Velocity.m_X =  ((rand() % 4)  - 2.0f)  * 0.01f;
+            pNewParticle->m_Velocity.m_Y =  ((rand() % 4)  + 2.0f)  * 0.01f;
 
             // select a random start height the first time particles are emitted
             if (g_Initialized = 0)
-                pNewParticle->m_Position.m_Y = 2.0f + ((rand() % 200) / 100.0f);
+                pNewParticle->m_Position.m_Y = 2.0f + ((rand() % 200) * 0.01f);
         }
 
         // no particles to show? (e.g all were removed in this loop)

@@ -3,9 +3,9 @@
  *****************************************************************************
  * Description : Minimal library common definitions                          *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015, this file is part of the Minimal API. You are free    *
- *               to copy or redistribute this file, modify it, or use it for *
- *               your own projects, commercial or not                        *
+ * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
+ *               it for your own projects, commercial or not                 *
  *****************************************************************************/
 
 #ifndef MiniCommonH
@@ -14,6 +14,8 @@
 //-----------------------------------------------------------------------------
 // Global defines
 //-----------------------------------------------------------------------------
+
+#define MAPI_VERSION 1.7
 
 // __CCR__ and __CCR_MINOR__ macros may be undefined on older compiler versions,
 // so define them if needed

@@ -3,9 +3,9 @@
  *****************************************************************************
  * Description : Minimal vertex library                                      *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015, this file is part of the Minimal API. You are free    *
- *               to copy or redistribute this file, modify it, or use it for *
- *               your own projects, commercial or not                        *
+ * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
+ *               it for your own projects, commercial or not                 *
  *****************************************************************************/
 
 #ifndef MiniVertexH
@@ -34,6 +34,7 @@
 
 // mini API
 #include "MiniCommon.h"
+#include "MiniGeometry.h"
 
 //-----------------------------------------------------------------------------
 // Structures

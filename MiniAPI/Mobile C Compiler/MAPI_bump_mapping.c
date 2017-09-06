@@ -183,12 +183,12 @@ void on_GLES2_Final()
         g_pSurfaceVB = 0;
     }
 
-	if (g_TextureIndex != GL_INVALID_VALUE)
+    if (g_TextureIndex != GL_INVALID_VALUE)
         glDeleteTextures(1, &g_TextureIndex);
 
     g_TextureIndex = GL_INVALID_VALUE;
 
-	if (g_BumpMapIndex != GL_INVALID_VALUE)
+    if (g_BumpMapIndex != GL_INVALID_VALUE)
         glDeleteTextures(1, &g_BumpMapIndex);
 
     g_BumpMapIndex = GL_INVALID_VALUE;
