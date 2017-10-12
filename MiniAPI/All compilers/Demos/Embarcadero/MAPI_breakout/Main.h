@@ -77,7 +77,7 @@ class TMainForm : public TForm
             int          m_Exploding;
             MINI_Vector2 m_ExpLOffset;
             MINI_Vector2 m_ExpROffset;
-            ALuint       m_bufferID;
+            ALuint       m_BufferID;
             ALuint       m_SoundID;
         };
 
@@ -90,7 +90,7 @@ class TMainForm : public TForm
             MINI_Vector2 m_Offset;
             MINI_Vector2 m_Inc;
             MINI_Vector2 m_Max;
-            ALuint       m_bufferID;
+            ALuint       m_BufferID;
             ALuint       m_SoundID;
         };
 

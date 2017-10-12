@@ -110,6 +110,22 @@ typedef struct
         //-----------------------------------------------------------------------------
 
         /**
+        * Checks if a body in movement intersects a wall
+        *@param pBodyStart - body movement start position
+        *@param pBodyEnd - body movement end position
+        *@param pLevel - level
+        *@param levelItemWidth - level item width
+        *@param levelItemHeight - level item height
+        *@param levelItemCount - level item count
+        */
+        int miniBodyIntersectWall(const MINI_Vector2*   pBodyStart,
+                                  const MINI_Vector2*   pBodyEnd,
+                                  const MINI_LevelItem* pLevel,
+                                        float           levelItemWidth,
+                                        float           levelItemHeight,
+                                        int             levelItemCount);
+
+        /**
         * Checks if the next position is valid
         *@param pLevel - level
         *@param levelItemWidth - level item width

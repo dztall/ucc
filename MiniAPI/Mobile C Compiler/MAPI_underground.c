@@ -345,7 +345,7 @@ void on_GLES2_Update(float timeStep_sec)
     if (g_TouchPosition.m_Y < minY)
         g_TouchPosition.m_Y = minY;
 
-    // calculate the final pos and_dir velocity
+    // calculate the final pos and dir velocity
     float posVelocity = (g_PosVelocity * ((g_TouchPosition.m_Y - g_TouchOrigin.m_Y) / g_TouchOrigin.m_Y));
     float dirVelocity = (g_DirVelocity * ((g_TouchPosition.m_X - g_TouchOrigin.m_X) / g_TouchOrigin.m_X));
 

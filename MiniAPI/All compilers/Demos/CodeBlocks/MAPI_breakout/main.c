@@ -56,7 +56,7 @@ typedef struct
     int          m_Exploding;
     MINI_Vector2 m_ExpLOffset;
     MINI_Vector2 m_ExpROffset;
-    ALuint       m_bufferID;
+    ALuint       m_BufferID;
     ALuint       m_SoundID;
 } MINI_Bar;
 //------------------------------------------------------------------------------
@@ -66,7 +66,7 @@ typedef struct
     MINI_Vector2 m_Offset;
     MINI_Vector2 m_Inc;
     MINI_Vector2 m_Max;
-    ALuint       m_bufferID;
+    ALuint       m_BufferID;
     ALuint       m_SoundID;
 } MINI_Ball;
 //------------------------------------------------------------------------------
@@ -423,9 +423,9 @@ void InitScene(int w, int h)
 
     miniInitializeOpenAL(&g_pOpenALDevice, &g_pOpenALContext);
 
-    // hard code file length values, not a good way but for now...
-    ballSoundFileLen = 57416;
-    barSoundFileLen  = 820644;
+    // get the sound files length
+    ballSoundFileLen = miniGetFileSize(BALL_REBOUND_SOUND_FILE);
+    barSoundFileLen  = miniGetFileSize(BAR_EXPLODE_SOUND_FILE);
 
     // allocate buffers
     pBallSndBuffer = (unsigned char*)calloc(ballSoundFileLen, sizeof(unsigned char));
@@ -447,7 +447,7 @@ void InitScene(int w, int h)
                     pBallSndBuffer,
                     ballSoundFileLen,
                     48000,
-                    &g_Ball.m_bufferID,
+                    &g_Ball.m_BufferID,
                     &g_Ball.m_SoundID);
 
     // create bar explode sound file
@@ -456,7 +456,7 @@ void InitScene(int w, int h)
                     pBarSndBuffer,
                     barSoundFileLen,
                     48000,
-                    &g_Bar.m_bufferID,
+                    &g_Bar.m_BufferID,
                     &g_Bar.m_SoundID);
 
     // delete ball sound resource
@@ -517,8 +517,8 @@ void DeleteScene()
         miniStopSound(g_Bar.m_SoundID);
 
     // release OpenAL interface
-    miniReleaseSound(g_Ball.m_bufferID, g_Ball.m_SoundID);
-    miniReleaseSound(g_Bar.m_bufferID,  g_Bar.m_SoundID);
+    miniReleaseSound(g_Ball.m_BufferID, g_Ball.m_SoundID);
+    miniReleaseSound(g_Bar.m_BufferID,  g_Bar.m_SoundID);
     miniReleaseOpenAL(g_pOpenALDevice, g_pOpenALContext);
 }
 //------------------------------------------------------------------------------
@@ -739,7 +739,7 @@ void UpdateScene(float elapsedTime)
     if (collisionX)
     {
         g_Ball.m_Offset.m_X = -g_Ball.m_Offset.m_X;
-        doPlaySound         = 1;
+        doPlaySound         =  1;
     }
 
     // collision on the y axis?

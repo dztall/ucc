@@ -22,12 +22,12 @@
 //-----------------------------------------------------------------------------
 // Level edition functions
 //-----------------------------------------------------------------------------
-int miniGenerateLevel(const char*              pMap,
-                            unsigned int       mapWidth,
-                            unsigned int       mapHeight,
-                      const float*             pItemWidth,
-                      const float*             pItemHeight,
-                            MINI_LevelItem**   pLevel)
+int miniGenerateLevel(const char*            pMap,
+                            unsigned int     mapWidth,
+                            unsigned int     mapHeight,
+                      const float*           pItemWidth,
+                      const float*           pItemHeight,
+                            MINI_LevelItem** pLevel)
 {
     unsigned int x;
     unsigned int y;
@@ -47,8 +47,8 @@ int miniGenerateLevel(const char*              pMap,
         for (x = 0; x < mapWidth; ++x)
         {
             // calculate the item center
-            (*pLevel)[offset].m_X      = -(levelWidth  / 2.0f) + (*pItemWidth  * x) - (*pItemWidth  / 2.0f);
-            (*pLevel)[offset].m_Y      = -(levelHeight / 2.0f) + (*pItemHeight * y) - (*pItemHeight / 2.0f);
+            (*pLevel)[offset].m_X      = -(levelWidth  * 0.5f) + (*pItemWidth  * x) - (*pItemWidth  * 0.5f);
+            (*pLevel)[offset].m_Y      = -(levelHeight * 0.5f) + (*pItemHeight * y) - (*pItemHeight * 0.5f);
             (*pLevel)[offset].m_Width  = *pItemWidth;
             (*pLevel)[offset].m_Height = *pItemHeight;
 
@@ -77,6 +77,68 @@ int miniGenerateLevel(const char*              pMap,
         }
 
     return 1;
+}
+//------------------------------------------------------------------------------
+int miniBodyIntersectWall(const MINI_Vector2*   pBodyStart,
+                          const MINI_Vector2*   pBodyEnd,
+                          const MINI_LevelItem* pLevel,
+                                float           levelItemWidth,
+                                float           levelItemHeight,
+                                int             levelItemCount)
+{
+    int          i;
+    MINI_Vector2 itemVertex1;
+    MINI_Vector2 itemVertex2;
+    MINI_Vector2 itemVertex3;
+    MINI_Vector2 itemVertex4;
+    MINI_Vector2 intersection;
+    MINI_Point   bodyStart;
+    MINI_Point   bodyEnd;
+    MINI_Rect    rect;
+    int          isBodyOutOfLevel = 1;
+
+    rect.m_Size.m_Width  = levelItemWidth;
+    rect.m_Size.m_Height = levelItemHeight;
+
+    // iterate through level items
+    for (i = 0; i < levelItemCount; ++i)
+    {
+        // calculate the rect surrounding the item
+        rect.m_Pos.m_X = pLevel[i].m_X + (levelItemWidth  * 0.5f);
+        rect.m_Pos.m_Y = pLevel[i].m_Y + (levelItemHeight * 0.5f);
+
+        // check if the body is inside the current item
+        if (isBodyOutOfLevel)
+        {
+            bodyStart.m_X = pBodyStart->m_X;
+            bodyStart.m_Y = pBodyStart->m_Y;
+            bodyEnd.m_X   = pBodyEnd->m_X;
+            bodyEnd.m_Y   = pBodyEnd->m_Y;
+
+            if (miniPointInRect(&bodyStart, &rect) || miniPointInRect(&bodyEnd, &rect))
+                isBodyOutOfLevel = 0;
+        }
+
+        // calculate item vertices
+        itemVertex1.m_X = rect.m_Pos.m_X;
+        itemVertex1.m_Y = rect.m_Pos.m_Y;
+        itemVertex2.m_X = rect.m_Pos.m_X;
+        itemVertex2.m_Y = rect.m_Pos.m_Y + levelItemHeight;
+        itemVertex3.m_X = rect.m_Pos.m_X + levelItemWidth;
+        itemVertex3.m_Y = rect.m_Pos.m_Y + levelItemHeight;
+        itemVertex4.m_X = rect.m_Pos.m_X + levelItemWidth;
+        itemVertex4.m_Y = rect.m_Pos.m_Y;
+
+        // is body crossing a wall?
+        if ((pLevel[i].m_Left  && miniLines2DIntersect(pBodyStart, pBodyEnd, &itemVertex1, &itemVertex2, &intersection)) ||
+            (pLevel[i].m_Front && miniLines2DIntersect(pBodyStart, pBodyEnd, &itemVertex2, &itemVertex3, &intersection)) ||
+            (pLevel[i].m_Right && miniLines2DIntersect(pBodyStart, pBodyEnd, &itemVertex3, &itemVertex4, &intersection)) ||
+            (pLevel[i].m_Back  && miniLines2DIntersect(pBodyStart, pBodyEnd, &itemVertex4, &itemVertex1, &intersection)))
+            return 1;
+    }
+
+    // return false if body is inside the level, otherwise true
+    return isBodyOutOfLevel;
 }
 //------------------------------------------------------------------------------
 int miniIsNextPosValid(const MINI_LevelItem* pLevel,
@@ -178,7 +240,7 @@ void miniValidateNextPos(const MINI_LevelItem* pLevel,
         {
             // calculate the wall position
             pos.m_X = pLevel[i].m_X + levelItemWidth + (levelItemWidth * 0.5f) - pPlayer->m_Radius;
-            pos.m_Y =  0.0f;
+            pos.m_Y = 0.0f;
             pos.m_Z = pLevel[i].m_Y + levelItemHeight;
 
             // get the wall normal

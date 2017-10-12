@@ -157,7 +157,55 @@ int miniPointInSphere(const MINI_Vector3* pPoint, const MINI_Sphere* pSphere)
     return (distance <= pSphere->m_Radius);
 }
 //----------------------------------------------------------------------------
-int miniRectsIntersect(MINI_Rect* pFirstRect, MINI_Rect* pSecondRect)
+int miniLines2DIntersect(const MINI_Vector2* pL1Start,
+                         const MINI_Vector2* pL1End,
+                         const MINI_Vector2* pL2Start,
+                         const MINI_Vector2* pL2End,
+                               MINI_Vector2* pR)
+{
+    MINI_Vector2 l1;
+    MINI_Vector2 l2;
+    MINI_Vector2 l2l1;
+    float        dot;
+    float        t;
+    float        u;
+
+    pR->m_X = 0.0f;
+    pR->m_Y = 0.0f;
+
+    l1.m_X = pL1End->m_X - pL1Start->m_X;
+    l1.m_Y = pL1End->m_Y - pL1Start->m_Y;
+
+    l2.m_X = pL2End->m_X - pL2Start->m_X;
+    l2.m_Y = pL2End->m_Y - pL2Start->m_Y;
+
+    dot = l1.m_X * l2.m_Y - l1.m_Y * l2.m_X;
+
+    // if dot product of l1 dot l2 is equals to 0, then the lines are parallel
+    // and have infinite intersection points
+    if (!dot)
+        return 0;
+
+    l2l1.m_X = pL2Start->m_X - pL1Start->m_X;
+    l2l1.m_Y = pL2Start->m_Y - pL1Start->m_Y;
+
+    t = (l2l1.m_X * l2.m_Y - l2l1.m_Y * l2.m_X) / dot;
+
+    if (t < 0.0f || t > 1.0f)
+        return 0;
+
+    u = (l2l1.m_X * l1.m_Y - l2l1.m_Y * l1.m_X) / dot;
+
+    if (u < 0.0f || u > 1.0f)
+        return 0;
+
+    pR->m_X = pL1Start->m_X + t * l1.m_X;
+    pR->m_Y = pL1Start->m_Y + t * l1.m_Y;
+
+    return 1;
+}
+//----------------------------------------------------------------------------
+int miniRectsIntersect(const MINI_Rect* pFirstRect, const MINI_Rect* pSecondRect)
 {
     return !(pFirstRect->m_Pos.m_X                               <= pSecondRect->m_Pos.m_X + pSecondRect->m_Size.m_Width  && 
              pFirstRect->m_Pos.m_X + pFirstRect->m_Size.m_Width  >= pSecondRect->m_Pos.m_X                                &&
@@ -165,7 +213,25 @@ int miniRectsIntersect(MINI_Rect* pFirstRect, MINI_Rect* pSecondRect)
              pFirstRect->m_Pos.m_Y + pFirstRect->m_Size.m_Height >= pSecondRect->m_Pos.m_Y);
 }
 //----------------------------------------------------------------------------
-int miniCircleRectIntersect(MINI_Circle* pCircle, MINI_Rect* pRect)
+int miniSpheresIntersect(const MINI_Sphere* pFirstSphere, const MINI_Sphere* pSecondSphere)
+{
+    MINI_Vector3 dist;
+    float        length;
+
+    // calculate the distance between the both sphere centers
+    dist.m_X = fabs(pFirstSphere->m_Pos.m_X - pSecondSphere->m_Pos.m_X);
+    dist.m_Y = fabs(pFirstSphere->m_Pos.m_Y - pSecondSphere->m_Pos.m_Y);
+    dist.m_Z = fabs(pFirstSphere->m_Pos.m_Z - pSecondSphere->m_Pos.m_Z);
+
+    // calculate the length between the both sphere centers
+    miniLength(&dist, &length);
+
+    // the spheres are on collision if the length between the centers is lower
+    // than or equal to the sum of the both sphere radius
+    return (length <= (pFirstSphere->m_Radius + pSecondSphere->m_Radius));
+}
+//----------------------------------------------------------------------------
+int miniCircleRectIntersect(const MINI_Circle* pCircle, const MINI_Rect* pRect)
 {
     MINI_Point circleDistance;
     float      cornerDistanceSq;
@@ -537,7 +603,7 @@ int miniLinePolygonIntersect(const MINI_Vector3* pP1,
     return miniInside(&pointOnPlane, &pPolygon->m_v[0], &pPolygon->m_v[1], &pPolygon->m_v[2]);
 }
 //----------------------------------------------------------------------------
-int miniRayBoxIntersect(MINI_Ray* pRay, MINI_Box* pBox)
+int miniRayBoxIntersect(const MINI_Ray* pRay, const MINI_Box* pBox)
 {
     float tx1;
     float tx2;

@@ -390,9 +390,9 @@ void TMainForm::InitScene(int w, int h)
 
     miniInitializeOpenAL(&m_pOpenALDevice, &m_pOpenALContext);
 
-    // hard code file length values, not a good way but for now...
-    ballSoundFileLen = 57416;
-    barSoundFileLen  = 820644;
+    // get the sound files length
+    ballSoundFileLen = miniGetFileSize(BALL_REBOUND_SOUND_FILE);
+    barSoundFileLen  = miniGetFileSize(BAR_EXPLODE_SOUND_FILE);
 
     // allocate buffers
     pBallSndBuffer = (unsigned char*)calloc(ballSoundFileLen, sizeof(unsigned char));
@@ -414,7 +414,7 @@ void TMainForm::InitScene(int w, int h)
                     pBallSndBuffer,
                     ballSoundFileLen,
                     48000,
-                    &m_Ball.m_bufferID,
+                    &m_Ball.m_BufferID,
                     &m_Ball.m_SoundID);
 
     // create bar explode sound file
@@ -423,7 +423,7 @@ void TMainForm::InitScene(int w, int h)
                     pBarSndBuffer,
                     barSoundFileLen,
                     48000,
-                    &m_Bar.m_bufferID,
+                    &m_Bar.m_BufferID,
                     &m_Bar.m_SoundID);
 
     // delete ball sound resource
@@ -480,8 +480,8 @@ void TMainForm::DeleteScene()
         miniStopSound(m_Bar.m_SoundID);
 
     // release OpenAL interface
-    miniReleaseSound(m_Ball.m_bufferID, m_Ball.m_SoundID);
-    miniReleaseSound(m_Bar.m_bufferID,  m_Bar.m_SoundID);
+    miniReleaseSound(m_Ball.m_BufferID, m_Ball.m_SoundID);
+    miniReleaseSound(m_Bar.m_BufferID,  m_Bar.m_SoundID);
     miniReleaseOpenAL(m_pOpenALDevice, m_pOpenALContext);
 }
 //------------------------------------------------------------------------------
@@ -703,7 +703,7 @@ void TMainForm::UpdateScene(float elapsedTime)
     if (collisionX)
     {
         m_Ball.m_Offset.m_X = -m_Ball.m_Offset.m_X;
-        doPlaySound         = 1;
+        doPlaySound         =  1;
     }
 
     // collision on the y axis?
