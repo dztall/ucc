@@ -208,7 +208,7 @@ void on_GLES2_Update(float timeStep_sec)
 {
     unsigned int frameCount = 0;
     unsigned int deltaRange = g_Animation[g_AnimIndex].m_Range[1] -
-            g_Animation[g_AnimIndex].m_Range[0];
+                              g_Animation[g_AnimIndex].m_Range[0];
 
     // calculate next time
     g_Time += (timeStep_sec * 1000.0f);

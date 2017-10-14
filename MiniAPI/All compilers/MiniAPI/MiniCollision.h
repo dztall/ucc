@@ -104,12 +104,35 @@ struct MINI_AABBNode
         int miniPointInSphere(const MINI_Vector3* pPoint, const MINI_Sphere* pSphere);
 
         /**
+        * Checks if 2 2D lines intersect
+        *@param pL1Start - line 1 start
+        *@param pL1End - line 1 end
+        *@param pL2Start - line 2 start
+        *@param pL2End - line 2 end
+        *@param[out] pR - on intersection, the point where the lines intersect
+        *@return 1 if lines intersect, otherwise 0
+        */
+        int miniLines2DIntersect(const MINI_Vector2* pL1Start,
+                                 const MINI_Vector2* pL1End,
+                                 const MINI_Vector2* pL2Start,
+                                 const MINI_Vector2* pL2End,
+                                       MINI_Vector2* pR);
+
+        /**
         * Checks if a rectangle intersects another rectangle
         *@param pFirstRect - first rectangle to check
         *@param pSecondRect - second rectangle to check against
         *@return 1 if rects intersect, otherwise 0
         */
-        int miniRectsIntersect(MINI_Rect* pFirstRect, MINI_Rect* pSecondRect);
+        int miniRectsIntersect(const MINI_Rect* pFirstRect, const MINI_Rect* pSecondRect);
+
+        /**
+        * Checks if a sphere intersects another sphere
+        *@param pFirstSphere - first sphere to check
+        *@param pSecondSphere - second sphere to check against
+        *@return 1 if spheres intersect, otherwise 0
+        */
+        int miniSpheresIntersect(const MINI_Sphere* pFirstSphere, const MINI_Sphere* pSecondSphere);
 
         /**
         * Checks if a circle intersects a rectangle
@@ -117,7 +140,7 @@ struct MINI_AABBNode
         *@param pRect - rectangle to check against
         *@return 1 if shapes intersect, otherwise 0
         */
-        int miniCircleRectIntersect(MINI_Circle* pCircle, MINI_Rect* pRect);
+        int miniCircleRectIntersect(const MINI_Circle* pCircle, const MINI_Rect* pRect);
 
         /**
         * Checks if a plane intesects a ray
@@ -183,7 +206,7 @@ struct MINI_AABBNode
         *@param pBox - box
         *@return 1 if ray intersects box, otherwise 0
         */
-        int miniRayBoxIntersect(MINI_Ray* pRay, MINI_Box* pBox);
+        int miniRayBoxIntersect(const MINI_Ray* pRay, const MINI_Box* pBox);
 
         /**
         * Checks if a sphere intersects a polygon, and gets the resulting sliding plane

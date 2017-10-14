@@ -34,7 +34,7 @@
 // Global defines
 //-----------------------------------------------------------------------------
 
-#define M_MINI_VERSION 2.0
+#define M_MINI_VERSION 2.1
 
 // __CCR__ and __CCR_MINOR__ macros may be undefined on older compiler versions,
 // so define them if needed
@@ -58,6 +58,17 @@
     extern "C"
     {
 #endif
+
+        //----------------------------------------------------------------------------
+        // File functions
+        //----------------------------------------------------------------------------
+
+        /**
+        * Gets the size of a file
+        *@param pFileName - file name for which the size should be get
+        *@return file size in bytes
+        */
+        int miniGetFileSize(const char* pFileName);
 
         //----------------------------------------------------------------------------
         // Math functions

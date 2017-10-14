@@ -13,8 +13,25 @@
 #include "MiniCommon.h"
 
 // std
+#include <stdio.h>
 #include <math.h>
 
+//----------------------------------------------------------------------------
+// File functions
+//----------------------------------------------------------------------------
+int miniGetFileSize(const char* pFileName)
+{
+    FILE* pFile;
+    int   fileSize;
+
+    // measure the file size
+    pFile = fopen(pFileName, "rb");
+    fseek(pFile, 0, SEEK_END);
+    fileSize = ftell(pFile);
+    fclose(pFile);
+
+    return fileSize;
+}
 //----------------------------------------------------------------------------
 // Math functions
 //----------------------------------------------------------------------------
