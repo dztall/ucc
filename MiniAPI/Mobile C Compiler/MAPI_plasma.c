@@ -3,7 +3,7 @@
  *****************************************************************************
  * Description : An old school plasma effect that use shader for calculation *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -62,18 +62,16 @@ MINI_VertexFormat g_VertexFormat;
 // plasma vertex shader program
 const char* g_pVSPlasma =
     "precision mediump float;"
-    "attribute vec4  qr_vPosition;"
-    "uniform   float qr_uTime;"
-    "uniform   vec2  qr_uSize;"
-    "uniform   mat4  qr_uProjection;"
-    "uniform   mat4  qr_uModelview;"
-    "varying   float qr_fTime;"
-    "varying   vec2  qr_fSize;"
+    "attribute vec3  mini_vPosition;"
+    "uniform   float mini_uTime;"
+    "uniform   vec2  mini_uSize;"
+    "varying   float mini_fTime;"
+    "varying   vec2  mini_fSize;"
     "void main(void)"
     "{"
-    "    qr_fSize    = qr_uSize;"
-    "    qr_fTime    = qr_uTime;"
-    "    gl_Position = qr_uProjection * qr_uModelview * qr_vPosition;"
+    "    mini_fSize  = mini_uSize;"
+    "    mini_fTime  = mini_uTime;"
+    "    gl_Position = vec4(mini_vPosition, 1.0);"
     "}";
 //------------------------------------------------------------------------------
 // plasma fragment shader program. NOTE the above used plasma algorithm is based on Bidouille.org
@@ -81,50 +79,25 @@ const char* g_pVSPlasma =
 // http://www.bidouille.org/prog/plasma
 const char* g_pFSPlasma =
     "precision mediump float;"
-    "varying float qr_fTime;"
-    "varying vec2  qr_fSize;"
+    "varying float mini_fTime;"
+    "varying vec2  mini_fSize;"
     "void main(void)"
     "{"
     "    const float pi      = 3.1415926535897932384626433832795;"
     "    vec2        vK      = vec2(0.34, 0.25);"
-    "    vec2        vCoords = vec2((gl_FragCoord.x / qr_fSize.x) * 100.0,"
-    "                               (gl_FragCoord.y / qr_fSize.y) * 100.0);"
+    "    vec2        vCoords = vec2((gl_FragCoord.x / mini_fSize.x) * 100.0,"
+    "                               (gl_FragCoord.y / mini_fSize.y) * 100.0);"
     "    float v             = 0.0;"
     "    vec2  c             = vCoords * (vK - (vK / 2.0));"
-    "    v                  += sin((c.x + qr_fTime));"
-    "    v                  += sin((c.y + qr_fTime) / 2.0);"
-    "    v                  += sin((c.x + c.y + qr_fTime) / 2.0);"
-    "    c                  += vK / 2.0 * vec2(sin(qr_fTime / 3.0), cos(qr_fTime / 2.0));"
-    "    v                  += sin(sqrt(c.x * c.x + c.y * c.y + 1.0) + qr_fTime);"
+    "    v                  += sin((c.x + mini_fTime));"
+    "    v                  += sin((c.y + mini_fTime) / 2.0);"
+    "    v                  += sin((c.x + c.y + mini_fTime) / 2.0);"
+    "    c                  += vK / 2.0 * vec2(sin(mini_fTime / 3.0), cos(mini_fTime / 2.0));"
+    "    v                  += sin(sqrt(c.x * c.x + c.y * c.y + 1.0) + mini_fTime);"
     "    v                   = v / 2.0;"
     "    vec3  col           = vec3(1, sin(pi * v), cos(pi * v));"
     "    gl_FragColor        = vec4(col * 0.5 + 0.5, 1);"
     "}";
-//------------------------------------------------------------------------------
-void ApplyOrtho(float maxX, float maxY)
-{
-    // get orthogonal matrix
-    float left  = -5.0f;
-    float right =  5.0f;
-    float zNear = -1.0f;
-    float zFar  =  1.0f;
-
-    // screen ratio was modified since CCR version 1.1
-    #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-        float bottom = -5.0f * 1.12f;
-        float top    =  5.0f * 1.12f;
-    #else
-        float bottom = -5.0f * 1.24f;
-        float top    =  5.0f * 1.24f;
-    #endif
-
-    MINI_Matrix ortho;
-    miniGetOrtho(&left, &right, &bottom, &top, &zNear, &zFar, &ortho);
-
-    // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
-    glUniformMatrix4fv(projectionUniform, 1, 0, &ortho.m_Table[0][0]);
-}
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
 {
@@ -148,9 +121,9 @@ void on_GLES2_Init(int view_w, int view_h)
     glUseProgram(g_ShaderProgram);
 
     // get shader attributes
-    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram,  "qr_vPosition");
-    g_TimeSlot            = glGetUniformLocation(g_ShaderProgram, "qr_uTime");
-    g_SizeSlot            = glGetUniformLocation(g_ShaderProgram, "qr_uSize");
+    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram,  "mini_vPosition");
+    g_TimeSlot            = glGetUniformLocation(g_ShaderProgram, "mini_uTime");
+    g_SizeSlot            = glGetUniformLocation(g_ShaderProgram, "mini_uSize");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -195,7 +168,6 @@ void on_GLES2_Final()
 void on_GLES2_Size(int view_w, int view_h)
 {
     glViewport(0, 0, view_w, view_h);
-    ApplyOrtho(2.0f, 2.0f);
 
     // notify shader about screen size
     glUniform2f(g_SizeSlot, view_w, view_h);
@@ -216,22 +188,7 @@ void on_GLES2_Update(float timeStep_sec)
 //------------------------------------------------------------------------------
 void on_GLES2_Render()
 {
-    MINI_Vector3 t;
-    MINI_Matrix  modelViewMatrix;
-
     miniBeginScene(0.0f, 0.0f, 0.0f, 1.0f);
-
-    // populate surface translation vector
-    t.m_X =  0.0f;
-    t.m_Y =  0.0f;
-    t.m_Z = -1.0f;
-
-    // get translation matrix
-    miniGetTranslateMatrix(&t, &modelViewMatrix);
-
-    // connect model view matrix to shader
-    GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
-    glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // draw the plasma
     miniDrawSurface(g_pSurfaceVB,

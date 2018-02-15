@@ -126,6 +126,18 @@
         <BCC_PCHName_Clang>MAPI_snow_PCH.h</BCC_PCHName_Clang>
     </PropertyGroup>
     <ItemGroup>
+        <CppCompile Include="Main.cpp">
+            <Form>MainForm</Form>
+            <FormType>dfm</FormType>
+            <DependentOn>Main.h</DependentOn>
+            <BuildOrder>2</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="MAPI_snow.cpp">
+            <BuildOrder>0</BuildOrder>
+        </CppCompile>
+        <PCHCompile Include="MAPI_snow_PCH.h">
+            <BuildOrder>1</BuildOrder>
+        </PCHCompile>
         <CppCompile Include="..\..\..\MiniAPI\MiniCommon.c">
             <BuildOrder>18</BuildOrder>
         </CppCompile>
@@ -168,18 +180,6 @@
         <None Include="..\..\..\MiniAPI\MiniVertex.h">
             <BuildOrder>24</BuildOrder>
         </None>
-        <CppCompile Include="Main.cpp">
-            <Form>MainForm</Form>
-            <FormType>dfm</FormType>
-            <DependentOn>Main.h</DependentOn>
-            <BuildOrder>2</BuildOrder>
-        </CppCompile>
-        <CppCompile Include="MAPI_snow.cpp">
-            <BuildOrder>0</BuildOrder>
-        </CppCompile>
-        <PCHCompile Include="MAPI_snow_PCH.h">
-            <BuildOrder>1</BuildOrder>
-        </PCHCompile>
         <FormResources Include="Main.dfm"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

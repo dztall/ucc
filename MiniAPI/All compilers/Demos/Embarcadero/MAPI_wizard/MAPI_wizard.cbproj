@@ -116,6 +116,18 @@
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
     </PropertyGroup>
     <ItemGroup>
+        <CppCompile Include="Main.cpp">
+            <Form>MainForm</Form>
+            <FormType>dfm</FormType>
+            <DependentOn>Main.h</DependentOn>
+            <BuildOrder>2</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="MAPI_wizard.cpp">
+            <BuildOrder>0</BuildOrder>
+        </CppCompile>
+        <None Include="MAPI_wizard_PCH.h">
+            <BuildOrder>14</BuildOrder>
+        </None>
         <CppCompile Include="..\..\..\MiniAPI\MiniCommon.c">
             <BuildOrder>5</BuildOrder>
         </CppCompile>
@@ -152,18 +164,6 @@
         <None Include="..\..\..\MiniAPI\MiniVertex.h">
             <BuildOrder>24</BuildOrder>
         </None>
-        <CppCompile Include="Main.cpp">
-            <Form>MainForm</Form>
-            <FormType>dfm</FormType>
-            <DependentOn>Main.h</DependentOn>
-            <BuildOrder>2</BuildOrder>
-        </CppCompile>
-        <CppCompile Include="MAPI_wizard.cpp">
-            <BuildOrder>0</BuildOrder>
-        </CppCompile>
-        <None Include="MAPI_wizard_PCH.h">
-            <BuildOrder>14</BuildOrder>
-        </None>
         <FormResources Include="Main.dfm"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
@@ -199,8 +199,9 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile Condition="'$(DynamicRTL)'=='true' And '$(Multithreaded)'!='true'" LocalName="$(BDS)\bin64\cc64160.dll" Class="DependencyModule">
-                    <Platform Name="Win64">
+                <DeployFile LocalName=".\Win32\Debug\MAPI_wizard.tds" Configuration="Debug" Class="DebugSymbols">
+                    <Platform Name="Win32">
+                        <RemoteName>MAPI_wizard.tds</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -242,9 +243,8 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName=".\Win32\Debug\MAPI_wizard.tds" Configuration="Debug" Class="DebugSymbols">
-                    <Platform Name="Win32">
-                        <RemoteName>MAPI_wizard.tds</RemoteName>
+                <DeployFile Condition="'$(DynamicRTL)'=='true' And '$(Multithreaded)'!='true'" LocalName="$(BDS)\bin64\cc64160.dll" Class="DependencyModule">
+                    <Platform Name="Win64">
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

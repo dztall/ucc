@@ -4,7 +4,7 @@
  * Description : A Quake II (MD2) model showing a robot. Tap on the left or  *
  *               right to change the animation                               *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -86,7 +86,7 @@ void ApplyMatrix(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -116,10 +116,10 @@ void on_GLES2_Init(int view_w, int view_h)
     glUseProgram(g_ShaderProgram);
 
     // configure the shader slots
-    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
-    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram, "qr_vTexCoord");
-    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram, "qr_sColorMap");
+    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram, "mini_vPosition");
+    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram, "mini_vColor");
+    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram, "mini_vTexCoord");
+    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram, "mini_sColorMap");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -242,7 +242,7 @@ void on_GLES2_Render()
     miniMatrixMultiply(&modelViewMatrix, &scaleMatrix,     &modelViewMatrix);
 
     // connect model view matrix to shader
-    modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
+    modelviewUniform = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // configure texture to draw

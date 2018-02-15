@@ -5,7 +5,7 @@
  *               Doom or Wolfenstein. Swipe up or down to walk, and left or  *
  *               right to rotate                                             *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -76,19 +76,19 @@ const char* g_pLevelMap =
 //------------------------------------------------------------------------------
 const char* miniVSTextured2 =
     "precision mediump float;"
-    "attribute vec4 qr_vPosition;"
-    "attribute vec4 qr_vColor;"
-    "attribute vec2 qr_vTexCoord;"
-    "uniform   mat4 qr_uProjection;"
-    "uniform   mat4 qr_uView;"
-    "uniform   mat4 qr_uModelview;"
-    "varying   vec4 qr_fColor;"
-    "varying   vec2 qr_fTexCoord;"
+    "attribute vec4 mini_vPosition;"
+    "attribute vec4 mini_vColor;"
+    "attribute vec2 mini_vTexCoord;"
+    "uniform   mat4 mini_uProjection;"
+    "uniform   mat4 mini_uView;"
+    "uniform   mat4 mini_uModelview;"
+    "varying   vec4 mini_fColor;"
+    "varying   vec2 mini_fTexCoord;"
     "void main(void)"
     "{"
-    "    qr_fColor    = qr_vColor;"
-    "    qr_fTexCoord = qr_vTexCoord;"
-    "    gl_Position  = qr_uProjection * qr_uView * qr_uModelview * qr_vPosition;"
+    "    mini_fColor    = mini_vColor;"
+    "    mini_fTexCoord = mini_vTexCoord;"
+    "    gl_Position    = mini_uProjection * mini_uView * mini_uModelview * mini_vPosition;"
     "}";
 //------------------------------------------------------------------------------
 MINI_Shader        g_Shader;
@@ -139,7 +139,7 @@ void ApplyMatrix(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -179,10 +179,10 @@ void on_GLES2_Init(int view_w, int view_h)
     glUseProgram(g_ShaderProgram);
 
     // get shader attributes
-    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
-    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram, "qr_vTexCoord");
-    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram, "qr_sColorMap");
+    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram, "mini_vPosition");
+    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram, "mini_vColor");
+    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram, "mini_vTexCoord");
+    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram, "mini_sColorMap");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);

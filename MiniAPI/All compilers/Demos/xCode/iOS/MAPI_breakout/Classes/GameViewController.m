@@ -3,7 +3,7 @@
  *****************************************************************************
  * Description : A simple breakout game                                      *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -109,7 +109,6 @@ typedef struct
 @interface GameViewController()
 {
     MINI_Shader       m_Shader;
-    GLuint            m_ShaderProgram;
     MINI_Screen       m_Screen;
     MINI_Ball         m_Ball;
     MINI_Bar          m_Bar;
@@ -119,15 +118,14 @@ typedef struct
     float*            m_pBlockVertices;
     unsigned          m_BlockVerticesCount;
     float*            m_pBallVertices;
-    MINI_Index*       m_pBallIndexes;
     unsigned          m_BallVerticesCount;
-    unsigned          m_BallIndexCount;
     int               m_BlockColumns;
     int               m_BlockLines;
     int               m_Level;
     ALCdevice*        m_pOpenALDevice;
     ALCcontext*       m_pOpenALContext;
     MINI_VertexFormat m_VertexFormat;
+    GLuint            m_ShaderProgram;
     CGRect            m_ScreenRect;
     CFTimeInterval    m_PreviousTime;
     CGPoint           m_TouchStartPos;
@@ -200,9 +198,7 @@ typedef struct
     m_pBlockVertices     = NULL;
     m_BlockVerticesCount = 0;
     m_pBallVertices      = NULL;
-    m_pBallIndexes       = NULL;
     m_BallVerticesCount  = 0;
-    m_BallIndexCount     = 0;
     m_BlockColumns       = 5;
     m_BlockLines         = 3;
     m_Level              = 0;
@@ -326,7 +322,7 @@ typedef struct
                  &ortho);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &ortho.m_Table[0][0]);
 }
 //----------------------------------------------------------------------------
@@ -349,8 +345,8 @@ typedef struct
     glUseProgram(m_ShaderProgram);
 
     // get vertex and color slots
-    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "qr_vPosition");
-    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "qr_vColor");
+    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "mini_vPosition");
+    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "mini_vColor");
 
     // get the screen rect
     m_ScreenRect = [[UIScreen mainScreen]bounds];
@@ -410,16 +406,15 @@ typedef struct
     m_VertexFormat.m_UseTextures = 0;
     m_VertexFormat.m_UseColors   = 1;
 
-    // generate sphere to draw
-    miniCreateSphere(&m_Ball.m_Geometry.m_Radius,
-                     20,
-                     50,
-                     0xFFFF00FF,
-                     &m_VertexFormat,
-                     &m_pBallVertices,
-                     &m_BallVerticesCount,
-                     &m_pBallIndexes,
-                     &m_BallIndexCount);
+    // generate disk to draw
+    miniCreateDisk(0.0f,
+                   0.0f,
+                   m_Ball.m_Geometry.m_Radius,
+                   20,
+                   0xFFFF00FF,
+                   &m_VertexFormat,
+                   &m_pBallVertices,
+                   &m_BallVerticesCount);
 
     surfaceWidth  = 0.06f;
     surfaceHeight = 0.0125f;
@@ -515,13 +510,6 @@ typedef struct
 //----------------------------------------------------------------------------
 - (void) DeleteScene
 {
-    // delete ball index table
-    if (m_pBallIndexes)
-    {
-        free(m_pBallIndexes);
-        m_pBallIndexes = 0;
-    }
-
     // delete ball vertices
     if (m_pBallVertices)
     {
@@ -796,16 +784,11 @@ typedef struct
     miniGetTranslateMatrix(&t, &modelViewMatrix);
 
     // connect model view matrix to shader
-    GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "qr_uModelview");
+    GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // draw the ball
-    miniDrawSphere(m_pBallVertices,
-                   m_BallVerticesCount,
-                   m_pBallIndexes,
-                   m_BallIndexCount,
-                   &m_VertexFormat,
-                   &m_Shader);
+    miniDrawDisk(m_pBallVertices, m_BallVerticesCount, &m_VertexFormat, &m_Shader);
 
     // is bar currently exploding?
     if (!m_Bar.m_Exploding)

@@ -5,7 +5,7 @@
  *               anywhere on the sphere to select a polygon, swipe to the    *
  *               left or right to rotate the sphere                          *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -50,28 +50,25 @@
         GLuint g_Renderbuffer, g_Framebuffer;
     #endif
 #endif
-MINI_Shader        g_Shader;
-GLuint             g_ShaderProgram        = 0;
-float*             g_pVertexBuffer        = 0;
-unsigned int       g_VertexCount          = 0;
-MINI_Index*        g_pIndexes             = 0;
-unsigned int       g_IndexCount           = 0;
-MINI_AABBNode*     g_pAABBRoot            = 0;
-MINI_Polygon*      g_pCollidePolygons     = 0;
-unsigned int       g_CollidePolygonsCount = 0;
-float              g_Radius               = 1.0f;
-float              g_RayX                 = 2.0f;
-float              g_RayY                 = 2.0f;
-float              g_Angle                = 0.0f;
-float              g_RotationSpeed        = 0.0f;
-float              g_Time                 = 0.0f;
-float              g_Interval             = 0.0f;
-const unsigned int g_FPS                  = 15;
-MINI_Size          g_View;
-MINI_VertexFormat  g_VertexFormat;
-MINI_Matrix        g_ProjectionMatrix;
-MINI_Matrix        g_ViewMatrix;
-float              g_PolygonArray[21];
+MINI_Shader       g_Shader;
+GLuint            g_ShaderProgram        = 0;
+float*            g_pVertexBuffer        = 0;
+unsigned int      g_VertexCount          = 0;
+MINI_Index*       g_pIndexes             = 0;
+unsigned int      g_IndexCount           = 0;
+MINI_AABBNode*    g_pAABBRoot            = 0;
+MINI_Polygon*     g_pCollidePolygons     = 0;
+unsigned          g_CollidePolygonsCount = 0;
+float             g_Radius               = 1.0f;
+float             g_RayX                 = 2.0f;
+float             g_RayY                 = 2.0f;
+float             g_Angle                = 0.0f;
+float             g_RotationSpeed        = 0.0f;
+MINI_Size         g_View;
+MINI_VertexFormat g_VertexFormat;
+MINI_Matrix       g_ProjectionMatrix;
+MINI_Matrix       g_ViewMatrix;
+float             g_PolygonArray[21];
 //------------------------------------------------------------------------------
 void ApplyMatrix(float w, float h)
 {
@@ -87,7 +84,7 @@ void ApplyMatrix(float w, float h)
     miniGetFrustum(&left, &right, &bottom, &top, &zNear, &zFar, &g_ProjectionMatrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &g_ProjectionMatrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -134,8 +131,8 @@ void on_GLES2_Init(int view_w, int view_h)
 
     // generate sphere
     miniCreateSphere(&g_Radius,
-                     10,
-                     12,
+                     20,
+                     24,
                      0x0000FFFF,
                      &g_VertexFormat,
                      &g_pVertexBuffer,
@@ -158,8 +155,8 @@ void on_GLES2_Init(int view_w, int view_h)
     miniPopulateTree(g_pAABBRoot, g_pCollidePolygons, g_CollidePolygonsCount);
 
     // get shader attributes
-    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
+    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "mini_vPosition");
+    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "mini_vColor");
 
     // fill polygon array colors
     g_PolygonArray[3]  = 1.0f;
@@ -174,9 +171,6 @@ void on_GLES2_Init(int view_w, int view_h)
     g_PolygonArray[18] = 0.12f;
     g_PolygonArray[19] = 0.2f;
     g_PolygonArray[20] = 1.0f;
-
-    // calculate frame interval
-    g_Interval = 1000.0f / g_FPS;
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
@@ -226,20 +220,8 @@ void on_GLES2_Size(int view_w, int view_h)
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
 {
-    unsigned int frameCount = 0;
-
-    // calculate next time
-    g_Time += (timeStep_sec * 1000.0f);
-
-    // count frames to skip
-    while (g_Time > g_Interval)
-    {
-        g_Time -= g_Interval;
-        ++frameCount;
-    }
-
     // calculate next rotation angle
-    g_Angle += (g_RotationSpeed * frameCount);
+    g_Angle += (g_RotationSpeed * timeStep_sec * 10.0f);
 
     // is rotating angle out of bounds?
     while (g_Angle >= 6.28f)
@@ -299,7 +281,7 @@ void on_GLES2_Render()
     miniMatrixMultiply(&rotateMatrix,  &translateMatrix, &modelMatrix);
 
     // connect model view matrix to shader
-    GLint modelUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
+    GLint modelUniform = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelUniform, 1, 0, &modelMatrix.m_Table[0][0]);
 
     // set ray in 3d world
@@ -359,7 +341,7 @@ void on_GLES2_Render()
 
             // copy polygon
             for (j = 0; j < 3; ++j)
-                miniCopy(&pPolygonList[i].m_v[j], &pPolygonsToDraw[polygonsToDrawCount - 1].m_v[j]);
+                pPolygonsToDraw[polygonsToDrawCount - 1].m_v[j] = pPolygonList[i].m_v[j];
         }
 
     // delete found polygons (no more needed from now)

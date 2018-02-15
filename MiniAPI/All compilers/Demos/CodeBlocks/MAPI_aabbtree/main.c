@@ -32,28 +32,25 @@
 void CreateViewport(float w, float h);
 
 //------------------------------------------------------------------------------
-MINI_Shader        g_Shader;
-GLuint             g_ShaderProgram        = 0;
-float*             g_pVertexBuffer        = 0;
-unsigned int       g_VertexCount          = 0;
-MINI_Index*        g_pIndexes             = 0;
-unsigned int       g_IndexCount           = 0;
-MINI_AABBNode*     g_pAABBRoot            = 0;
-MINI_Polygon*      g_pCollidePolygons     = 0;
-unsigned int       g_CollidePolygonsCount = 0;
-float              g_Radius               = 1.0f;
-float              g_RayX                 = 2.0f;
-float              g_RayY                 = 2.0f;
-int                g_SceneInitialized     = 0;
-float              g_Angle                = 0.0f;
-float              g_RotationSpeed        = 0.0f;
-float              g_Time                 = 0.0f;
-float              g_Interval             = 0.0f;
-const unsigned int g_FPS                  = 15;
-MINI_VertexFormat  g_VertexFormat;
-MINI_Matrix        g_ProjectionMatrix;
-MINI_Matrix        g_ViewMatrix;
-float              g_PolygonArray[21];
+MINI_Shader       g_Shader;
+GLuint            g_ShaderProgram        = 0;
+float*            g_pVertexBuffer        = 0;
+unsigned          g_VertexCount          = 0;
+MINI_Index*       g_pIndexes             = 0;
+unsigned          g_IndexCount           = 0;
+MINI_AABBNode*    g_pAABBRoot            = 0;
+MINI_Polygon*     g_pCollidePolygons     = 0;
+unsigned          g_CollidePolygonsCount = 0;
+float             g_Radius               = 1.0f;
+float             g_RayX                 = 2.0f;
+float             g_RayY                 = 2.0f;
+int               g_SceneInitialized     = 0;
+float             g_Angle                = 0.0f;
+float             g_RotationSpeed        = 0.0f;
+MINI_VertexFormat g_VertexFormat;
+MINI_Matrix       g_ProjectionMatrix;
+MINI_Matrix       g_ViewMatrix;
+float             g_PolygonArray[21];
 //------------------------------------------------------------------------------
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -161,7 +158,7 @@ void CreateViewport(float w, float h)
     miniGetFrustum(&left, &right, &bottom, &top, &zNear, &zFar, &g_ProjectionMatrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &g_ProjectionMatrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -174,8 +171,8 @@ void InitScene(int w, int h)
     glUseProgram(g_ShaderProgram);
 
     // get shader attributes
-    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
+    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "mini_vPosition");
+    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "mini_vColor");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -237,9 +234,6 @@ void InitScene(int w, int h)
     g_PolygonArray[20] = 1.0f;
 
     g_SceneInitialized = 1;
-
-    // calculate frame interval
-    g_Interval = 1000.0f / g_FPS;
 }
 //------------------------------------------------------------------------------
 void DeleteScene()
@@ -281,20 +275,8 @@ void DeleteScene()
 //------------------------------------------------------------------------------
 void UpdateScene(float elapsedTime)
 {
-    unsigned int frameCount = 0;
-
-    // calculate next time
-    g_Time += (elapsedTime * 1000.0f);
-
-    // count frames to skip
-    while (g_Time > g_Interval)
-    {
-        g_Time -= g_Interval;
-        ++frameCount;
-    }
-
     // calculate next rotation angle
-    g_Angle += (g_RotationSpeed * frameCount);
+    g_Angle += (g_RotationSpeed * elapsedTime * 10.0f);
 
     // is rotating angle out of bounds?
     while (g_Angle >= 6.28f)
@@ -354,7 +336,7 @@ void DrawScene()
     miniMatrixMultiply(&rotateMatrix,  &translateMatrix, &modelMatrix);
 
     // connect model view matrix to shader
-    GLint modelUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
+    GLint modelUniform = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelUniform, 1, 0, &modelMatrix.m_Table[0][0]);
 
     // set ray in 3d world
@@ -414,7 +396,7 @@ void DrawScene()
 
             // copy polygon
             for (j = 0; j < 3; ++j)
-                miniCopy(&pPolygonList[i].m_v[j], &pPolygonsToDraw[polygonsToDrawCount - 1].m_v[j]);
+                pPolygonsToDraw[polygonsToDrawCount - 1].m_v[j] = pPolygonList[i].m_v[j];
         }
 
     // delete found polygons (no more needed from now)

@@ -157,7 +157,7 @@ void CreateViewport(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -170,10 +170,10 @@ void InitScene(int w, int h)
     glUseProgram(g_ShaderProgram);
 
     // configure the shader slots
-    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
-    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram, "qr_vTexCoord");
-    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram, "qr_sColorMap");
+    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram, "mini_vPosition");
+    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram, "mini_vColor");
+    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram, "mini_vTexCoord");
+    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram, "mini_sColorMap");
 
     // create the viewport
     CreateViewport(w, h);
@@ -336,7 +336,7 @@ void DrawScene()
     miniMatrixMultiply(&combinedRotTransMatrix, &scaleMatrix,     &modelViewMatrix);
 
     // connect model view matrix to shader
-    modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
+    modelviewUniform = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // configure texture to draw

@@ -3,7 +3,7 @@
  *****************************************************************************
  * Description : Snow particle system demo                                   *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -29,16 +29,11 @@
     MINI_Shader       m_Shader;
     GLuint            m_ShaderProgram;
     float*            m_pVertexBuffer;
-    unsigned int      m_VertexCount;
-    MINI_Index*       m_pIndexes;
-    unsigned int      m_IndexCount;
+    unsigned          m_VertexCount;
+    unsigned          m_ParticleCount;
     float             m_Radius;
     float             m_Angle;
     float             m_RotationSpeed;
-    float             m_ElapsedTime;
-    float             m_Interval;
-    unsigned int      m_ParticleCount;
-    unsigned int      m_FPS;
     int               m_Initialized;
     MINI_Particles    m_Particles;
     MINI_VertexFormat m_VertexFormat;
@@ -96,15 +91,10 @@
     m_ShaderProgram = 0;
     m_pVertexBuffer = 0;
     m_VertexCount   = 0;
-    m_pIndexes      = 0;
-    m_IndexCount    = 0;
+    m_ParticleCount = 1000;
     m_Radius        = 0.02f;
     m_Angle         = 0.0f;
     m_RotationSpeed = 0.1f;
-    m_ElapsedTime   = 0.0f;
-    m_Interval      = 0.0f;
-    m_ParticleCount = 1000;
-    m_FPS           = 10;
     m_Initialized   = 0;
     m_PreviousTime  = CACurrentMediaTime();
 
@@ -152,7 +142,7 @@
     const CFTimeInterval now            =  CACurrentMediaTime();
     const double         elapsedTime    = (now - m_PreviousTime);
                          m_PreviousTime =  now;
-    
+
     [self UpdateScene :elapsedTime];
     [self DrawScene];
 }
@@ -193,7 +183,7 @@
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //----------------------------------------------------------------------------
@@ -208,8 +198,8 @@
     glUseProgram(m_ShaderProgram);
 
     // get shader attributes
-    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "qr_vPosition");
-    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "qr_vColor");
+    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "mini_vPosition");
+    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "mini_vColor");
 
     // get the screen rect
     CGRect screenRect = [[UIScreen mainScreen] bounds];
@@ -225,37 +215,27 @@
 
     // enable culling
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
+    glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
     m_VertexFormat.m_UseNormals  = 0;
     m_VertexFormat.m_UseTextures = 0;
     m_VertexFormat.m_UseColors   = 1;
 
-    // generate sphere
-    miniCreateSphere(&m_Radius,
-                     5,
-                     5,
-                     0xFFFFFFFF,
-                     &m_VertexFormat,
-                     &m_pVertexBuffer,
-                     &m_VertexCount,
-                     &m_pIndexes,
-                     &m_IndexCount);
-
-    m_Interval = 1000.0f / m_FPS;
+    // generate disk
+    miniCreateDisk(0.0f,
+                   0.0f,
+                   m_Radius,
+                   5,
+                   0xFFFFFFFF,
+                   &m_VertexFormat,
+                   &m_pVertexBuffer,
+                   &m_VertexCount);
 }
 //----------------------------------------------------------------------------
 - (void) DeleteScene
 {
     miniClearParticles(&m_Particles);
-
-    // delete buffer index table
-    if (m_pIndexes)
-    {
-        free(m_pIndexes);
-        m_pIndexes = 0;
-    }
 
     // delete vertices
     if (m_pVertexBuffer)
@@ -274,23 +254,10 @@
 - (void) UpdateScene :(float)elapsedTime
 {
     unsigned       i;
-    unsigned       frameCount;
     MINI_Vector3   startPos;
     MINI_Vector3   startDir;
     MINI_Vector3   startVelocity;
     MINI_Particle* pNewParticle;
-
-    frameCount = 0;
-
-    // calculate next time
-    m_ElapsedTime += (elapsedTime * 1000.0f);
-
-    // count frames to skip
-    while (m_ElapsedTime > m_Interval)
-    {
-        m_ElapsedTime -= m_Interval;
-        ++frameCount;
-    }
 
     startPos.m_X      =  0.0f; // between -2.2 to 2.2
     startPos.m_Y      =  2.0f;
@@ -306,11 +273,13 @@
     for (i = 0; i < m_ParticleCount; ++i)
     {
         // emit a new particle
-        if ((pNewParticle = miniEmitParticle(&m_Particles,
-                                             &startPos,
-                                             &startDir,
-                                             &startVelocity,
-                                             m_ParticleCount)))
+        pNewParticle = miniEmitParticle(&m_Particles,
+                                        &startPos,
+                                        &startDir,
+                                        &startVelocity,
+                                        m_ParticleCount);
+
+        if (pNewParticle)
         {
             // initialize default values
             pNewParticle->m_Position.m_X =  ((rand() % 44) - 22.0f) * 0.1f; // between -2.2 to  2.2
@@ -330,9 +299,9 @@
         // move particle
         if (i >= m_Particles.m_Count)
             miniMoveParticle(&m_Particles.m_pParticles[m_Particles.m_Count - 1],
-                             frameCount);
+                             elapsedTime * 20.0f);
         else
-            miniMoveParticle(&m_Particles.m_pParticles[i], frameCount);
+            miniMoveParticle(&m_Particles.m_pParticles[i], elapsedTime * 20.0f);
 
         // is particle out of screen?
         if (m_Particles.m_pParticles[i].m_Position.m_Y <= -2.0f ||
@@ -352,7 +321,6 @@
 {
     unsigned     i;
     MINI_Vector3 t;
-    MINI_Matrix  translateMatrix;
     MINI_Matrix  modelViewMatrix;
 
     miniBeginScene(0.1f, 0.35f, 0.66f, 1.0f);
@@ -365,23 +333,14 @@
         t.m_Y = m_Particles.m_pParticles[i].m_Position.m_Y;
         t.m_Z = m_Particles.m_pParticles[i].m_Position.m_Z;
 
-        miniGetTranslateMatrix(&t, &translateMatrix);
-
-        // build model view matrix
-        miniGetIdentity(&modelViewMatrix);
-        miniMatrixMultiply(&modelViewMatrix, &translateMatrix, &modelViewMatrix);
+        miniGetTranslateMatrix(&t, &modelViewMatrix);
 
         // connect model view matrix to shader
-        GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "qr_uModelview");
+        GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "mini_uModelview");
         glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
         // draw the particle
-        miniDrawSphere(m_pVertexBuffer,
-                       m_VertexCount,
-                       m_pIndexes,
-                       m_IndexCount,
-                       &m_VertexFormat,
-                       &m_Shader);
+        miniDrawDisk(m_pVertexBuffer, m_VertexCount, &m_VertexFormat, &m_Shader);
     }
 
     miniEndScene();

@@ -4,13 +4,16 @@
  * Description : This module provides the functions to generate geometrical  *
  *               shapes, like sphere, cylinders, ...                         *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
  *****************************************************************************/
 
 #include "MiniShapes.h"
+
+// mini api
+#include "MiniRenderer.h"
 
 // std
 #include <stdlib.h>
@@ -19,12 +22,12 @@
 //----------------------------------------------------------------------------
 // Shapes creation functions
 //----------------------------------------------------------------------------
-int miniCreateSurface(const float*             pWidth,
-                      const float*             pHeight,
-                            unsigned int       color,
-                            MINI_VertexFormat* pVertexFormat,
-                            float**            pVertices,
-                            unsigned*          pVertexCount)
+void miniCreateSurface(const float*             pWidth,
+                       const float*             pHeight,
+                             unsigned int       color,
+                             MINI_VertexFormat* pVertexFormat,
+                             float**            pVertices,
+                             unsigned*          pVertexCount)
 {
     int i;
     int index;
@@ -114,8 +117,6 @@ int miniCreateSurface(const float*             pWidth,
             offset += 4;
         }
     }
-
-    return 1;
 }
 //----------------------------------------------------------------------------
 void miniCreateSphere(const float*             pRadius,
@@ -156,7 +157,7 @@ void miniCreateSphere(const float*             pRadius,
     *pIndexCount  = 0;
 
     // iterate through vertex slices
-    for (i = 0; i <= slices; ++i)
+    for (i = 0; i < slices; ++i)
     {
         // calculate values for next slice
         a  = i * majorStep;
@@ -400,6 +401,437 @@ void miniCreateCylinder(const float*             pRadius,
 
             index += 4;
         }
+    }
+}
+//------------------------------------------------------------------------------
+void miniCreateDisk(float              centerX,
+                    float              centerY,
+                    float              radius,
+                    unsigned           sliceCount,
+                    unsigned           color,
+                    MINI_VertexFormat* pVertexFormat,
+                    float**            pVertices,
+                    unsigned*          pVertexCount)
+{
+    int   i;
+    int   index;
+    float x;
+    float y;
+    float angle;
+
+    // calculate the slice step
+    const float step  = (2.0f * M_PI) / (float)sliceCount;
+
+    miniCalculateStride(pVertexFormat);
+
+    *pVertices    = 0;
+    *pVertexCount = 0;
+
+    index = 0;
+    angle = 0.0f;
+
+    // iterate through disk slices to create
+    for (i = 0; i <= sliceCount + 1; ++i)
+    {
+        // is the first point to calculate?
+        if (!i)
+        {
+            // get the center
+            x = centerX;
+            y = centerY;
+        }
+        else
+        {
+            // calculate the current slice angle
+            angle = step * (float)(i - 1);
+
+            // calculate the slice point
+            x = centerX + radius * cos(angle);
+            y = centerY + radius * sin(angle);
+        }
+
+        // count the vertices
+        ++(*pVertexCount);
+
+        // add vertices to the buffer
+        if (!(*pVertices))
+            *pVertices = (float*)malloc(*pVertexCount * pVertexFormat->m_Stride * sizeof(float));
+        else
+            *pVertices = (float*)realloc(*pVertices, *pVertexCount * pVertexFormat->m_Stride * sizeof(float));
+
+        // add min point in buffer
+        (*pVertices)[index]     = x;
+        (*pVertices)[index + 1] = y;
+        (*pVertices)[index + 2] = 0.0f;
+
+        index += 3;
+
+        // do use normals?
+        if (pVertexFormat->m_UseNormals)
+        {
+            // set normal data
+            (*pVertices)[index]     = 0.0f;
+            (*pVertices)[index + 1] = 0.0f;
+            (*pVertices)[index + 2] = 1.0f;
+
+            index += 3;
+        }
+
+        // do use textures?
+        if (pVertexFormat->m_UseTextures)
+        {
+            // set texture data
+            if (!i)
+            {
+                (*pVertices)[index]     = 0.5f;
+                (*pVertices)[index + 1] = 0.5f;
+            }
+            else
+            {
+                (*pVertices)[index]     = 0.5f + (cos(angle) * 0.5f);
+                (*pVertices)[index + 1] = 0.5f + (sin(angle) * 0.5f);
+            }
+
+            index += 2;
+        }
+
+        // do use colors?
+        if (pVertexFormat->m_UseColors)
+        {
+            // set color data
+            (*pVertices)[index]     = (float)((color >> 24) & 0xFF) / 255.0f;
+            (*pVertices)[index + 1] = (float)((color >> 16) & 0xFF) / 255.0f;
+            (*pVertices)[index + 2] = (float)((color >> 8)  & 0xFF) / 255.0f;
+            (*pVertices)[index + 3] = (float) (color        & 0xFF) / 255.0f;
+
+            index += 4;
+        }
+    }
+}
+//------------------------------------------------------------------------------
+void miniCreateRing(float              centerX,
+                    float              centerY,
+                    float              minRadius,
+                    float              maxRadius,
+                    unsigned           sliceCount,
+                    unsigned           minColor,
+                    unsigned           maxColor,
+                    MINI_VertexFormat* pVertexFormat,
+                    float**            pVertices,
+                    unsigned*          pVertexCount)
+{
+    int   i;
+    int   index;
+    float xA;
+    float yA;
+    float xB;
+    float yB;
+    float angle;
+    float texU;
+
+    // calculate the slice step
+    const float step = (2.0f * M_PI) / (float)sliceCount;
+
+    index = 0;
+
+    miniCalculateStride(pVertexFormat);
+
+    *pVertices    = 0;
+    *pVertexCount = 0;
+
+    // iterate through ring slices to create
+    for (i = 0; i <= sliceCount; ++i)
+    {
+        // calculate the current slice angle
+        angle = step * (float)i;
+
+        // calculate the slice min point
+        xA = centerX + minRadius * cos(angle);
+        yA = centerY - minRadius * sin(angle);
+
+        // calculate the slice max point
+        xB = centerX + maxRadius * cos(angle);
+        yB = centerY - maxRadius * sin(angle);
+
+        // calculate texture u coordinate
+        if (!i)
+            texU = 0.0f;
+        else
+        if (i == sliceCount)
+            texU = 1.0f;
+        else
+            texU = (float)i / (float)sliceCount;
+
+        // count 2 vertices
+        *pVertexCount += 2;
+
+        // add vertices to the buffer
+        if (!(*pVertices))
+            *pVertices = (float*)malloc(*pVertexCount * pVertexFormat->m_Stride * sizeof(float));
+        else
+            *pVertices = (float*)realloc(*pVertices, *pVertexCount * pVertexFormat->m_Stride * sizeof(float));
+
+        // add min point in buffer
+        (*pVertices)[index]     = xA;
+        (*pVertices)[index + 1] = yA;
+        (*pVertices)[index + 2] = 0.0f;
+
+        index += 3;
+
+        // do use normals?
+        if (pVertexFormat->m_UseNormals)
+        {
+            // set normal data
+            (*pVertices)[index]     = 0.0f;
+            (*pVertices)[index + 1] = 0.0f;
+            (*pVertices)[index + 2] = 1.0f;
+
+            index += 3;
+        }
+
+        // do use textures?
+        if (pVertexFormat->m_UseTextures)
+        {
+            // set texture data
+            (*pVertices)[index]     = texU;
+            (*pVertices)[index + 1] = 0.0f;
+
+            index += 2;
+        }
+
+        // do use colors?
+        if (pVertexFormat->m_UseColors)
+        {
+            // set color data
+            (*pVertices)[index]     = (float)((minColor >> 24) & 0xFF) / 255.0f;
+            (*pVertices)[index + 1] = (float)((minColor >> 16) & 0xFF) / 255.0f;
+            (*pVertices)[index + 2] = (float)((minColor >> 8)  & 0xFF) / 255.0f;
+            (*pVertices)[index + 3] = (float) (minColor        & 0xFF) / 255.0f;
+
+            index += 4;
+        }
+
+        // add max point in the buffer
+        (*pVertices)[index]     = xB;
+        (*pVertices)[index + 1] = yB;
+        (*pVertices)[index + 2] = 0.0f;
+
+        index += 3;
+
+        // do use normals?
+        if (pVertexFormat->m_UseNormals)
+        {
+            // set normal data
+            (*pVertices)[index]     = 0.0f;
+            (*pVertices)[index + 1] = 0.0f;
+            (*pVertices)[index + 2] = 1.0f;
+
+            index += 3;
+        }
+
+        // do use textures?
+        if (pVertexFormat->m_UseTextures)
+        {
+            // set texture data
+            (*pVertices)[index]     = texU;
+            (*pVertices)[index + 1] = 1.0f;
+
+            index += 2;
+        }
+
+        // do use colors?
+        if (pVertexFormat->m_UseColors)
+        {
+            // set color data
+            (*pVertices)[index]     = (float)((maxColor >> 24) & 0xFF) / 255.0f;
+            (*pVertices)[index + 1] = (float)((maxColor >> 16) & 0xFF) / 255.0f;
+            (*pVertices)[index + 2] = (float)((maxColor >> 8)  & 0xFF) / 255.0f;
+            (*pVertices)[index + 3] = (float) (maxColor        & 0xFF) / 255.0f;
+
+            index += 4;
+        }
+    }
+}
+//------------------------------------------------------------------------------
+void miniCreateSpiral(float              centerX,
+                      float              centerY,
+                      float              minRadius,
+                      float              maxRadius,
+                      float              deltaMin,
+                      float              deltaMax,
+                      float              deltaZ,
+                      unsigned           stackCount,
+                      unsigned           sliceCount,
+                      unsigned           minColor,
+                      unsigned           maxColor,
+                      MINI_VertexFormat* pVertexFormat,
+                      float**            pVertices,
+                      unsigned*          pVertexCount,
+                      MINI_Index**       pIndexes,
+                      unsigned*          pIndexCount)
+{
+    int   i;
+    int   j;
+    int   index;
+    float xA;
+    float yA;
+    float xB;
+    float yB;
+    float angle;
+    float z;
+    float texU;
+
+    // calculate the slice step
+    const float step  = (2.0f * M_PI) / (float)sliceCount;
+
+    miniCalculateStride(pVertexFormat);
+
+    z     = 0.0f;
+    index = 0;
+
+    *pVertices    = 0;
+    *pVertexCount = 0;
+
+    // iterate through spiral stacks to create
+    for (i = 0; i < stackCount; ++i)
+    {
+        *pIndexCount += 1;
+
+        // add vertices to the buffer
+        if (!(*pIndexes))
+            *pIndexes = (MINI_Index*)malloc(*pIndexCount * sizeof(MINI_Index));
+        else
+            *pIndexes = (MINI_Index*)realloc(*pIndexes, *pIndexCount * sizeof(MINI_Index));
+
+        // populate the next indice
+        (*pIndexes)[i].m_Start  = index;
+        (*pIndexes)[i].m_Length = (sliceCount + 1) * 2;
+        (*pIndexes)[i].m_GlCmd  = E_TriangleStrip;
+
+        // iterate through spiral slices to create
+        for (j = 0; j <= sliceCount; ++j)
+        {
+            // calculate the current slice angle
+            angle = step * (float)j;
+
+            // calculate the slice min point
+            xA = centerX + minRadius * cos(angle);
+            yA = centerY + minRadius * sin(angle);
+
+            // calculate the slice max point
+            xB = centerX + maxRadius * cos(angle);
+            yB = centerY + maxRadius * sin(angle);
+
+            // calculate the spiral curve
+            minRadius += deltaMin;
+            maxRadius += deltaMax;
+
+            // calculate the z position
+            z -= deltaZ;
+
+            // calculate texture u coordinate
+            if (!j)
+                texU = 0.0f;
+            else
+            if (j == sliceCount)
+                texU = 1.0f;
+            else
+                texU = (float)j / (float)sliceCount;
+
+            // count 2 vertices
+            *pVertexCount += 2;
+
+            // add vertices to the buffer
+            if (!(*pVertices))
+                *pVertices = (float*)malloc(*pVertexCount * pVertexFormat->m_Stride * sizeof(float));
+            else
+                *pVertices = (float*)realloc(*pVertices, *pVertexCount * pVertexFormat->m_Stride * sizeof(float));
+
+            // add min point in buffer
+            (*pVertices)[index]     = xA;
+            (*pVertices)[index + 1] = yA;
+            (*pVertices)[index + 2] = z;
+
+            index += 3;
+
+            // do use normals?
+            if (pVertexFormat->m_UseNormals)
+            {
+                // set normal data
+                (*pVertices)[index]     = 0.0f;
+                (*pVertices)[index + 1] = 0.0f;
+                (*pVertices)[index + 2] = 1.0f;
+
+                index += 3;
+            }
+
+            // do use textures?
+            if (pVertexFormat->m_UseTextures)
+            {
+                // set texture data
+                (*pVertices)[index]     = texU;
+                (*pVertices)[index + 1] = 0.0f;
+
+                index += 2;
+            }
+
+            // do use colors?
+            if (pVertexFormat->m_UseColors)
+            {
+                // set color data
+                (*pVertices)[index]     = (float)((minColor >> 24) & 0xFF) / 255.0f;
+                (*pVertices)[index + 1] = (float)((minColor >> 16) & 0xFF) / 255.0f;
+                (*pVertices)[index + 2] = (float)((minColor >> 8)  & 0xFF) / 255.0f;
+                (*pVertices)[index + 3] = (float) (minColor        & 0xFF) / 255.0f;
+
+                index += 4;
+            }
+
+            // add max point in the buffer
+            (*pVertices)[index]     = xB;
+            (*pVertices)[index + 1] = yB;
+            (*pVertices)[index + 2] = z;
+
+            index += 3;
+
+            // do use normals?
+            if (pVertexFormat->m_UseNormals)
+            {
+                // set normal data
+                (*pVertices)[index]     = 0.0f;
+                (*pVertices)[index + 1] = 0.0f;
+                (*pVertices)[index + 2] = 1.0f;
+
+                index += 3;
+            }
+
+            // do use textures?
+            if (pVertexFormat->m_UseTextures)
+            {
+                // set texture data
+                (*pVertices)[index]     = texU;
+                (*pVertices)[index + 1] = 1.0f;
+
+                index += 2;
+            }
+
+            // do use colors?
+            if (pVertexFormat->m_UseColors)
+            {
+                // set color data
+                (*pVertices)[index]     = (float)((maxColor >> 24) & 0xFF) / 255.0f;
+                (*pVertices)[index + 1] = (float)((maxColor >> 16) & 0xFF) / 255.0f;
+                (*pVertices)[index + 2] = (float)((maxColor >> 8)  & 0xFF) / 255.0f;
+                (*pVertices)[index + 3] = (float) (maxColor        & 0xFF) / 255.0f;
+
+                index += 4;
+            }
+        }
+
+        // correct the last values otherwise the spiral will appears broken
+        minRadius -= deltaMin;
+        maxRadius -= deltaMax;
+        z         += deltaZ;
     }
 }
 //----------------------------------------------------------------------------

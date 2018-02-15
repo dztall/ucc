@@ -4,7 +4,7 @@
  * Description : This module provides the functions required to detect the   *
  *               collisions inside a 2d or 3d world.                         *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -64,7 +64,7 @@ struct MINI_AABBNode
         * Adds a polygon inside an existing bounding box
         *@param pPolygon - polygon to add
         *@param pBox - bounding box in which polygon should be added
-        *@param empty - if true, box is empty an still no contains any polygon
+        *@param[in, out] pEmpty - if 1, box is empty and still no contains any polygon
         */
         void miniAddPolygonToBoundingBox(const MINI_Polygon* pPolygon,
                                                MINI_Box*     pBox,
@@ -80,18 +80,18 @@ struct MINI_AABBNode
         *@param pV1 - first polygon vector
         *@param pV2 - second polygon vector
         *@param pV3 - third polygon vector
-        *@return 1 if point is inside polygon, otherwise 0
+        *@return 1 if point is inside the polygon, otherwise 0
         */
-        int miniInside(const MINI_Vector3* pP,
-                       const MINI_Vector3* pV1,
-                       const MINI_Vector3* pV2,
-                       const MINI_Vector3* pV3);
+        int miniPointInPolygon(const MINI_Vector3* pP,
+                               const MINI_Vector3* pV1,
+                               const MINI_Vector3* pV2,
+                               const MINI_Vector3* pV3);
 
         /**
         * Checks if a point is inside a rect
         *@param pPoint - point to check
         *@param pRect - rect to check against
-        *@return 1 if point is inside rect, otherwise 0
+        *@return 1 if point is inside the rect, otherwise 0
         */
         int miniPointInRect(const MINI_Point* pPoint, const MINI_Rect* pRect);
 
@@ -99,12 +99,20 @@ struct MINI_AABBNode
         * Checks if a point is inside a sphere
         *@param pPoint - point to check
         *@param pSphere - sphere to check against
-        *@return 1 if point is inside sphere, otherwise 0
+        *@return 1 if point is inside the sphere, otherwise 0
         */
         int miniPointInSphere(const MINI_Vector3* pPoint, const MINI_Sphere* pSphere);
 
         /**
-        * Checks if 2 2D lines intersect
+        * Checks if a point is inside a box
+        *@param pPoint - point to check
+        *@param pBox - box to check against
+        *@return 1 if point is inside the box, otherwise 0
+        */
+        int miniPointInBox(const MINI_Vector3* pPoint, const MINI_Box* pBox);
+
+        /**
+        * Checks if 2 line segments intersect
         *@param pL1Start - line 1 start
         *@param pL1End - line 1 end
         *@param pL2Start - line 2 start
@@ -147,13 +155,13 @@ struct MINI_AABBNode
         *@param pPl - plane
         *@param pPos -ray position
         *@param pDir - ray direction
-        *@param[out] pR - resulting point where plane intersects line
-        *@return 1 if plane intersects line, otherwise 0
+        *@param[out] pR - resulting point where plane intersects ray
+        *@return 1 if plane intersects ray, otherwise 0
         */
         int miniRayPlaneIntersect(const MINI_Plane*   pPl,
                                   const MINI_Vector3* pPos,
                                   const MINI_Vector3* pDir,
-                                        MINI_Vector3* pP);
+                                        MINI_Vector3* pR);
 
         /**
         * Checks if a line intesects a plane
@@ -166,10 +174,10 @@ struct MINI_AABBNode
         int miniLinePlaneIntersect(const MINI_Plane*   pPl,
                                    const MINI_Vector3* pP1,
                                    const MINI_Vector3* pP2,
-                                         MINI_Vector3* pP);
+                                         MINI_Vector3* pR);
 
         /**
-        * Checks if a polygons intersects another polygon
+        * Checks if a polygon intersects another polygon
         *@param pP1V1 - first polygon first vertex
         *@param pP1V2 - first polygon second vertex
         *@param pP1V3 - first polygon third vertex
@@ -281,7 +289,7 @@ struct MINI_AABBNode
                                         unsigned*      pPolygonsCount);
 
         /**
-        * Release polygons previously created by GetPolygonsFromVB() or AddPolygon()
+        * Releases polygons previously created by GetPolygonsFromVB() or AddPolygon()
         *@param pPolygons - polygon array to release
         */
         void miniReleasePolygons(MINI_Polygon* pPolygons);
@@ -348,4 +356,4 @@ struct MINI_AABBNode
     #include "MiniCollision.c"
 #endif
 
-#endif // MiniCollisionH
+#endif

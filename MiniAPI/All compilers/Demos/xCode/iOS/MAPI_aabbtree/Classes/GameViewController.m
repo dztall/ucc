@@ -5,7 +5,7 @@
  *               anywhere on the sphere to select a polygon, swipe to the    *
  *               left or right to rotate the sphere                          *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -42,9 +42,6 @@
     float             m_RayY;
     float             m_Angle;
     float             m_RotationSpeed;
-    float             m_Time;
-    float             m_Interval;
-    unsigned int      m_FPS;
     float             m_PolygonArray[21];
     MINI_VertexFormat m_VertexFormat;
     MINI_Matrix       m_ProjectionMatrix;
@@ -126,9 +123,6 @@
     m_RayY                 = 2.0f;
     m_Angle                = 0.0f;
     m_RotationSpeed        = 0.0f;
-    m_Time                 = 0.0f;
-    m_Interval             = 0.0f;
-    m_FPS                  = 15;
     m_PreviousTime         = CACurrentMediaTime();
 
     // add a tap gesture to the view
@@ -234,7 +228,7 @@
     miniGetFrustum(&left, &right, &bottom, &top, &zNear, &zFar, &m_ProjectionMatrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &m_ProjectionMatrix.m_Table[0][0]);
 }
 //----------------------------------------------------------------------------
@@ -247,8 +241,8 @@
     glUseProgram(m_ShaderProgram);
 
     // get shader attributes
-    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "qr_vPosition");
-    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "qr_vColor");
+    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "mini_vPosition");
+    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "mini_vColor");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -275,8 +269,8 @@
 
     // generate sphere
     miniCreateSphere(&m_Radius,
-                     10,
-                     12,
+                     20,
+                     24,
                      0x0000FFFF,
                      &m_VertexFormat,
                      &m_pVertexBuffer,
@@ -311,9 +305,6 @@
     m_PolygonArray[18] = 0.12f;
     m_PolygonArray[19] = 0.2f;
     m_PolygonArray[20] = 1.0f;
-
-    // calculate frame interval
-    m_Interval = 1000.0f / m_FPS;
 }
 //----------------------------------------------------------------------------
 - (void) DeleteScene
@@ -353,20 +344,8 @@
 //------------------------------------------------------------------------------
 - (void) UpdateScene :(float)elapsedTime
 {
-    unsigned int frameCount = 0;
-
-    // calculate next time
-    m_Time += (elapsedTime * 1000.0f);
-
-    // count frames to skip
-    while (m_Time > m_Interval)
-    {
-        m_Time -= m_Interval;
-        ++frameCount;
-    }
-
     // calculate next rotation angle
-    m_Angle += (m_RotationSpeed * frameCount);
+    m_Angle += (m_RotationSpeed * elapsedTime * 10.0f);
 
     // is rotating angle out of bounds?
     while (m_Angle >= 6.28f)
@@ -426,7 +405,7 @@
     miniMatrixMultiply(&rotateMatrix,  &translateMatrix, &modelMatrix);
 
     // connect model view matrix to shader
-    GLint modelUniform = glGetUniformLocation(m_ShaderProgram, "qr_uModelview");
+    GLint modelUniform = glGetUniformLocation(m_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelUniform, 1, 0, &modelMatrix.m_Table[0][0]);
 
     // set ray in 3d world
@@ -485,7 +464,7 @@
 
             // copy polygon
             for (j = 0; j < 3; ++j)
-                miniCopy(&pPolygonList[i].m_v[j], &pPolygonsToDraw[polygonsToDrawCount - 1].m_v[j]);
+                pPolygonsToDraw[polygonsToDrawCount - 1].m_v[j] = pPolygonList[i].m_v[j];
         }
 
     // delete found polygons (no more needed from now)

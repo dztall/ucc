@@ -5,7 +5,7 @@
  *               decrease the rotation speed, swipe up/down to increase or   *
  *               decrease the transparency                                   *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -32,20 +32,17 @@
     MINI_Shader       m_Shader;
     GLuint            m_ShaderProgram;
     float*            m_pSphereVB;
-    unsigned int      m_SphereVertexCount;
+    unsigned          m_SphereVertexCount;
     MINI_Index*       m_pSphereIndexes;
-    unsigned int      m_SphereIndexCount;
+    unsigned          m_SphereIndexCount;
     float*            m_pSurfaceVB;
-    unsigned int      m_SurfaceVertexCount;
+    unsigned          m_SurfaceVertexCount;
     float             m_SurfaceWidth;
     float             m_SurfaceHeight;
     float             m_SphereRadius;
     float             m_Angle;
     float             m_RotationSpeed;
     float             m_AlphaLevel;
-    float             m_Time;
-    float             m_Interval;
-    unsigned int      m_FPS;
     GLuint            m_GlassTextureIndex;
     GLuint            m_CloudTextureIndex;
     GLuint            m_TexSamplerSlot;
@@ -123,9 +120,6 @@
     m_Angle              = 0.0f;
     m_RotationSpeed      = 0.1f;
     m_AlphaLevel         = 0.5f;
-    m_Time               = 0.0f;
-    m_Interval           = 0.0f;
-    m_FPS                = 15;
     m_GlassTextureIndex  = GL_INVALID_VALUE;
     m_CloudTextureIndex  = GL_INVALID_VALUE;
     m_TexSamplerSlot     = 0;
@@ -226,7 +220,7 @@
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //----------------------------------------------------------------------------
@@ -237,12 +231,12 @@
     glUseProgram(m_ShaderProgram);
 
     // get shader attributes
-    m_Shader.m_VertexSlot   = glGetAttribLocation(m_ShaderProgram,  "qr_vPosition");
-    m_Shader.m_ColorSlot    = glGetAttribLocation(m_ShaderProgram,  "qr_vColor");
-    m_Shader.m_TexCoordSlot = glGetAttribLocation(m_ShaderProgram,  "qr_vTexCoord");
-    m_TexSamplerSlot        = glGetAttribLocation(m_ShaderProgram,  "qr_sColorMap");
-    m_AlphaSlot             = glGetUniformLocation(m_ShaderProgram, "qr_uAlpha");
-    m_ModelviewUniform      = glGetUniformLocation(m_ShaderProgram, "qr_uModelview");
+    m_Shader.m_VertexSlot   = glGetAttribLocation(m_ShaderProgram,  "mini_vPosition");
+    m_Shader.m_ColorSlot    = glGetAttribLocation(m_ShaderProgram,  "mini_vColor");
+    m_Shader.m_TexCoordSlot = glGetAttribLocation(m_ShaderProgram,  "mini_vTexCoord");
+    m_TexSamplerSlot        = glGetAttribLocation(m_ShaderProgram,  "mini_sColorMap");
+    m_AlphaSlot             = glGetUniformLocation(m_ShaderProgram, "mini_uAlpha");
+    m_ModelviewUniform      = glGetUniformLocation(m_ShaderProgram, "mini_uModelview");
 
     // get the screen rect
     CGRect screenRect = [[UIScreen mainScreen] bounds];
@@ -264,8 +258,8 @@
 
     // generate sphere
     miniCreateSphere(&m_SphereRadius,
-                     10,
-                     24,
+                     20,
+                     48,
                      0xFFFFFFFF,
                      &m_VertexFormat,
                      &m_pSphereVB,
@@ -286,9 +280,6 @@
 
     free(pGlassTextureName);
     free(pCloudTextureName);
-
-    // calculate frame interval
-    m_Interval = 1000.0f / m_FPS;
 }
 //----------------------------------------------------------------------------
 - (void) DeleteScene
@@ -333,20 +324,8 @@
 //----------------------------------------------------------------------------
 - (void) UpdateScene :(float)elapsedTime
 {
-    unsigned int frameCount = 0;
-
-    // calculate next time
-    m_Time += (elapsedTime * 1000.0f);
-
-    // count frames to skip
-    while (m_Time > m_Interval)
-    {
-        m_Time -= m_Interval;
-        ++frameCount;
-    }
-
     // calculate next rotation angle
-    m_Angle += (m_RotationSpeed * frameCount);
+    m_Angle += (m_RotationSpeed * elapsedTime * 10.0f);
 
     // is rotating angle out of bounds?
     while (m_Angle >= 6.28f)

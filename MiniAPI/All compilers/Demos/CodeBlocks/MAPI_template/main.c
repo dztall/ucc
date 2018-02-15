@@ -143,7 +143,7 @@ void CreateViewport(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -154,8 +154,8 @@ void InitScene(int w, int h)
     glUseProgram(g_ShaderProgram);
 
     // get shader attributes
-    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
+    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "mini_vPosition");
+    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "mini_vColor");
 
     // create the viewport
     CreateViewport(w, h);

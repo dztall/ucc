@@ -4,7 +4,7 @@
  * Description : This module provides the funcions required to calculate the *
  *               geometry in an euclidean space                              *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -22,16 +22,16 @@
 int miniVectorIsBetween(const MINI_Vector3* pP,
                         const MINI_Vector3* pS,
                         const MINI_Vector3* pE,
-                        const float*        pEpsylon)
+                        const float*        pTolerance)
 {
     // check if each vector component is between start and end limits
-    if (!miniValueIsBetween(&pP->m_X, &pS->m_X, &pE->m_X, pEpsylon))
+    if (!miniValueIsBetween(&pP->m_X, &pS->m_X, &pE->m_X, pTolerance))
         return 0;
 
-    if (!miniValueIsBetween(&pP->m_Y, &pS->m_Y, &pE->m_Y, pEpsylon))
+    if (!miniValueIsBetween(&pP->m_Y, &pS->m_Y, &pE->m_Y, pTolerance))
         return 0;
 
-    if (!miniValueIsBetween(&pP->m_Z, &pS->m_Z, &pE->m_Z, pEpsylon))
+    if (!miniValueIsBetween(&pP->m_Z, &pS->m_Z, &pE->m_Z, pTolerance))
         return 0;
 
     return 1;
@@ -41,7 +41,7 @@ void miniGetShortestDistance(const MINI_Vector3* pL1S,
                              const MINI_Vector3* pL1E,
                              const MINI_Vector3* pL2S,
                              const MINI_Vector3* pL2E,
-                             const float*        pEpsylon,
+                             const float*        pTolerance,
                                    float*        pR)
 {
     MINI_Vector3 delta21;
@@ -82,12 +82,12 @@ void miniGetShortestDistance(const MINI_Vector3* pL1S,
     tD = D;
 
     // compute the line parameters of the two closest points
-    if (D < *pEpsylon)
+    if (D < *pTolerance)
     {
         // the lines are almost parallel, force using point P0 on segment S1
         // to prevent possible division by 0 later
-        sN = 0.0;
-        sD = 1.0;
+        sN = 0.0f;
+        sD = 1.0f;
         tN = e;
         tD = c;
     }
@@ -98,9 +98,9 @@ void miniGetShortestDistance(const MINI_Vector3* pL1S,
         tN = ((a * e) - (b * d));
 
         // sc < 0 => the s=0 edge is visible
-        if (sN < 0.0)
+        if (sN < 0.0f)
         {
-            sN = 0.0;
+            sN = 0.0f;
             tN = e;
             tD = c;
         }
@@ -115,13 +115,13 @@ void miniGetShortestDistance(const MINI_Vector3* pL1S,
     }
 
     // tc < 0 => the t=0 edge is visible
-    if (tN < 0.0)
+    if (tN < 0.0f)
     {
-        tN = 0.0;
+        tN = 0.0f;
 
         // recompute sc for this edge
-        if (-d < 0.0)
-            sN = 0.0;
+        if (-d < 0.0f)
+            sN = 0.0f;
         else
         if (-d > a)
             sN = sD;
@@ -138,8 +138,8 @@ void miniGetShortestDistance(const MINI_Vector3* pL1S,
         tN = tD;
 
         // recompute sc for this edge
-        if ((-d + b) < 0.0)
-            sN = 0;
+        if ((-d + b) < 0.0f)
+            sN = 0.0f;
         else
         if ((-d + b) > a)
             sN = sD;
@@ -151,13 +151,13 @@ void miniGetShortestDistance(const MINI_Vector3* pL1S,
     }
 
     // finally do the division to get sc and tc
-    if (fabs(sN) < *pEpsylon)
-        sc = 0.0;
+    if (fabs(sN) < *pTolerance)
+        sc = 0.0f;
     else
         sc = sN / sD;
 
-    if (fabs(tN) < *pEpsylon)
-        tc = 0.0;
+    if (fabs(tN) < *pTolerance)
+        tc = 0.0f;
     else
         tc = tN / tD;
 
@@ -213,11 +213,11 @@ void miniClosestPointOnLine(const MINI_Vector3* pSegStart,
     }
 }
 //----------------------------------------------------------------------------
-void miniClosestPointOnTriangle(const MINI_Vector3* pPoint,
-                                const MINI_Vector3* pV1,
-                                const MINI_Vector3* pV2,
-                                const MINI_Vector3* pV3,
-                                      MINI_Vector3* pR)
+void miniClosestPointOnPolygon(const MINI_Vector3* pPoint,
+                               const MINI_Vector3* pV1,
+                               const MINI_Vector3* pV2,
+                               const MINI_Vector3* pV3,
+                                     MINI_Vector3* pR)
 {
     float        dAB;
     float        dBC;
@@ -244,32 +244,24 @@ void miniClosestPointOnTriangle(const MINI_Vector3* pPoint,
     miniLength(&vAB, &dAB);
     miniLength(&vBC, &dBC);
     miniLength(&vCA, &dCA);
- 
+
     // calculate the shortest distance
     min = dAB;
- 
     *pR = rab;
- 
+
     // check if dBC is shortest
     if (dBC < min)
     {
         min = dBC;
         *pR = rbc;
     }
- 
+
     // check if dCA is shortest
     if (dCA < min)
         *pR = rca;
 }
 //----------------------------------------------------------------------------
 // Vector functions
-//----------------------------------------------------------------------------
-void miniCopy(const MINI_Vector3* pS, MINI_Vector3* pD)
-{
-    pD->m_X = pS->m_X;
-    pD->m_Y = pS->m_Y;
-    pD->m_Z = pS->m_Z;
-}
 //----------------------------------------------------------------------------
 void miniAdd(const MINI_Vector3* pV1, const MINI_Vector3* pV2, MINI_Vector3* pR)
 {

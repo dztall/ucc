@@ -4,7 +4,7 @@
  * Description : This module provides the functions required to detect the   *
  *               collisions inside a 2d or 3d world.                         *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -33,9 +33,9 @@ void miniAddPolygonToBoundingBox(const MINI_Polygon* pPolygon,
         if (*pEmpty)
         {
             // initialize bounding box with first vertex
-            miniCopy(&pPolygon->m_v[i], &pBox->m_Min);
-            miniCopy(&pPolygon->m_v[i], &pBox->m_Max);
-            *pEmpty = 0;
+             pBox->m_Min = pPolygon->m_v[i];
+             pBox->m_Max = pPolygon->m_v[i];
+            *pEmpty      = 0;
             continue;
         }
 
@@ -59,10 +59,10 @@ void miniAddPolygonToBoundingBox(const MINI_Polygon* pPolygon,
 //----------------------------------------------------------------------------
 // Collision detection
 //----------------------------------------------------------------------------
-int miniInside(const MINI_Vector3* pP,
-               const MINI_Vector3* pV1,
-               const MINI_Vector3* pV2,
-               const MINI_Vector3* pV3)
+int miniPointInPolygon(const MINI_Vector3* pP,
+                       const MINI_Vector3* pV1,
+                       const MINI_Vector3* pV2,
+                       const MINI_Vector3* pV3)
 {
     MINI_Vector3 nPToV1;
     MINI_Vector3 nPToV2;
@@ -151,10 +151,17 @@ int miniPointInSphere(const MINI_Vector3* pPoint, const MINI_Sphere* pSphere)
     // calculate the distance between test point and the center of the sphere
     miniSub(pPoint, &pSphere->m_Pos, &length);
     miniLength(&length, &distance);
- 
+
     // check if distance is shorter than the radius of the sphere and return
     // result
     return (distance <= pSphere->m_Radius);
+}
+//----------------------------------------------------------------------------
+int miniPointInBox(const MINI_Vector3* pPoint, const MINI_Box* pBox)
+{
+    return (pPoint->m_X >= pBox->m_Min.m_X && pPoint->m_X <= pBox->m_Max.m_X &&
+            pPoint->m_Y >= pBox->m_Min.m_Y && pPoint->m_Y <= pBox->m_Max.m_Y &&
+            pPoint->m_Z >= pBox->m_Min.m_Z && pPoint->m_Z <= pBox->m_Max.m_Z);
 }
 //----------------------------------------------------------------------------
 int miniLines2DIntersect(const MINI_Vector2* pL1Start,
@@ -207,9 +214,9 @@ int miniLines2DIntersect(const MINI_Vector2* pL1Start,
 //----------------------------------------------------------------------------
 int miniRectsIntersect(const MINI_Rect* pFirstRect, const MINI_Rect* pSecondRect)
 {
-    return !(pFirstRect->m_Pos.m_X                               <= pSecondRect->m_Pos.m_X + pSecondRect->m_Size.m_Width  && 
+    return !(pFirstRect->m_Pos.m_X                               <= pSecondRect->m_Pos.m_X + pSecondRect->m_Size.m_Width  &&
              pFirstRect->m_Pos.m_X + pFirstRect->m_Size.m_Width  >= pSecondRect->m_Pos.m_X                                &&
-             pFirstRect->m_Pos.m_Y                               <= pSecondRect->m_Pos.m_Y + pSecondRect->m_Size.m_Height && 
+             pFirstRect->m_Pos.m_Y                               <= pSecondRect->m_Pos.m_Y + pSecondRect->m_Size.m_Height &&
              pFirstRect->m_Pos.m_Y + pFirstRect->m_Size.m_Height >= pSecondRect->m_Pos.m_Y);
 }
 //----------------------------------------------------------------------------
@@ -268,7 +275,7 @@ int miniCircleRectIntersect(const MINI_Circle* pCircle, const MINI_Rect* pRect)
 int miniRayPlaneIntersect(const MINI_Plane*   pPl,
                           const MINI_Vector3* pPos,
                           const MINI_Vector3* pDir,
-                                MINI_Vector3* pP)
+                                MINI_Vector3* pR)
 {
     MINI_Vector3 n;
     float        dot;
@@ -294,9 +301,9 @@ int miniRayPlaneIntersect(const MINI_Plane*   pPl,
     temp = ((pPl->m_D + nDot) / dot);
 
     // calculates the intersection point
-    pP->m_X = (pPos->m_X - (temp * pDir->m_X));
-    pP->m_Y = (pPos->m_Y - (temp * pDir->m_Y));
-    pP->m_Z = (pPos->m_Z - (temp * pDir->m_Z));
+    pR->m_X = (pPos->m_X - (temp * pDir->m_X));
+    pR->m_Y = (pPos->m_Y - (temp * pDir->m_Y));
+    pR->m_Z = (pPos->m_Z - (temp * pDir->m_Z));
 
     return 1;
 }
@@ -304,7 +311,7 @@ int miniRayPlaneIntersect(const MINI_Plane*   pPl,
 int miniLinePlaneIntersect(const MINI_Plane*   pPl,
                            const MINI_Vector3* pP1,
                            const MINI_Vector3* pP2,
-                                 MINI_Vector3* pP)
+                                 MINI_Vector3* pR)
 {
     MINI_Vector3 dir;
     MINI_Vector3 nDir;
@@ -313,7 +320,7 @@ int miniLinePlaneIntersect(const MINI_Plane*   pPl,
     miniSub(pP2, pP1, &dir);
     miniNormalize(&dir, &nDir);
 
-    return miniRayPlaneIntersect(pPl, pP1, &nDir, pP);
+    return miniRayPlaneIntersect(pPl, pP1, &nDir, pR);
 }
 //----------------------------------------------------------------------------
 int miniPolygonsIntersect(MINI_Vector3* pP1V1, MINI_Vector3* pP1V2, MINI_Vector3* pP1V3,
@@ -352,7 +359,7 @@ int miniPolygonsIntersect(MINI_Vector3* pP1V1, MINI_Vector3* pP1V2, MINI_Vector3
     float        dist2v2;
     float        dist2v3;
     float        result;
-    float        epsylon = 1.0E-3;
+    float        tolerance = 1.0E-3;
 
     // get planes from polygons
     miniPlaneFromPoints(pP1V1, pP1V2, pP1V3, &plane1);
@@ -369,89 +376,89 @@ int miniPolygonsIntersect(MINI_Vector3* pP1V1, MINI_Vector3* pP1V2, MINI_Vector3
          (plane1.m_D == -plane2.m_D)))
     {
         // is any vertex inside other polygon?
-        if (miniInside(pP1V1, pP2V1, pP2V2, pP2V3) ||
-            miniInside(pP1V2, pP2V1, pP2V2, pP2V3) ||
-            miniInside(pP1V3, pP2V1, pP2V2, pP2V3) ||
-            miniInside(pP2V1, pP1V1, pP1V2, pP1V3) ||
-            miniInside(pP2V2, pP1V1, pP1V2, pP1V3) ||
-            miniInside(pP2V3, pP1V1, pP1V2, pP1V3))
+        if (miniPointInPolygon(pP1V1, pP2V1, pP2V2, pP2V3) ||
+            miniPointInPolygon(pP1V2, pP2V1, pP2V2, pP2V3) ||
+            miniPointInPolygon(pP1V3, pP2V1, pP2V2, pP2V3) ||
+            miniPointInPolygon(pP2V1, pP1V1, pP1V2, pP1V3) ||
+            miniPointInPolygon(pP2V2, pP1V1, pP1V2, pP1V3) ||
+            miniPointInPolygon(pP2V3, pP1V1, pP1V2, pP1V3))
             return 1;
 
         // create polygon lines
-        miniCopy(pP1V1, &v1v2LineS);
-        miniCopy(pP1V2, &v1v2LineE);
-        miniCopy(pP1V2, &v2v3LineS);
-        miniCopy(pP1V3, &v2v3LineE);
-        miniCopy(pP1V3, &v3v1LineS);
-        miniCopy(pP1V1, &v3v1LineE);
-        miniCopy(pP2V1, &ov1ov2LineS);
-        miniCopy(pP2V2, &ov1ov2LineE);
-        miniCopy(pP2V2, &ov2ov3LineS);
-        miniCopy(pP2V3, &ov2ov3LineE);
-        miniCopy(pP2V3, &ov3ov1LineS);
-        miniCopy(pP2V1, &ov3ov1LineE);
+        v1v2LineS   = *pP1V1;
+        v1v2LineE   = *pP1V2;
+        v2v3LineS   = *pP1V2;
+        v2v3LineE   = *pP1V3;
+        v3v1LineS   = *pP1V3;
+        v3v1LineE   = *pP1V1;
+        ov1ov2LineS = *pP2V1;
+        ov1ov2LineE = *pP2V2;
+        ov2ov3LineS = *pP2V2;
+        ov2ov3LineE = *pP2V3;
+        ov3ov1LineS = *pP2V3;
+        ov3ov1LineE = *pP2V1;
 
         miniGetShortestDistance(&v1v2LineS,   &v1v2LineE,
-                                &ov1ov2LineS, &ov1ov2LineE, &epsylon, &result);
+                                &ov1ov2LineS, &ov1ov2LineE, &tolerance, &result);
 
         // is shortest distance between lines equal to 0?
-        if (result < epsylon)
+        if (result < tolerance)
             return 1;
 
         miniGetShortestDistance(&v2v3LineS,   &v2v3LineE,
-                                &ov1ov2LineS, &ov1ov2LineE, &epsylon, &result);
+                                &ov1ov2LineS, &ov1ov2LineE, &tolerance, &result);
 
         // is shortest distance between lines equal to 0?
-        if (result < epsylon)
+        if (result < tolerance)
             return 1;
 
         miniGetShortestDistance(&v3v1LineS,   &v3v1LineE,
-                                &ov1ov2LineS, &ov1ov2LineE, &epsylon, &result);
+                                &ov1ov2LineS, &ov1ov2LineE, &tolerance, &result);
 
         // is shortest distance between lines equal to 0?
-        if (result < epsylon)
+        if (result < tolerance)
             return 1;
 
         miniGetShortestDistance(&v1v2LineS,   &v1v2LineE,
-                                &ov2ov3LineS, &ov2ov3LineE, &epsylon, &result);
+                                &ov2ov3LineS, &ov2ov3LineE, &tolerance, &result);
 
         // is shortest distance between lines equal to 0?
-        if (result < epsylon)
+        if (result < tolerance)
             return 1;
 
         miniGetShortestDistance(&v2v3LineS,   &v2v3LineE,
-                                &ov2ov3LineS, &ov2ov3LineE, &epsylon, &result);
+                                &ov2ov3LineS, &ov2ov3LineE, &tolerance, &result);
 
         // is shortest distance between lines equal to 0?
-        if (result < epsylon)
+        if (result < tolerance)
             return 1;
 
         miniGetShortestDistance(&v3v1LineS,   &v3v1LineE,
-                                &ov2ov3LineS, &ov2ov3LineE, &epsylon, &result);
+                                &ov2ov3LineS, &ov2ov3LineE, &tolerance, &result);
 
         // is shortest distance between lines equal to 0?
-        if (result < epsylon)
+        if (result < tolerance)
             return 1;
 
         miniGetShortestDistance(&v1v2LineS,   &v1v2LineE,
-                                &ov3ov1LineS, &ov3ov1LineE, &epsylon, &result);
+                                &ov3ov1LineS, &ov3ov1LineE, &tolerance, &result);
 
         // is shortest distance between lines equal to 0?
-        if (result < epsylon)
+        if (result < tolerance)
             return 1;
 
         miniGetShortestDistance(&v2v3LineS,   &v2v3LineE,
-                                &ov3ov1LineS, &ov3ov1LineE, &epsylon, &result);
+                                &ov3ov1LineS, &ov3ov1LineE, &tolerance, &result);
 
         // is shortest distance between lines equal to 0?
-        if (result < epsylon)
+        if (result < tolerance)
             return 1;
 
         miniGetShortestDistance(&v3v1LineS,   &v3v1LineE,
-                                &ov3ov1LineS, &ov3ov1LineE, &epsylon, &result);
+                                &ov3ov1LineS, &ov3ov1LineE, &tolerance, &result);
 
         // is shortest distance between lines equal to 0?
-        if (result < epsylon)
+        if (result < tolerance)
             return 1;
 
         return 0;
@@ -487,7 +494,7 @@ int miniPolygonsIntersect(MINI_Vector3* pP1V1, MINI_Vector3* pP1V2, MINI_Vector3
         // calculate intersection point and add to list on success
         if (miniLinePlaneIntersect(&plane2, pP1V1, pP1V2, &p))
         {
-            miniCopy(&p, &p1pt1);
+            p1pt1 = p;
             ++p1ptsCount;
         }
 
@@ -496,7 +503,7 @@ int miniPolygonsIntersect(MINI_Vector3* pP1V1, MINI_Vector3* pP1V2, MINI_Vector3
         // calculate intersection point and add to list on success
         if (miniLinePlaneIntersect(&plane2, pP1V2, pP1V3, &p))
         {
-            miniCopy(&p, &p1pt2);
+            p1pt2 = p;
             ++p1ptsCount;
         }
 
@@ -505,7 +512,7 @@ int miniPolygonsIntersect(MINI_Vector3* pP1V1, MINI_Vector3* pP1V2, MINI_Vector3
         // calculate intersection point and add to list on success
         if (miniLinePlaneIntersect(&plane2, pP1V3, pP1V1, &p))
         {
-            miniCopy(&p, &p1pt3);
+            p1pt3 = p;
             ++p1ptsCount;
         }
 
@@ -526,7 +533,7 @@ int miniPolygonsIntersect(MINI_Vector3* pP1V1, MINI_Vector3* pP1V2, MINI_Vector3
         // calculate intersection point and add to list on success
         if (miniLinePlaneIntersect(&plane1, pP2V1, pP2V2, &p))
         {
-            miniCopy(&p, &p2pt1);
+            p2pt1 = p;
             ++p2ptsCount;
         }
 
@@ -535,7 +542,7 @@ int miniPolygonsIntersect(MINI_Vector3* pP1V1, MINI_Vector3* pP1V2, MINI_Vector3
         // calculate intersection point and add to list on success
         if (miniLinePlaneIntersect(&plane1, pP2V2, pP2V3, &p))
         {
-            miniCopy(&p, &p2pt2);
+            p2pt2 = p;
             ++p2ptsCount;
         }
 
@@ -544,7 +551,7 @@ int miniPolygonsIntersect(MINI_Vector3* pP1V1, MINI_Vector3* pP1V2, MINI_Vector3
         // calculate intersection point and add to list on success
         if (miniLinePlaneIntersect(&plane1, pP2V3, pP2V1, &p))
         {
-            miniCopy(&p, &p2pt3);
+            p2pt3 = p;
             ++p2ptsCount;
         }
 
@@ -554,16 +561,16 @@ int miniPolygonsIntersect(MINI_Vector3* pP1V1, MINI_Vector3* pP1V2, MINI_Vector3
 
     // first and second polygon intersection points are on the same line, so
     // check if calculated first and second polygon segments intersect
-    if (miniVectorIsBetween(&p1pt1, &p2pt1, &p2pt2, &epsylon))
+    if (miniVectorIsBetween(&p1pt1, &p2pt1, &p2pt2, &tolerance))
         return 1;
 
-    if (miniVectorIsBetween(&p1pt2, &p2pt1, &p2pt2, &epsylon))
+    if (miniVectorIsBetween(&p1pt2, &p2pt1, &p2pt2, &tolerance))
         return 1;
 
-    if (miniVectorIsBetween(&p2pt1, &p1pt1, &p1pt2, &epsylon))
+    if (miniVectorIsBetween(&p2pt1, &p1pt1, &p1pt2, &tolerance))
         return 1;
 
-    if (miniVectorIsBetween(&p2pt2, &p1pt1, &p1pt2, &epsylon))
+    if (miniVectorIsBetween(&p2pt2, &p1pt1, &p1pt2, &tolerance))
         return 1;
 
     return 0;
@@ -582,7 +589,7 @@ int miniRayPolygonIntersect(const MINI_Ray* pRay, const MINI_Polygon* pPolygon)
         return 0;
 
     // check if calculated point is inside the polygon
-    return miniInside(&pointOnPlane, &pPolygon->m_v[0], &pPolygon->m_v[1], &pPolygon->m_v[2]);
+    return miniPointInPolygon(&pointOnPlane, &pPolygon->m_v[0], &pPolygon->m_v[1], &pPolygon->m_v[2]);
 }
 //----------------------------------------------------------------------------
 int miniLinePolygonIntersect(const MINI_Vector3* pP1,
@@ -600,7 +607,7 @@ int miniLinePolygonIntersect(const MINI_Vector3* pP1,
         return 0;
 
     // check if calculated point is inside the polygon
-    return miniInside(&pointOnPlane, &pPolygon->m_v[0], &pPolygon->m_v[1], &pPolygon->m_v[2]);
+    return miniPointInPolygon(&pointOnPlane, &pPolygon->m_v[0], &pPolygon->m_v[1], &pPolygon->m_v[2]);
 }
 //----------------------------------------------------------------------------
 int miniRayBoxIntersect(const MINI_Ray* pRay, const MINI_Box* pBox)
@@ -731,7 +738,7 @@ int miniSpherePolygonIntersectAndSlide(const MINI_Sphere*  pSphere,
     // calculate the point who the segment from center of sphere in the
     // direction of the plane will cross the border of the sphere
     pointOnSphere.m_X = pSphere->m_Pos.m_X + (pSphere->m_Radius * sphereNormal.m_X);
-    pointOnSphere.m_Y = pSphere->m_Pos.m_Y + (pSphere->m_Radius * sphereNormal.m_Y),
+    pointOnSphere.m_Y = pSphere->m_Pos.m_Y + (pSphere->m_Radius * sphereNormal.m_Y);
     pointOnSphere.m_Z = pSphere->m_Pos.m_Z + (pSphere->m_Radius * sphereNormal.m_Z);
 
     // calculate the distance between the border of the sphere and the plane
@@ -761,7 +768,10 @@ int miniSpherePolygonIntersectAndSlide(const MINI_Sphere*  pSphere,
                                    &pointOnPlane);
 
         // check if calculated point is inside the polygon
-        if (miniInside(&pointOnPlane, &pPolygon->m_v[0], &pPolygon->m_v[1], &pPolygon->m_v[2]))
+        if (miniPointInPolygon(&pointOnPlane,
+                               &pPolygon->m_v[0],
+                               &pPolygon->m_v[1],
+                               &pPolygon->m_v[2]))
         {
             // if yes, the sphere collide the polygon. In this case, we copy
             // the plane and we returns true
@@ -772,11 +782,11 @@ int miniSpherePolygonIntersectAndSlide(const MINI_Sphere*  pSphere,
         {
             // otherwise check if the sphere collide the border of the polygon.
             // First we calculate the test point on the border of the polygon
-            miniClosestPointOnTriangle(&pointOnPlane,
-                                       &pPolygon->m_v[0],
-                                       &pPolygon->m_v[1],
-                                       &pPolygon->m_v[2],
-                                       &pointOnTriangle);
+            miniClosestPointOnPolygon(&pointOnPlane,
+                                      &pPolygon->m_v[0],
+                                      &pPolygon->m_v[1],
+                                      &pPolygon->m_v[2],
+                                      &pointOnTriangle);
 
             // check if calculated point is inside the sphere
             if (miniPointInSphere(&pointOnTriangle, pSphere))
@@ -836,10 +846,10 @@ void miniGetSlidingPoint(const MINI_Plane*   pSlidingPlane,
     // calculate the point where the segment "center of the sphere - point beyond
     // the plane" cross the collision plane
     miniLinePlaneIntersect(pSlidingPlane,
-                           pPosition, 
+                           pPosition,
                            &pointBeyondPlane,
                            &pointOnPlane);
- 
+
     // from point calculated below, we add the radius of the sphere, and we
     // returns the value
     pR->m_X = pointOnPlane.m_X + planeRatio.m_X;
@@ -1058,34 +1068,34 @@ void miniCutBox(const MINI_Box* pBox, MINI_Box* pLeftBox, MINI_Box* pRightBox)
     {
         // cut on x axis
         case 0:
-            miniCopy(&pBox->m_Min, &pLeftBox->m_Min);
-            miniCopy(&pBox->m_Max, &pLeftBox->m_Max);
+            pLeftBox->m_Min     = pBox->m_Min;
+            pLeftBox->m_Max     = pBox->m_Max;
             pLeftBox->m_Max.m_X = pBox->m_Min.m_X + (x / 2.0f);
 
-            miniCopy(&pBox->m_Min, &pRightBox->m_Min);
-            miniCopy(&pBox->m_Max, &pRightBox->m_Max);
+            pRightBox->m_Min     = pBox->m_Min;
+            pRightBox->m_Max     = pBox->m_Max;
             pRightBox->m_Min.m_X = pBox->m_Min.m_X + (x / 2.0f);
             break;
 
         // cut on y axis
         case 1:
-            miniCopy(&pBox->m_Min, &pLeftBox->m_Min);
-            miniCopy(&pBox->m_Max, &pLeftBox->m_Max);
+            pLeftBox->m_Min     = pBox->m_Min;
+            pLeftBox->m_Max     = pBox->m_Max;
             pLeftBox->m_Max.m_Y = pBox->m_Min.m_Y + (y / 2.0f);
 
-            miniCopy(&pBox->m_Min, &pRightBox->m_Min);
-            miniCopy(&pBox->m_Max, &pRightBox->m_Max);
+            pRightBox->m_Min     = pBox->m_Min;
+            pRightBox->m_Max     = pBox->m_Max;
             pRightBox->m_Min.m_Y = pBox->m_Min.m_Y + (y / 2.0f);
             break;
 
         // cut on z axis
         case 2:
-            miniCopy(&pBox->m_Min, &pLeftBox->m_Min);
-            miniCopy(&pBox->m_Max, &pLeftBox->m_Max);
+            pLeftBox->m_Min     = pBox->m_Min;
+            pLeftBox->m_Max     = pBox->m_Max;
             pLeftBox->m_Max.m_Z = pBox->m_Min.m_Z + (z / 2.0f);
 
-            miniCopy(&pBox->m_Min, &pRightBox->m_Min);
-            miniCopy(&pBox->m_Max, &pRightBox->m_Max);
+            pRightBox->m_Min     = pBox->m_Min;
+            pRightBox->m_Max     = pBox->m_Max;
             pRightBox->m_Min.m_Z = pBox->m_Min.m_Z + (z / 2.0f);
             break;
     }
@@ -1103,11 +1113,12 @@ int miniPopulateTree(      MINI_AABBNode* pNode,
     MINI_Polygon* pRightPolygons     = 0;
     unsigned      leftPolygonsCount  = 0;
     unsigned      rightPolygonsCount = 0;
+    unsigned      insideLeft         = 0;
+    unsigned      insideRight        = 0;
     int           boxEmpty           = 1;
     int           canResolveLeft     = 0;
     int           canResolveRight    = 0;
     int           result             = 0;
-    float         epsylon            = M_MINI_Epsilon;
 
     // initialize node content
     pNode->m_pParent       = 0;
@@ -1130,55 +1141,59 @@ int miniPopulateTree(      MINI_AABBNode* pNode,
 
     // iterate again through polygons to divide
     for (i = 0; i < polygonsCount; ++i)
-        for (j = 0; j < 3; ++i)
-            // check if first polygon vertice belongs to left or right sub-box
-            if (miniVectorIsBetween(&pPolygons[i].m_v[j], &leftBox.m_Min, &leftBox.m_Max, &epsylon))
-            {
-                // left node polygon array already contains polygons?
-                if (!leftPolygonsCount)
-                {
-                    // no, add new first polygon in array
-                    pLeftPolygons     = (MINI_Polygon*)malloc(sizeof(MINI_Polygon));
-                    leftPolygonsCount = 1;
-                }
-                else
-                {
-                    // yes, increase the polygons count and add new polygon inside array
-                    ++leftPolygonsCount;
-                    pLeftPolygons = (MINI_Polygon*)realloc(pLeftPolygons,
-                                                           leftPolygonsCount * sizeof(MINI_Polygon));
-                }
+    {
+        insideLeft  = 0;
+        insideRight = 0;
 
-                // copy polygon
-                miniCopy(&pPolygons[i].m_v[0], &pLeftPolygons[leftPolygonsCount - 1].m_v[0]);
-                miniCopy(&pPolygons[i].m_v[1], &pLeftPolygons[leftPolygonsCount - 1].m_v[1]);
-                miniCopy(&pPolygons[i].m_v[2], &pLeftPolygons[leftPolygonsCount - 1].m_v[2]);
-                break;
+        // check if first polygon vertice belongs to left or right sub-box
+        for (j = 0; j < 3; ++j)
+            if (miniPointInBox(&pPolygons[i].m_v[j], &leftBox))
+                ++insideLeft;
+            else
+                ++insideRight;
+
+        // do include polygon in left or right list?
+        if (insideLeft >= insideRight)
+        {
+            // left node polygon array already contains polygons?
+            if (!leftPolygonsCount)
+            {
+                // no, add new first polygon in array
+                pLeftPolygons     = (MINI_Polygon*)malloc(sizeof(MINI_Polygon));
+                leftPolygonsCount = 1;
             }
             else
-            if (miniVectorIsBetween(&pPolygons[i].m_v[j], &rightBox.m_Min, &rightBox.m_Max, &epsylon))
             {
-                // right node polygon array already contains polygons?
-                if (!rightPolygonsCount)
-                {
-                    // no, add new first polygon in array
-                    pRightPolygons    = (MINI_Polygon*)malloc(sizeof(MINI_Polygon));
-                    rightPolygonsCount = 1;
-                }
-                else
-                {
-                    // yes, increase the polygons count and add new polygon inside array
-                    ++rightPolygonsCount;
-                    pRightPolygons = (MINI_Polygon*)realloc(pRightPolygons,
-                                                            rightPolygonsCount * sizeof(MINI_Polygon));
-                }
-
-                // copy polygon
-                miniCopy(&pPolygons[i].m_v[0], &pRightPolygons[rightPolygonsCount - 1].m_v[0]);
-                miniCopy(&pPolygons[i].m_v[1], &pRightPolygons[rightPolygonsCount - 1].m_v[1]);
-                miniCopy(&pPolygons[i].m_v[2], &pRightPolygons[rightPolygonsCount - 1].m_v[2]);
-                break;
+                // yes, increase the polygons count and add new polygon inside array
+                ++leftPolygonsCount;
+                pLeftPolygons = (MINI_Polygon*)realloc(pLeftPolygons,
+                                                       leftPolygonsCount * sizeof(MINI_Polygon));
             }
+
+            // copy polygon
+            pLeftPolygons[leftPolygonsCount - 1] = pPolygons[i];
+        }
+        else
+        {
+            // right node polygon array already contains polygons?
+            if (!rightPolygonsCount)
+            {
+                // no, add new first polygon in array
+                pRightPolygons    = (MINI_Polygon*)malloc(sizeof(MINI_Polygon));
+                rightPolygonsCount = 1;
+            }
+            else
+            {
+                // yes, increase the polygons count and add new polygon inside array
+                ++rightPolygonsCount;
+                pRightPolygons = (MINI_Polygon*)realloc(pRightPolygons,
+                                                        rightPolygonsCount * sizeof(MINI_Polygon));
+            }
+
+            // copy polygon
+            pRightPolygons[rightPolygonsCount - 1] = pPolygons[i];
+        }
+    }
 
     canResolveLeft  = (leftPolygonsCount  && leftPolygonsCount  < polygonsCount);
     canResolveRight = (rightPolygonsCount && rightPolygonsCount < polygonsCount);
@@ -1206,7 +1221,7 @@ int miniPopulateTree(      MINI_AABBNode* pNode,
 
             // copy polygon
             for (j = 0; j < 3 ; ++j)
-                miniCopy(&pLeftPolygons[i].m_v[j], &pNode->m_pPolygons[pNode->m_PolygonsCount - 1].m_v[j]);
+                pNode->m_pPolygons[pNode->m_PolygonsCount - 1].m_v[j] = pLeftPolygons[i].m_v[j];
         }
 
         // copy right polygons in polygon list
@@ -1229,7 +1244,7 @@ int miniPopulateTree(      MINI_AABBNode* pNode,
 
             // copy polygon
             for (j = 0; j < 3 ; ++j)
-                miniCopy(&pRightPolygons[i].m_v[j], &pNode->m_pPolygons[pNode->m_PolygonsCount - 1].m_v[j]);
+                pNode->m_pPolygons[pNode->m_PolygonsCount - 1].m_v[j] = pRightPolygons[i].m_v[j];
         }
 
         // delete left list, as it will no more be used
@@ -1246,11 +1261,13 @@ int miniPopulateTree(      MINI_AABBNode* pNode,
     // do create left node?
     if (canResolveLeft)
     {
-        // create and populate left node
-        pNode->m_pLeft            = (MINI_AABBNode*)malloc(sizeof(MINI_AABBNode));
-        pNode->m_pLeft->m_pParent = pNode;
+        // create left node
+        pNode->m_pLeft = (MINI_AABBNode*)malloc(sizeof(MINI_AABBNode));
 
         result |= miniPopulateTree(pNode->m_pLeft, pLeftPolygons, leftPolygonsCount);
+
+        // set node parent. IMPORTANT must be done after the call to miniPopulateTree()
+        pNode->m_pLeft->m_pParent = pNode;
 
         // delete current list, as it will no more be used
         if (pLeftPolygons)
@@ -1260,11 +1277,13 @@ int miniPopulateTree(      MINI_AABBNode* pNode,
     // do create right node?
     if (canResolveRight)
     {
-        // create and populate right node
-        pNode->m_pRight            = (MINI_AABBNode*)malloc(sizeof(MINI_AABBNode));
-        pNode->m_pRight->m_pParent = pNode;
+        // create right node
+        pNode->m_pRight = (MINI_AABBNode*)malloc(sizeof(MINI_AABBNode));
 
         result |= miniPopulateTree(pNode->m_pRight, pRightPolygons, rightPolygonsCount);
+
+        // set node parent. IMPORTANT must be done after the call to miniPopulateTree()
+        pNode->m_pRight->m_pParent = pNode;
 
         // delete current list, as it will no more be used
         if (pRightPolygons)
@@ -1310,7 +1329,7 @@ int miniResolveTree(MINI_Ray*      pRay,
 
             // copy polygon
             for (j = 0; j < 3; ++j)
-                miniCopy(&pNode->m_pPolygons[i].m_v[j], &(*pPolygons)[*pPolygonsCount - 1].m_v[j]);
+                (*pPolygons)[*pPolygonsCount - 1].m_v[j] = pNode->m_pPolygons[i].m_v[j];
         }
 
         return 1;

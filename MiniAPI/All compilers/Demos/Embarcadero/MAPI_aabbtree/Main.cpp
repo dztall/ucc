@@ -5,7 +5,7 @@
  *               mouse above the sphere to select a polygon, press the left  *
  *               or right arrow keys to rotate the sphere                    *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -44,10 +44,7 @@ __fastcall TMainForm::TMainForm(TComponent* pOwner) :
     m_RayX(2.0f),
     m_RayY(2.0f),
     m_Angle(0.0f),
-    m_RotationSpeed(0.0f),
-    m_Time(0.0f),
-    m_Interval(0.0f),
-    m_FPS(15)
+    m_RotationSpeed(0.0f)
 {
     // enable OpenGL
     EnableOpenGL(Handle, &m_hDC, &m_hRC);
@@ -88,7 +85,7 @@ void __fastcall TMainForm::FormResize(TObject* pSender)
 {
     // update the viewport
     CreateViewport(ClientWidth, ClientHeight);
-}
+}
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormPaint(TObject* pSender)
 {
@@ -171,7 +168,7 @@ void TMainForm::CreateViewport(float w, float h)
     miniGetFrustum(&left, &right, &bottom, &top, &zNear, &zFar, &m_ProjectionMatrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &m_ProjectionMatrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -184,8 +181,8 @@ void TMainForm::InitScene(int w, int h)
     glUseProgram(m_ShaderProgram);
 
     // get shader attributes
-    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "qr_vPosition");
-    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "qr_vColor");
+    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "mini_vPosition");
+    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "mini_vColor");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -242,9 +239,6 @@ void TMainForm::InitScene(int w, int h)
     m_PolygonArray[18] = 0.12f;
     m_PolygonArray[19] = 0.2f;
     m_PolygonArray[20] = 1.0f;
-
-    // calculate frame interval
-    m_Interval = 1000.0f / m_FPS;
 }
 //------------------------------------------------------------------------------
 void TMainForm::DeleteScene()
@@ -284,20 +278,8 @@ void TMainForm::DeleteScene()
 //------------------------------------------------------------------------------
 void TMainForm::UpdateScene(float elapsedTime)
 {
-    unsigned int frameCount = 0;
-
-    // calculate next time
-    m_Time += (elapsedTime * 1000.0f);
-
-    // count frames to skip
-    while (m_Time > m_Interval)
-    {
-        m_Time -= m_Interval;
-        ++frameCount;
-    }
-
     // calculate next rotation angle
-    m_Angle += (m_RotationSpeed * frameCount);
+    m_Angle += (m_RotationSpeed * elapsedTime * 10.0f);
 
     // is rotating angle out of bounds?
     while (m_Angle >= 6.28f)
@@ -357,7 +339,7 @@ void TMainForm::DrawScene()
     miniMatrixMultiply(&rotateMatrix,  &translateMatrix, &modelMatrix);
 
     // connect model view matrix to shader
-    GLint modelUniform = glGetUniformLocation(m_ShaderProgram, "qr_uModelview");
+    GLint modelUniform = glGetUniformLocation(m_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelUniform, 1, 0, &modelMatrix.m_Table[0][0]);
 
     // set ray in 3d world
@@ -416,7 +398,7 @@ void TMainForm::DrawScene()
 
             // copy polygon
             for (j = 0; j < 3; ++j)
-                miniCopy(&pPolygonList[i].m_v[j], &pPolygonsToDraw[polygonsToDrawCount - 1].m_v[j]);
+                pPolygonsToDraw[polygonsToDrawCount - 1].m_v[j] = pPolygonList[i].m_v[j];
         }
 
     // delete found polygons (no more needed from now)

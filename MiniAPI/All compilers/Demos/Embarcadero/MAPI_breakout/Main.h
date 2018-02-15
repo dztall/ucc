@@ -3,7 +3,7 @@
  *****************************************************************************
  * Description : A simple breakout game                                      *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -115,9 +115,7 @@ class TMainForm : public TForm
         float*            m_pBlockVertices;
         unsigned          m_BlockVerticesCount;
         float*            m_pBallVertices;
-        MINI_Index*       m_pBallIndexes;
         unsigned          m_BallVerticesCount;
-        unsigned          m_BallIndexCount;
         int               m_BlockColumns;
         int               m_BlockLines;
         int               m_Level;

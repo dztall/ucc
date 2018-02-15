@@ -35,30 +35,27 @@
 void CreateViewport(float w, float h);
 
 //------------------------------------------------------------------------------
-MINI_Shader        g_Shader;
-GLuint             g_ShaderProgram      = 0;
-float*             g_pSphereVB          = 0;
-unsigned int       g_SphereVertexCount  = 0;
-MINI_Index*        g_pSphereIndexes     = 0;
-unsigned int       g_SphereIndexCount   = 0;
-float*             g_pSurfaceVB         = 0;
-unsigned int       g_SurfaceVertexCount = 0;
-const float        g_SurfaceWidth       = 20.0f;
-const float        g_SurfaceHeight      = 20.0f;
-const float        g_SphereRadius       = 1.0f;
-float              g_Angle              = 0.0f;
-float              g_RotationSpeed      = 0.1f;
-float              g_AlphaLevel         = 0.5f;
-float              g_Time               = 0.0f;
-float              g_Interval           = 0.0f;
-const unsigned int g_FPS                = 15;
-int                g_SceneInitialized   = 0;
-GLuint             g_GlassTextureIndex  = GL_INVALID_VALUE;
-GLuint             g_CloudTextureIndex  = GL_INVALID_VALUE;
-GLuint             g_TexSamplerSlot     = 0;
-GLuint             g_AlphaSlot          = 0;
-GLuint             g_ModelviewUniform   = 0;
-MINI_VertexFormat  g_VertexFormat;
+MINI_Shader       g_Shader;
+GLuint            g_ShaderProgram      = 0;
+float*            g_pSphereVB          = 0;
+unsigned int      g_SphereVertexCount  = 0;
+MINI_Index*       g_pSphereIndexes     = 0;
+unsigned int      g_SphereIndexCount   = 0;
+float*            g_pSurfaceVB         = 0;
+unsigned int      g_SurfaceVertexCount = 0;
+const float       g_SurfaceWidth       = 20.0f;
+const float       g_SurfaceHeight      = 20.0f;
+const float       g_SphereRadius       = 1.0f;
+float             g_Angle              = 0.0f;
+float             g_RotationSpeed      = 0.1f;
+float             g_AlphaLevel         = 0.5f;
+int               g_SceneInitialized   = 0;
+GLuint            g_GlassTextureIndex  = GL_INVALID_VALUE;
+GLuint            g_CloudTextureIndex  = GL_INVALID_VALUE;
+GLuint            g_TexSamplerSlot     = 0;
+GLuint            g_AlphaSlot          = 0;
+GLuint            g_ModelviewUniform   = 0;
+MINI_VertexFormat g_VertexFormat;
 //------------------------------------------------------------------------------
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -162,7 +159,7 @@ void CreateViewport(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -173,12 +170,12 @@ void InitScene(int w, int h)
     glUseProgram(g_ShaderProgram);
 
     // get shader attributes
-    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram,  "qr_vPosition");
-    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram,  "qr_vColor");
-    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram,  "qr_vTexCoord");
-    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram,  "qr_sColorMap");
-    g_AlphaSlot             = glGetUniformLocation(g_ShaderProgram, "qr_uAlpha");
-    g_ModelviewUniform      = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
+    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram,  "mini_vPosition");
+    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram,  "mini_vColor");
+    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram,  "mini_vTexCoord");
+    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram,  "mini_sColorMap");
+    g_AlphaSlot             = glGetUniformLocation(g_ShaderProgram, "mini_uAlpha");
+    g_ModelviewUniform      = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
 
     // create the viewport
     CreateViewport(w, h);
@@ -209,9 +206,6 @@ void InitScene(int w, int h)
     // load textures
     g_GlassTextureIndex = miniLoadTexture(GLASS_TEXTURE_FILE);
     g_CloudTextureIndex = miniLoadTexture(CLOUD_TEXTURE_FILE);
-
-    // calculate frame interval
-    g_Interval = 1000.0f / g_FPS;
 
     g_SceneInitialized = 1;
 }
@@ -260,20 +254,8 @@ void DeleteScene()
 //------------------------------------------------------------------------------
 void UpdateScene(float elapsedTime)
 {
-    unsigned int frameCount = 0;
-
-    // calculate next time
-    g_Time += (elapsedTime * 1000.0f);
-
-    // count frames to skip
-    while (g_Time > g_Interval)
-    {
-        g_Time -= g_Interval;
-        ++frameCount;
-    }
-
     // calculate next rotation angle
-    g_Angle += (g_RotationSpeed * frameCount);
+    g_Angle += (g_RotationSpeed * elapsedTime * 10.0f);
 
     // is rotating angle out of bounds?
     while (g_Angle >= 6.28f)

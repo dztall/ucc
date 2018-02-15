@@ -4,7 +4,7 @@
  * Description : This module provides the common functions and declarations  *
  *               used by the whole API                                       *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -34,7 +34,7 @@
 // Global defines
 //-----------------------------------------------------------------------------
 
-#define M_MINI_VERSION 2.1
+#define M_MINI_VERSION 2.2
 
 // __CCR__ and __CCR_MINOR__ macros may be undefined on older compiler versions,
 // so define them if needed
@@ -66,9 +66,9 @@
         /**
         * Gets the size of a file
         *@param pFileName - file name for which the size should be get
-        *@return file size in bytes
+        *@return file size in bytes, 0 on error or if file is empty
         */
-        int miniGetFileSize(const char* pFileName);
+        long miniGetFileSize(const char* pFileName);
 
         //----------------------------------------------------------------------------
         // Math functions
@@ -95,13 +95,13 @@
         *@param pV - value to test
         *@param pS - start value
         *@param pE - end value
-        *@param pEpsylon - epsylon value for tolerance
+        *@param pTolerance - tolerance for calculation
         *@return 1 if value is between values, otherwise 0
         */
         int miniValueIsBetween(const float* pV,
                                const float* pS,
                                const float* pE,
-                               const float* pEpsylon);
+                               const float* pTolerance);
 
         /**
         * Rounds a value to the closest integer

@@ -5,7 +5,7 @@
  *               decrease the rotation speed, swipe up/down to increase or   *
  *               decrease the transparency                                   *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -52,29 +52,26 @@
         GLuint g_Renderbuffer, g_Framebuffer;
     #endif
 #endif
-MINI_Shader        g_Shader;
-GLuint             g_ShaderProgram      = 0;
-float*             g_pSphereVB          = 0;
-unsigned int       g_SphereVertexCount  = 0;
-MINI_Index*        g_pSphereIndexes     = 0;
-unsigned int       g_SphereIndexCount   = 0;
-float*             g_pSurfaceVB         = 0;
-unsigned int       g_SurfaceVertexCount = 0;
-const float        g_SurfaceWidth       = 20.0f;
-const float        g_SurfaceHeight      = 20.0f;
-const float        g_SphereRadius       = 1.0f;
-float              g_Angle              = 0.0f;
-float              g_RotationSpeed      = 0.1f;
-float              g_AlphaLevel         = 0.5f;
-float              g_Time               = 0.0f;
-float              g_Interval           = 0.0f;
-const unsigned int g_FPS                = 15;
-GLuint             g_GlassTextureIndex  = GL_INVALID_VALUE;
-GLuint             g_CloudTextureIndex  = GL_INVALID_VALUE;
-GLuint             g_TexSamplerSlot     = 0;
-GLuint             g_AlphaSlot          = 0;
-GLuint             g_ModelviewUniform   = 0;
-MINI_VertexFormat  g_VertexFormat;
+MINI_Shader       g_Shader;
+GLuint            g_ShaderProgram      = 0;
+float*            g_pSphereVB          = 0;
+unsigned          g_SphereVertexCount  = 0;
+MINI_Index*       g_pSphereIndexes     = 0;
+unsigned          g_SphereIndexCount   = 0;
+float*            g_pSurfaceVB         = 0;
+unsigned          g_SurfaceVertexCount = 0;
+const float       g_SurfaceWidth       = 20.0f;
+const float       g_SurfaceHeight      = 20.0f;
+const float       g_SphereRadius       = 1.0f;
+float             g_Angle              = 0.0f;
+float             g_RotationSpeed      = 0.1f;
+float             g_AlphaLevel         = 0.5f;
+GLuint            g_GlassTextureIndex  = GL_INVALID_VALUE;
+GLuint            g_CloudTextureIndex  = GL_INVALID_VALUE;
+GLuint            g_TexSamplerSlot     = 0;
+GLuint            g_AlphaSlot          = 0;
+GLuint            g_ModelviewUniform   = 0;
+MINI_VertexFormat g_VertexFormat;
 //------------------------------------------------------------------------------
 void ApplyMatrix(float w, float h)
 {
@@ -88,7 +85,7 @@ void ApplyMatrix(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -114,12 +111,12 @@ void on_GLES2_Init(int view_w, int view_h)
     glUseProgram(g_ShaderProgram);
 
     // get shader attributes
-    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram,  "qr_vPosition");
-    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram,  "qr_vColor");
-    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram,  "qr_vTexCoord");
-    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram,  "qr_sColorMap");
-    g_AlphaSlot             = glGetUniformLocation(g_ShaderProgram, "qr_uAlpha");
-    g_ModelviewUniform      = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
+    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram,  "mini_vPosition");
+    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram,  "mini_vColor");
+    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram,  "mini_vTexCoord");
+    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram,  "mini_sColorMap");
+    g_AlphaSlot             = glGetUniformLocation(g_ShaderProgram, "mini_uAlpha");
+    g_ModelviewUniform      = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
 
     g_VertexFormat.m_UseNormals  = 0;
     g_VertexFormat.m_UseTextures = 1;
@@ -135,8 +132,8 @@ void on_GLES2_Init(int view_w, int view_h)
 
     // generate sphere
     miniCreateSphere(&g_SphereRadius,
-                     10,
-                     24,
+                     20,
+                     48,
                      0xFFFFFFFF,
                      &g_VertexFormat,
                      &g_pSphereVB,
@@ -147,9 +144,6 @@ void on_GLES2_Init(int view_w, int view_h)
     // load textures
     g_GlassTextureIndex = miniLoadTexture(GLASS_TEXTURE_FILE);
     g_CloudTextureIndex = miniLoadTexture(CLOUD_TEXTURE_FILE);
-
-    // calculate frame interval
-    g_Interval = 1000.0f / g_FPS;
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
@@ -200,20 +194,8 @@ void on_GLES2_Size(int view_w, int view_h)
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
 {
-    unsigned int frameCount = 0;
-
-    // calculate next time
-    g_Time += (timeStep_sec * 1000.0f);
-
-    // count frames to skip
-    while (g_Time > g_Interval)
-    {
-        g_Time -= g_Interval;
-        ++frameCount;
-    }
-
     // calculate next rotation angle
-    g_Angle += (g_RotationSpeed * frameCount);
+    g_Angle += (g_RotationSpeed * timeStep_sec * 10.0f);
 
     // is rotating angle out of bounds?
     while (g_Angle >= 6.28f)

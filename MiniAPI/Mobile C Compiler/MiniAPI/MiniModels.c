@@ -4,7 +4,7 @@
  * Description : This module provides the functions to generate models like  *
  *               characters, landscapes, ...                                 *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -565,9 +565,7 @@ int miniCreateMDLMesh(MINI_MDLHeader*       pHeader,
                     // do include texture coordinates?
                     if ((*pMDLModel)->m_pVertexFormat->m_UseTextures)
                     {
-                        // get vertex texture coordinates. Be careful, here a pointer of
-                        // type float should be read from memory, for that the conversion
-                        // cannot be done from M_Precision
+                        // get vertex texture coordinates
                         tu = pTexCoord[pPolygon[j].m_VertexIndex[k]].m_U;
                         tv = pTexCoord[pPolygon[j].m_VertexIndex[k]].m_V;
 
@@ -684,7 +682,7 @@ int miniLoadMDLModel(const unsigned char*     pName,
     else
         pFrameGroup = 0;
 
-    // close MD2 file
+    // close MDL file
     M_MINI_FILE_CLOSE(pFile);
 
     // create mesh from file content

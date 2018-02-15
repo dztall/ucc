@@ -3,7 +3,7 @@
  *****************************************************************************
  * Description : A simple breakout game                                      *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -78,9 +78,7 @@ __fastcall TMainForm::TMainForm(TComponent* pOwner) :
     m_pBlockVertices(0),
     m_BlockVerticesCount(0),
     m_pBallVertices(0),
-    m_pBallIndexes(0),
     m_BallVerticesCount(0),
-    m_BallIndexCount(0),
     m_BlockColumns(5),
     m_BlockLines(3),
     m_Level(0),
@@ -126,7 +124,7 @@ void __fastcall TMainForm::FormResize(TObject* pSender)
 {
     // update the viewport
     CreateViewport(ClientWidth, ClientHeight);
-}
+}
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormPaint(TObject* pSender)
 {
@@ -257,14 +255,14 @@ void TMainForm::CreateViewport(float w, float h)
                  &ortho);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &ortho.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
 void TMainForm::InitScene(int w, int h)
 {
     int            i;
-    int            j;
+    int            j;
     int            index;
     float          blockWidth;
     float          blockTop;
@@ -280,8 +278,8 @@ void TMainForm::InitScene(int w, int h)
     glUseProgram(m_ShaderProgram);
 
     // get vertex and color slots
-    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "qr_vPosition");
-    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "qr_vColor");
+    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "mini_vPosition");
+    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "mini_vColor");
 
     // configure screen
     CreateViewport(w, h);
@@ -338,23 +336,23 @@ void TMainForm::InitScene(int w, int h)
     m_VertexFormat.m_UseTextures = 0;
     m_VertexFormat.m_UseColors   = 1;
 
-    // generate sphere to draw
-    miniCreateSphere(&m_Ball.m_Geometry.m_Radius,
-                     20,
-                     50,
-                     0xFFFF00FF,
-                     &m_VertexFormat,
-                     &m_pBallVertices,
-                     &m_BallVerticesCount,
-                     &m_pBallIndexes,
-                     &m_BallIndexCount);
+    // generate disk to draw
+    miniCreateDisk(0.0f,
+                   0.0f,
+                   m_Ball.m_Geometry.m_Radius,
+                   20,
+                   0xFFFF00FF,
+                  &m_VertexFormat,
+                  &m_pBallVertices,
+                  &m_BallVerticesCount);
 
     surfaceWidth  = 0.06f;
     surfaceHeight = 0.0125f;
 
+    // create a surface for the bar
     miniCreateSurface(&surfaceWidth,
                       &surfaceHeight,
-                      0xFF0033FF,
+                       0xFF0033FF,
                       &m_VertexFormat,
                       &m_pBarVertices,
                       &m_BarVerticesCount);
@@ -370,6 +368,7 @@ void TMainForm::InitScene(int w, int h)
     m_pBarVertices[25] = 0.2f;
     m_pBarVertices[26] = 0.4f;
 
+    // create a surface for the blocks
     miniCreateSurface(&surfaceWidth,
                       &surfaceHeight,
                       0x0000FFFF,
@@ -437,13 +436,6 @@ void TMainForm::InitScene(int w, int h)
 //------------------------------------------------------------------------------
 void TMainForm::DeleteScene()
 {
-    // delete ball index table
-    if (m_pBallIndexes)
-    {
-        free(m_pBallIndexes);
-        m_pBallIndexes = 0;
-    }
-
     // delete ball vertices
     if (m_pBallVertices)
     {
@@ -738,16 +730,11 @@ void TMainForm::DrawScene()
     miniGetTranslateMatrix(&t, &modelViewMatrix);
 
     // connect model view matrix to shader
-    GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "qr_uModelview");
+    GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // draw the ball
-    miniDrawSphere(m_pBallVertices,
-                   m_BallVerticesCount,
-                   m_pBallIndexes,
-                   m_BallIndexCount,
-                   &m_VertexFormat,
-                   &m_Shader);
+    miniDrawDisk(m_pBallVertices, m_BallVerticesCount, &m_VertexFormat, &m_Shader);
 
     // is bar currently exploding?
     if (!m_Bar.m_Exploding)

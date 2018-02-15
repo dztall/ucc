@@ -4,7 +4,7 @@
  * Description : This module provides the funcions required to calculate the *
  *               geometry in an euclidean space                              *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -147,13 +147,13 @@ typedef struct
         *@param pP - point to test
         *@param pS - start vertex
         *@param pE - End vertex
-        *@param pEpsylon - epsylon value for tolerance
+        *@param pTolerance - tolerance for calculation
         *@return 1 if value is between points, otherwise 0
         */
         int miniVectorIsBetween(const MINI_Vector3* pP,
                                 const MINI_Vector3* pS,
                                 const MINI_Vector3* pE,
-                                const float*        pEpsylon);
+                                const float*        pTolerance);
 
         /**
         * Gets the shortest distance between 2 lines
@@ -161,17 +161,18 @@ typedef struct
         *@param pL1E - first line end point
         *@param pL2S - second line start point
         *@param pL2E - second line end point
+        *@param pTolerance - tolerance for calculation
         *@param[out] pR - resulting distance
         */
         void miniGetShortestDistance(const MINI_Vector3* pL1S,
                                      const MINI_Vector3* pL1E,
                                      const MINI_Vector3* pL2S,
                                      const MINI_Vector3* pL2E,
-                                     const float*        pEpsylon,
+                                     const float*        pTolerance,
                                            float*        pR);
 
         /**
-        * Calculates and gets the projection of a given point on a given segment
+        * Calculates and gets the projection of a point on a segment
         *@param pSegStart - segment start
         *@param pSegEnd - segment end
         *@param pPoint - point for which projection must be calculated
@@ -183,29 +184,22 @@ typedef struct
                                           MINI_Vector3* pR);
 
         /**
-        * Calculates and gets the projection of a given point on a given polygon
+        * Calculates and gets the projection of a point on a polygon
         *@param pPoint - point for which projection must be calculated
         *@param pV1 - polygon first vertex
         *@param pV2 - polygon second vertex
         *@param pV3 - polygon third vertex
         *@param pR - the calculated point
         */
-        void miniClosestPointOnTriangle(const MINI_Vector3* pPoint,
-                                        const MINI_Vector3* pV1,
-                                        const MINI_Vector3* pV2,
-                                        const MINI_Vector3* pV3,
-                                              MINI_Vector3* pR);
+        void miniClosestPointOnPolygon(const MINI_Vector3* pPoint,
+                                       const MINI_Vector3* pV1,
+                                       const MINI_Vector3* pV2,
+                                       const MINI_Vector3* pV3,
+                                             MINI_Vector3* pR);
 
         //----------------------------------------------------------------------------
         // Vector functions
         //----------------------------------------------------------------------------
-
-        /**
-        * Copies vector content to another vector
-        *@param pS - source vector to copy from
-        *@param pD - destination vector to copy to
-        */
-        void miniCopy(const MINI_Vector3* pS, MINI_Vector3* pD);
 
         /**
         * Adds vector contents

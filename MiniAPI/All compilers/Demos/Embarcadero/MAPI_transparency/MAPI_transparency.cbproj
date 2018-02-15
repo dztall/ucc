@@ -126,6 +126,18 @@
         <BCC_PCHName_Clang>MAPI_transparency_PCH.h</BCC_PCHName_Clang>
     </PropertyGroup>
     <ItemGroup>
+        <CppCompile Include="Main.cpp">
+            <Form>MainForm</Form>
+            <FormType>dfm</FormType>
+            <DependentOn>Main.h</DependentOn>
+            <BuildOrder>2</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="MAPI_transparency.cpp">
+            <BuildOrder>0</BuildOrder>
+        </CppCompile>
+        <PCHCompile Include="MAPI_transparency_PCH.h">
+            <BuildOrder>1</BuildOrder>
+        </PCHCompile>
         <CppCompile Include="..\..\..\MiniAPI\MiniCommon.c">
             <BuildOrder>18</BuildOrder>
         </CppCompile>
@@ -162,18 +174,6 @@
         <None Include="..\..\..\MiniAPI\MiniVertex.h">
             <BuildOrder>24</BuildOrder>
         </None>
-        <CppCompile Include="Main.cpp">
-            <Form>MainForm</Form>
-            <FormType>dfm</FormType>
-            <DependentOn>Main.h</DependentOn>
-            <BuildOrder>2</BuildOrder>
-        </CppCompile>
-        <CppCompile Include="MAPI_transparency.cpp">
-            <BuildOrder>0</BuildOrder>
-        </CppCompile>
-        <PCHCompile Include="MAPI_transparency_PCH.h">
-            <BuildOrder>1</BuildOrder>
-        </PCHCompile>
         <FormResources Include="Main.dfm"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
@@ -219,15 +219,15 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="..\..\..\MiniAPI\MiniCommon.c" Configuration="Debug" Class="ProjectFile">
-                    <Platform Name="Win32">
-                        <RemoteDir>.\</RemoteDir>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
                 <DeployFile LocalName=".\Win32\Debug\MAPI_transparency.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>MAPI_transparency.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\..\..\MiniAPI\MiniCommon.c" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

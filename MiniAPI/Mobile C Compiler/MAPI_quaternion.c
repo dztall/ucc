@@ -3,7 +3,7 @@
  *****************************************************************************
  * Description : An animation using a quaternion                             *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -75,7 +75,7 @@ void ApplyMatrix(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &g_ProjectionMatrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &g_ProjectionMatrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -104,8 +104,8 @@ void on_GLES2_Init(int view_w, int view_h)
     glUseProgram(g_ShaderProgram);
 
     // get shader attributes
-    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
+    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "mini_vPosition");
+    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "mini_vColor");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -242,7 +242,7 @@ void on_GLES2_Render()
     miniMatrixMultiply(&combMatrix2,    &translateMatrix, &modelMatrix);
 
     // connect model view matrix to shader
-    GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
+    GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelMatrix.m_Table[0][0]);
 
     // draw the sphere

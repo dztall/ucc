@@ -5,7 +5,7 @@
  *               shader programs, and provides several common and simple     *
  *               ready-to-use programs                                       *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -49,37 +49,37 @@ typedef struct
         * Gets a vertex shader program containing slots for position and color
         *@return the shader program
         */
-        const char* miniGetVSColored();
+        const char* miniGetVSColored(void);
 
         /**
         * Gets a fragment shader program containing slots for position and color
         *@return the shader program
         */
-        const char* miniGetFSColored();
+        const char* miniGetFSColored(void);
 
         /**
         * Gets a vertex shader program containing slots for position, color and texture
         *@return the shader program
         */
-        const char* miniGetVSTextured();
+        const char* miniGetVSTextured(void);
 
         /**
         * Gets a fragment shader program containing slots for position, color and texture
         *@return the shader program
         */
-        const char* miniGetFSTextured();
+        const char* miniGetFSTextured(void);
 
         /**
         * Gets a vertex shader program containing slots for position, color, texture and alpha blending value
         *@return the shader program
         */
-        const char* miniGetVSTexAlpha();
+        const char* miniGetVSTexAlpha(void);
 
         /**
         * Gets a fragment shader program containing slots for position, color, texture and alpha blending value
         *@return the shader program
         */
-        const char* miniGetFSTexAlpha();
+        const char* miniGetFSTexAlpha(void);
 
         //----------------------------------------------------------------------------
         // Shader compilation and linking functions

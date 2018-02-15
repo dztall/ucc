@@ -4,8 +4,8 @@
  * Description : A textured sphere representing the earth, press the left or *
  *               right arrow keys to increase or decrease the rotation speed *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
- *               free to copy or redistribute this file, modify it, or use   *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
  *****************************************************************************/
@@ -41,9 +41,6 @@ __fastcall TMainForm::TMainForm(TComponent* pOwner) :
     m_Radius(1.0f),
     m_Angle(0.0f),
     m_RotationSpeed(0.1f),
-    m_Time(0.0f),
-    m_Interval(0.0f),
-    m_FPS(15),
     m_TextureIndex(GL_INVALID_VALUE),
     m_TexSamplerSlot(0),
     m_PreviousTime(0)
@@ -87,7 +84,7 @@ void __fastcall TMainForm::FormResize(TObject* pSender)
 {
     // update the viewport
     CreateViewport(ClientWidth, ClientHeight);
-}
+}
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormPaint(TObject* pSender)
 {
@@ -161,21 +158,21 @@ void TMainForm::CreateViewport(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
 void TMainForm::InitScene(int w, int h)
 {
     // compile, link and use shaders
-    m_ShaderProgram = miniCompileShaders(miniGetVSTextured(), miniGetFSTextured());
+    m_ShaderProgram = miniCompileShaders(miniGetVSTextured(), miniGetFSTextured());
     glUseProgram(m_ShaderProgram);
 
     // get shader attributes
-    m_Shader.m_VertexSlot   = glGetAttribLocation(m_ShaderProgram, "qr_vPosition");
-    m_Shader.m_ColorSlot    = glGetAttribLocation(m_ShaderProgram, "qr_vColor");
-    m_Shader.m_TexCoordSlot = glGetAttribLocation(m_ShaderProgram, "qr_vTexCoord");
-    m_TexSamplerSlot        = glGetAttribLocation(m_ShaderProgram, "qr_sColorMap");
+    m_Shader.m_VertexSlot   = glGetAttribLocation(m_ShaderProgram, "mini_vPosition");
+    m_Shader.m_ColorSlot    = glGetAttribLocation(m_ShaderProgram, "mini_vColor");
+    m_Shader.m_TexCoordSlot = glGetAttribLocation(m_ShaderProgram, "mini_vTexCoord");
+    m_TexSamplerSlot        = glGetAttribLocation(m_ShaderProgram, "mini_sColorMap");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -197,8 +194,8 @@ void TMainForm::InitScene(int w, int h)
 
     // generate sphere
     miniCreateSphere(&m_Radius,
-                     10,
-                     24,
+                     20,
+                     48,
                      0xFFFFFFFF,
                      &m_VertexFormat,
                      &m_pVertexBuffer,
@@ -208,11 +205,8 @@ void TMainForm::InitScene(int w, int h)
 
     // load earth texture
     m_TextureIndex = miniLoadTexture(EARTH_TEXTURE_FILE);
-
-    // calculate frame interval
-    m_Interval = 1000.0f / m_FPS;
 }
-//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 void TMainForm::DeleteScene()
 {
     // delete buffer index table
@@ -243,20 +237,8 @@ void TMainForm::DeleteScene()
 //------------------------------------------------------------------------------
 void TMainForm::UpdateScene(float elapsedTime)
 {
-    unsigned int frameCount = 0;
-
-    // calculate next time
-    m_Time += (elapsedTime * 1000.0f);
-
-    // count frames to skip
-    while (m_Time > m_Interval)
-    {
-        m_Time -= m_Interval;
-        ++frameCount;
-    }
-
     // calculate next rotation angle
-    m_Angle += (m_RotationSpeed * frameCount);
+    m_Angle += (m_RotationSpeed * elapsedTime * 10.0f);
 
     // is rotating angle out of bounds?
     while (m_Angle >= 6.28f)
@@ -304,7 +286,7 @@ void TMainForm::DrawScene()
     miniMatrixMultiply(&modelViewMatrix, &translateMatrix, &modelViewMatrix);
 
     // connect model view matrix to shader
-    GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "qr_uModelview");
+    GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // configure texture to draw

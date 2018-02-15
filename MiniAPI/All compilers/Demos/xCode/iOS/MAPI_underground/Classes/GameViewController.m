@@ -5,7 +5,7 @@
  *               Doom or Wolfenstein. Swipe up or down to walk, and left or  *
  *               right to rotate                                             *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -45,19 +45,19 @@ const char* g_pLevelMap =
 //------------------------------------------------------------------------------
 const char* miniVSTextured2 =
     "precision mediump float;"
-    "attribute vec4 qr_vPosition;"
-    "attribute vec4 qr_vColor;"
-    "attribute vec2 qr_vTexCoord;"
-    "uniform   mat4 qr_uProjection;"
-    "uniform   mat4 qr_uView;"
-    "uniform   mat4 qr_uModelview;"
-    "varying   vec4 qr_fColor;"
-    "varying   vec2 qr_fTexCoord;"
+    "attribute vec4 mini_vPosition;"
+    "attribute vec4 mini_vColor;"
+    "attribute vec2 mini_vTexCoord;"
+    "uniform   mat4 mini_uProjection;"
+    "uniform   mat4 mini_uView;"
+    "uniform   mat4 mini_uModelview;"
+    "varying   vec4 mini_fColor;"
+    "varying   vec2 mini_fTexCoord;"
     "void main(void)"
     "{"
-    "    qr_fColor    = qr_vColor;"
-    "    qr_fTexCoord = qr_vTexCoord;"
-    "    gl_Position  = qr_uProjection * qr_uView * qr_uModelview * qr_vPosition;"
+    "    mini_fColor    = mini_vColor;"
+    "    mini_fTexCoord = mini_vTexCoord;"
+    "    gl_Position  = mini_uProjection * mini_uView * mini_uModelview * mini_vPosition;"
     "}";
 //----------------------------------------------------------------------------
 @interface GameViewController()
@@ -88,7 +88,7 @@ const char* miniVSTextured2 =
     GLuint            m_ModelviewUniform;
     MINI_VertexFormat m_VertexFormat;
     CFTimeInterval    m_PreviousTime;
-    
+
     #ifdef MAP_MODE
         float             m_SphereRadius;
         float*            m_pSphereVertices;
@@ -235,7 +235,7 @@ const char* miniVSTextured2 =
     const CFTimeInterval now            =  CACurrentMediaTime();
     const double         elapsedTime    = (now - m_PreviousTime);
                          m_PreviousTime =  now;
-    
+
     [self UpdateScene :elapsedTime];
     [self DrawScene];
 }
@@ -276,7 +276,7 @@ const char* miniVSTextured2 =
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //----------------------------------------------------------------------------
@@ -301,10 +301,10 @@ const char* miniVSTextured2 =
     glUseProgram(m_ShaderProgram);
 
     // get shader attributes
-    m_Shader.m_VertexSlot   = glGetAttribLocation(m_ShaderProgram, "qr_vPosition");
-    m_Shader.m_ColorSlot    = glGetAttribLocation(m_ShaderProgram, "qr_vColor");
-    m_Shader.m_TexCoordSlot = glGetAttribLocation(m_ShaderProgram, "qr_vTexCoord");
-    m_TexSamplerSlot        = glGetAttribLocation(m_ShaderProgram, "qr_sColorMap");
+    m_Shader.m_VertexSlot   = glGetAttribLocation(m_ShaderProgram, "mini_vPosition");
+    m_Shader.m_ColorSlot    = glGetAttribLocation(m_ShaderProgram, "mini_vColor");
+    m_Shader.m_TexCoordSlot = glGetAttribLocation(m_ShaderProgram, "mini_vTexCoord");
+    m_TexSamplerSlot        = glGetAttribLocation(m_ShaderProgram, "mini_sColorMap");
 
     // get the screen rect
     CGRect screenRect = [[UIScreen mainScreen] bounds];
@@ -384,7 +384,7 @@ const char* miniVSTextured2 =
 
     #ifdef MAP_MODE
         char* pSphereTextureName = 0;
-    
+
         // get the sphere texture file paths from resources
         [MiniObjectiveCHelper ResourceToFileName :@"cloud" :@"bmp" :&pSphereTextureName];
 

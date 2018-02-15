@@ -5,7 +5,7 @@
  *               mouse above the sphere to select a polygon, press the left  *
  *               or right arrow keys to rotate the sphere                    *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -55,30 +55,27 @@ class TMainForm : public TForm
         virtual __fastcall ~TMainForm();
 
     private:
-        HDC                m_hDC;
-        HGLRC              m_hRC;
-        MINI_Shader        m_Shader;
-        GLuint             m_ShaderProgram;
-        float*             m_pVertexBuffer;
-        unsigned int       m_VertexCount;
-        MINI_Index*        m_pIndexes;
-        unsigned int       m_IndexCount;
-        MINI_AABBNode*     m_pAABBRoot;
-        MINI_Polygon*      m_pCollidePolygons;
-        unsigned int       m_CollidePolygonsCount;
-        float              m_Radius;
-        float              m_RayX;
-        float              m_RayY;
-        float              m_Angle;
-        float              m_RotationSpeed;
-        float              m_Time;
-        float              m_Interval;
-        const unsigned int m_FPS;
-        float              m_PolygonArray[21];
-        MINI_VertexFormat  m_VertexFormat;
-        MINI_Matrix        m_ProjectionMatrix;
-        MINI_Matrix        m_ViewMatrix;
-        unsigned __int64   m_PreviousTime;
+        HDC               m_hDC;
+        HGLRC             m_hRC;
+        MINI_Shader       m_Shader;
+        GLuint            m_ShaderProgram;
+        float*            m_pVertexBuffer;
+        unsigned          m_VertexCount;
+        MINI_Index*       m_pIndexes;
+        unsigned          m_IndexCount;
+        MINI_AABBNode*    m_pAABBRoot;
+        MINI_Polygon*     m_pCollidePolygons;
+        unsigned          m_CollidePolygonsCount;
+        float             m_Radius;
+        float             m_RayX;
+        float             m_RayY;
+        float             m_Angle;
+        float             m_RotationSpeed;
+        float             m_PolygonArray[21];
+        MINI_VertexFormat m_VertexFormat;
+        MINI_Matrix       m_ProjectionMatrix;
+        MINI_Matrix       m_ViewMatrix;
+        unsigned __int64  m_PreviousTime;
 
         /**
         * Enables OpenGL

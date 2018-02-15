@@ -4,7 +4,7 @@
  * Description : This module provides the functions required to draw the     *
  *               objects inside a scene                                      *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -21,7 +21,7 @@ void miniBeginScene(float r, float g, float b, float a)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 //----------------------------------------------------------------------------
-void miniEndScene()
+void miniEndScene(void)
 {}
 //----------------------------------------------------------------------------
 void miniDrawBuffer(float*             pVertices,
@@ -172,7 +172,7 @@ void miniDrawSphere(float*             pVertices,
     if (pVertexFormat->m_UseColors)
         glEnableVertexAttribArray(pShader->m_ColorSlot);
 
-    // iterate through vertex fan buffers to draw
+    // iterate through vertex buffers to draw
     for (i = 0; i < indexCount; ++i)
         // draw the vertex buffer
         miniDrawBuffer(&pVertices[pIndexes[i].m_Start],
@@ -223,6 +223,141 @@ void miniDrawCylinder(float*             pVertices,
                    E_TriangleStrip,
                    pVertexFormat,
                    pShader);
+
+    // disable vertices slots from shader
+    glDisableVertexAttribArray(pShader->m_VertexSlot);
+
+    // disable normal slot
+    if (pVertexFormat->m_UseNormals)
+        glDisableVertexAttribArray(pShader->m_NormalSlot);
+
+    // disable texture slot
+    if (pVertexFormat->m_UseTextures)
+        glDisableVertexAttribArray(pShader->m_TexCoordSlot);
+
+    // disable color slot
+    if (pVertexFormat->m_UseColors)
+        glDisableVertexAttribArray(pShader->m_ColorSlot);
+}
+//----------------------------------------------------------------------------
+void miniDrawDisk(float*             pVertices,
+                  unsigned           vertexCount,
+                  MINI_VertexFormat* pVertexFormat,
+                  MINI_Shader*       pShader)
+{
+    // enable position slot
+    glEnableVertexAttribArray(pShader->m_VertexSlot);
+
+    // enable normal slot
+    if (pVertexFormat->m_UseNormals)
+        glEnableVertexAttribArray(pShader->m_NormalSlot);
+
+    // enable texture slot
+    if (pVertexFormat->m_UseTextures)
+        glEnableVertexAttribArray(pShader->m_TexCoordSlot);
+
+    // enable color slot
+    if (pVertexFormat->m_UseColors)
+        glEnableVertexAttribArray(pShader->m_ColorSlot);
+
+    // draw the vertex buffer
+    miniDrawBuffer(pVertices,
+                   vertexCount,
+                   E_TriangleFan,
+                   pVertexFormat,
+                   pShader);
+
+    // disable vertices slots from shader
+    glDisableVertexAttribArray(pShader->m_VertexSlot);
+
+    // disable normal slot
+    if (pVertexFormat->m_UseNormals)
+        glDisableVertexAttribArray(pShader->m_NormalSlot);
+
+    // disable texture slot
+    if (pVertexFormat->m_UseTextures)
+        glDisableVertexAttribArray(pShader->m_TexCoordSlot);
+
+    // disable color slot
+    if (pVertexFormat->m_UseColors)
+        glDisableVertexAttribArray(pShader->m_ColorSlot);
+}
+//----------------------------------------------------------------------------
+void miniDrawRing(float*             pVertices,
+                  unsigned           vertexCount,
+                  MINI_VertexFormat* pVertexFormat,
+                  MINI_Shader*       pShader)
+{
+    // enable position slot
+    glEnableVertexAttribArray(pShader->m_VertexSlot);
+
+    // enable normal slot
+    if (pVertexFormat->m_UseNormals)
+        glEnableVertexAttribArray(pShader->m_NormalSlot);
+
+    // enable texture slot
+    if (pVertexFormat->m_UseTextures)
+        glEnableVertexAttribArray(pShader->m_TexCoordSlot);
+
+    // enable color slot
+    if (pVertexFormat->m_UseColors)
+        glEnableVertexAttribArray(pShader->m_ColorSlot);
+
+    // draw the vertex buffer
+    miniDrawBuffer(pVertices,
+                   vertexCount,
+                   E_TriangleStrip,
+                   pVertexFormat,
+                   pShader);
+
+    // disable vertices slots from shader
+    glDisableVertexAttribArray(pShader->m_VertexSlot);
+
+    // disable normal slot
+    if (pVertexFormat->m_UseNormals)
+        glDisableVertexAttribArray(pShader->m_NormalSlot);
+
+    // disable texture slot
+    if (pVertexFormat->m_UseTextures)
+        glDisableVertexAttribArray(pShader->m_TexCoordSlot);
+
+    // disable color slot
+    if (pVertexFormat->m_UseColors)
+        glDisableVertexAttribArray(pShader->m_ColorSlot);
+}
+//----------------------------------------------------------------------------
+void miniDrawSpiral(float*             pVertices,
+                    unsigned           vertexCount,
+                    MINI_Index*        pIndexes,
+                    unsigned           indexCount,
+                    MINI_VertexFormat* pVertexFormat,
+                    MINI_Shader*       pShader)
+{
+    unsigned i;
+
+    // enable position slot
+    glEnableVertexAttribArray(pShader->m_VertexSlot);
+
+    // enable normal slot
+    if (pVertexFormat->m_UseNormals)
+        glEnableVertexAttribArray(pShader->m_NormalSlot);
+
+    // enable texture slot
+    if (pVertexFormat->m_UseTextures)
+        glEnableVertexAttribArray(pShader->m_TexCoordSlot);
+
+    // enable color slot
+    if (pVertexFormat->m_UseColors)
+        glEnableVertexAttribArray(pShader->m_ColorSlot);
+
+    // iterate through vertex buffers to draw
+    for (i = 0; i < indexCount; ++i)
+        // draw the vertex buffer
+        miniDrawBuffer(pVertices + pIndexes[i].m_Start,
+                       pIndexes[i].m_Length,
+                       pIndexes[i].m_GlCmd,
+                       pVertexFormat,
+                       pShader);
 
     // disable vertices slots from shader
     glDisableVertexAttribArray(pShader->m_VertexSlot);
