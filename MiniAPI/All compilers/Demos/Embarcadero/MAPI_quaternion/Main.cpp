@@ -3,7 +3,7 @@
  *****************************************************************************
  * Description : An animation using a quaternion                             *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -82,7 +82,7 @@ void __fastcall TMainForm::FormResize(TObject* pSender)
 {
     // update the viewport
     CreateViewport(ClientWidth, ClientHeight);
-}
+}
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormPaint(TObject* pSender)
 {
@@ -146,22 +146,22 @@ void TMainForm::CreateViewport(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &m_ProjectionMatrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &m_ProjectionMatrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
 void TMainForm::InitScene(int w, int h)
 {
     m_View.m_Width  = 0.0f;
-    m_View.m_Height = 0.0f;
+    m_View.m_Height = 0.0f;
 
     // compile, link and use shader
     m_ShaderProgram = miniCompileShaders(miniGetVSColored(), miniGetFSColored());
     glUseProgram(m_ShaderProgram);
 
     // get shader attributes
-    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "qr_vPosition");
-    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "qr_vColor");
+    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "mini_vPosition");
+    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "mini_vColor");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -288,7 +288,7 @@ void TMainForm::DrawScene()
     miniMatrixMultiply(&combMatrix2,    &translateMatrix, &modelMatrix);
 
     // connect model view matrix to shader
-    GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "qr_uModelview");
+    GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelMatrix.m_Table[0][0]);
 
     // draw the sphere

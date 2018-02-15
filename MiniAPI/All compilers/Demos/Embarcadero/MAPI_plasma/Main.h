@@ -3,8 +3,8 @@
  *****************************************************************************
  * Description : An old school plasma effect that use shader for calculation *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
- *               free to copy or redistribute this file, modify it, or use   *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
  *****************************************************************************/
@@ -80,13 +80,6 @@ class TMainForm : public TForm
         *@param hRC - OpenGL rendering context
         */
         void DisableOpenGL(HWND hWnd, HDC hDC, HGLRC hRC);
-
-        /**
-        * Creates the viewport
-        *@param w - viewport width
-        *@param h - viewport height
-        */
-        void CreateViewport(float w, float h);
 
         /**
         * Initializes the scene

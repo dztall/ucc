@@ -3,7 +3,7 @@
  *****************************************************************************
  * Description : A simple breakout game                                      *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -138,9 +138,7 @@ int                g_BarVerticesCount   = 0;
 float*             g_pBlockVertices     = 0;
 int                g_BlockVerticesCount = 0;
 float*             g_pBallVertices      = 0;
-MINI_Index*        g_pBallIndexes       = 0;
 unsigned           g_BallVerticesCount  = 0;
-unsigned           g_BallIndexCount     = 0;
 int                g_BlockColumns       = 5;
 int                g_BlockLines         = 3;
 int                g_Level              = 0;
@@ -192,7 +190,7 @@ void ApplyOrtho(MINI_Screen* pScreen, float* pNear, float* pFar)
                  &ortho);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &ortho.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -232,8 +230,8 @@ void on_GLES2_Init(int view_w, int view_h)
     glUseProgram(g_ShaderProgram);
 
     // get vertex and color slots
-    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
+    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "mini_vPosition");
+    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "mini_vColor");
 
     // configure screen
     GetScreen(&w, &h, &g_Screen);
@@ -290,23 +288,23 @@ void on_GLES2_Init(int view_w, int view_h)
     g_VertexFormat.m_UseTextures = 0;
     g_VertexFormat.m_UseColors   = 1;
 
-    // generate sphere to draw
-    miniCreateSphere(&g_Ball.m_Geometry.m_Radius,
-                     20,
-                     50,
-                     0xFFFF00FF,
-                     &g_VertexFormat,
-                     &g_pBallVertices,
-                     &g_BallVerticesCount,
-                     &g_pBallIndexes,
-                     &g_BallIndexCount);
+    // generate disk to draw
+    miniCreateDisk(0.0f,
+                   0.0f,
+                   g_Ball.m_Geometry.m_Radius,
+                   20,
+                   0xFFFF00FF,
+                  &g_VertexFormat,
+                  &g_pBallVertices,
+                  &g_BallVerticesCount);
 
     surfaceWidth  = 0.06f;
     surfaceHeight = 0.0125f;
 
+    // create a surface for the bar
     miniCreateSurface(&surfaceWidth,
                       &surfaceHeight,
-                      0xFF0033FF,
+                       0xFF0033FF,
                       &g_VertexFormat,
                       &g_pBarVertices,
                       &g_BarVerticesCount);
@@ -322,9 +320,10 @@ void on_GLES2_Init(int view_w, int view_h)
     g_pBarVertices[25] = 0.2f;
     g_pBarVertices[26] = 0.4f;
 
+    // create a surface for the blocks
     miniCreateSurface(&surfaceWidth,
                       &surfaceHeight,
-                      0x0000FFFF,
+                       0x0000FFFF,
                       &g_VertexFormat,
                       &g_pBlockVertices,
                       &g_BlockVerticesCount);
@@ -389,13 +388,6 @@ void on_GLES2_Init(int view_w, int view_h)
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
 {
-    // delete ball index table
-    if (g_pBallIndexes)
-    {
-        free(g_pBallIndexes);
-        g_pBallIndexes = 0;
-    }
-
     // delete ball vertices
     if (g_pBallVertices)
     {
@@ -698,16 +690,11 @@ void on_GLES2_Render()
     miniGetTranslateMatrix(&t, &modelViewMatrix);
 
     // connect model view matrix to shader
-    GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
+    GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // draw the ball
-    miniDrawSphere(g_pBallVertices,
-                   g_BallVerticesCount,
-                   g_pBallIndexes,
-                   g_BallIndexCount,
-                   &g_VertexFormat,
-                   &g_Shader);
+    miniDrawDisk(g_pBallVertices, g_BallVerticesCount, &g_VertexFormat, &g_Shader);
 
     // is bar currently exploding?
     if (!g_Bar.m_Exploding)

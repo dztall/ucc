@@ -31,24 +31,18 @@
 void CreateViewport(float w, float h);
 
 //------------------------------------------------------------------------------
-MINI_Shader        g_Shader;
-GLuint             g_ShaderProgram       = 0;
-float*             g_pVertexBuffer       = 0;
-unsigned int       g_VertexCount         = 0;
-MINI_Index*        g_pIndexes            = 0;
-unsigned int       g_IndexCount          = 0;
-float              g_Radius              = 0.02f;
-float              g_Angle               = 0.0f;
-float              g_RotationSpeed       = 0.1f;
-float              g_ElapsedTime         = 0.0f;
-float              g_Interval            = 0.0f;
-const unsigned     g_ParticleCount       = 1000;
-const unsigned int g_FPS                 = 10;
-int                g_Initialized         = 0;
-int                g_SceneInitialized    = 0;
-int                g_ParticleInitialized = 0;
-MINI_Particles     g_Particles;
-MINI_VertexFormat  g_VertexFormat;
+MINI_Shader       g_Shader;
+GLuint            g_ShaderProgram    = 0;
+float*            g_pVertexBuffer    = 0;
+unsigned          g_VertexCount      = 0;
+float             g_Radius           = 0.02f;
+float             g_Angle            = 0.0f;
+float             g_RotationSpeed    = 0.1f;
+const unsigned    g_ParticleCount    = 1000;
+int               g_Initialized      = 0;
+int               g_SceneInitialized = 0;
+MINI_Particles    g_Particles;
+MINI_VertexFormat g_VertexFormat;
 //------------------------------------------------------------------------------
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -132,7 +126,7 @@ void CreateViewport(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -140,13 +134,15 @@ void InitScene(int w, int h)
 {
     srand((unsigned)time(0));
 
+    g_Particles.m_Count = 0;
+
     // compile, link and use shader
     g_ShaderProgram = miniCompileShaders(miniGetVSColored(), miniGetFSColored());
     glUseProgram(g_ShaderProgram);
 
     // get shader attributes
-    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
+    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "mini_vPosition");
+    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "mini_vColor");
 
     // create the viewport
     CreateViewport(w, h);
@@ -159,27 +155,22 @@ void InitScene(int w, int h)
 
     // enable culling
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
+    glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
     g_VertexFormat.m_UseNormals  = 0;
     g_VertexFormat.m_UseTextures = 0;
     g_VertexFormat.m_UseColors   = 1;
 
-    // generate sphere
-    miniCreateSphere(&g_Radius,
-                     5,
-                     5,
-                     0xFFFFFFFF,
-                     &g_VertexFormat,
-                     &g_pVertexBuffer,
-                     &g_VertexCount,
-                     &g_pIndexes,
-                     &g_IndexCount);
-
-    g_Particles.m_Count = 0;
-
-    g_Interval = 1000.0f / g_FPS;
+    // generate disk
+    miniCreateDisk(0.0f,
+                   0.0f,
+                   g_Radius,
+                   5,
+                   0xFFFFFFFF,
+                  &g_VertexFormat,
+                  &g_pVertexBuffer,
+                  &g_VertexCount);
 
     g_SceneInitialized = 1;
 }
@@ -189,13 +180,6 @@ void DeleteScene()
     g_SceneInitialized = 0;
 
     miniClearParticles(&g_Particles);
-
-    // delete buffer index table
-    if (g_pIndexes)
-    {
-        free(g_pIndexes);
-        g_pIndexes = 0;
-    }
 
     // delete vertices
     if (g_pVertexBuffer)
@@ -214,23 +198,10 @@ void DeleteScene()
 void UpdateScene(float elapsedTime)
 {
     unsigned       i;
-    unsigned       frameCount;
     MINI_Vector3   startPos;
     MINI_Vector3   startDir;
     MINI_Vector3   startVelocity;
     MINI_Particle* pNewParticle;
-
-    frameCount = 0;
-
-    // calculate next time
-    g_ElapsedTime += (elapsedTime * 1000.0f);
-
-    // count frames to skip
-    while (g_ElapsedTime > g_Interval)
-    {
-        g_ElapsedTime -= g_Interval;
-        ++frameCount;
-    }
 
     startPos.m_X      =  0.0f; // between -2.2 to 2.2
     startPos.m_Y      =  2.0f;
@@ -259,7 +230,7 @@ void UpdateScene(float elapsedTime)
             pNewParticle->m_Velocity.m_Y =  ((rand() % 4)  + 2.0f)  * 0.01f;
 
             // select a random start height the first time particles are emitted
-            if (!g_ParticleInitialized)
+            if (!g_Initialized)
                 pNewParticle->m_Position.m_Y = 2.0f + ((rand() % 200) * 0.01f);
         }
 
@@ -270,9 +241,9 @@ void UpdateScene(float elapsedTime)
         // move particle
         if (i >= g_Particles.m_Count)
             miniMoveParticle(&g_Particles.m_pParticles[g_Particles.m_Count - 1],
-                         frameCount);
+                              elapsedTime * 20.0f);
         else
-            miniMoveParticle(&g_Particles.m_pParticles[i], frameCount);
+            miniMoveParticle(&g_Particles.m_pParticles[i], elapsedTime * 20.0f);
 
         // is particle out of screen?
         if (g_Particles.m_pParticles[i].m_Position.m_Y <= -2.0f ||
@@ -285,15 +256,13 @@ void UpdateScene(float elapsedTime)
         }
     }
 
-    g_ParticleInitialized = 1;
+    g_Initialized = 1;
 }
 //------------------------------------------------------------------------------
 void DrawScene()
 {
     unsigned     i;
-    unsigned     j;
     MINI_Vector3 t;
-    MINI_Matrix  translateMatrix;
     MINI_Matrix  modelViewMatrix;
 
     miniBeginScene(0.1f, 0.35f, 0.66f, 1.0f);
@@ -306,23 +275,14 @@ void DrawScene()
         t.m_Y = g_Particles.m_pParticles[i].m_Position.m_Y;
         t.m_Z = g_Particles.m_pParticles[i].m_Position.m_Z;
 
-        miniGetTranslateMatrix(&t, &translateMatrix);
-
-        // build model view matrix
-        miniGetIdentity(&modelViewMatrix);
-        miniMatrixMultiply(&modelViewMatrix, &translateMatrix, &modelViewMatrix);
+        miniGetTranslateMatrix(&t, &modelViewMatrix);
 
         // connect model view matrix to shader
-        GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
+        GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
         glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
         // draw the particle
-        miniDrawSphere(g_pVertexBuffer,
-                       g_VertexCount,
-                       g_pIndexes,
-                       g_IndexCount,
-                       &g_VertexFormat,
-                       &g_Shader);
+        miniDrawDisk(g_pVertexBuffer, g_VertexCount, &g_VertexFormat, &g_Shader);
     }
 
     miniEndScene();

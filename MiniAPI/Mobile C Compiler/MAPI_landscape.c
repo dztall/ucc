@@ -4,7 +4,7 @@
  * Description : A landscape generator based on a grayscale image, swipe to  *
  *               left or right to increase or decrease the rotation speed    *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -51,19 +51,16 @@
         GLuint g_Renderbuffer, g_Framebuffer;
     #endif
 #endif
-MINI_Shader        g_Shader;
-GLuint             g_ShaderProgram  = 0;
-float              g_MapHeight      = 3.0f;
-float              g_MapScale       = 0.2f;
-float              g_Angle          = 0.0f;
-float              g_RotationSpeed  = 0.02f;
-float              g_Time           = 0.0f;
-float              g_Interval       = 0.0f;
-const unsigned int g_FPS            = 15;
-GLuint             g_TextureIndex   = GL_INVALID_VALUE;
-GLuint             g_TexSamplerSlot = 0;
-MINI_Mesh*         g_pLandscapeMesh = 0;
-MINI_VertexFormat  g_VertexFormat;
+MINI_Shader       g_Shader;
+GLuint            g_ShaderProgram  = 0;
+float             g_MapHeight      = 3.0f;
+float             g_MapScale       = 0.2f;
+float             g_Angle          = 0.0f;
+float             g_RotationSpeed  = 0.02f;
+GLuint            g_TextureIndex   = GL_INVALID_VALUE;
+GLuint            g_TexSamplerSlot = 0;
+MINI_Mesh*        g_pLandscapeMesh = 0;
+MINI_VertexFormat g_VertexFormat;
 //------------------------------------------------------------------------------
 void ApplyMatrix(float w, float h)
 {
@@ -77,7 +74,7 @@ void ApplyMatrix(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -107,10 +104,10 @@ void on_GLES2_Init(int view_w, int view_h)
     glUseProgram(g_ShaderProgram);
 
     // get shader attributes
-    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
-    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram, "qr_vTexCoord");
-    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram, "qr_sColorMap");
+    g_Shader.m_VertexSlot   = glGetAttribLocation(g_ShaderProgram, "mini_vPosition");
+    g_Shader.m_ColorSlot    = glGetAttribLocation(g_ShaderProgram, "mini_vColor");
+    g_Shader.m_TexCoordSlot = glGetAttribLocation(g_ShaderProgram, "mini_vTexCoord");
+    g_TexSamplerSlot        = glGetAttribLocation(g_ShaderProgram, "mini_sColorMap");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -147,9 +144,6 @@ void on_GLES2_Init(int view_w, int view_h)
 
     // load landscape texture
     g_TextureIndex = miniLoadTexture(LANDSCAPE_TEXTURE_FILE);
-
-    // calculate frame interval
-    g_Interval = 1000.0f / g_FPS;
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
@@ -178,20 +172,8 @@ void on_GLES2_Size(int view_w, int view_h)
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
 {
-    unsigned int frameCount = 0;
-
-    // calculate next time
-    g_Time += (timeStep_sec * 1000.0f);
-
-    // count frames to skip
-    while (g_Time > g_Interval)
-    {
-        g_Time -= g_Interval;
-        ++frameCount;
-    }
-
     // calculate next rotation angle
-    g_Angle += (g_RotationSpeed * frameCount);
+    g_Angle += (g_RotationSpeed * timeStep_sec * 10.0f);
 
     // is rotating angle out of bounds?
     while (g_Angle >= 6.28f)
@@ -226,7 +208,7 @@ void on_GLES2_Render()
     miniMatrixMultiply(&yRotateMatrix, &translateMatrix, &modelViewMatrix);
 
     // connect model view matrix to shader
-    GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
+    GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // configure texture to draw

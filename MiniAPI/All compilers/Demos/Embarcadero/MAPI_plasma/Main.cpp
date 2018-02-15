@@ -3,8 +3,8 @@
  *****************************************************************************
  * Description : An old school plasma effect that use shader for calculation *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
- *               free to copy or redistribute this file, modify it, or use   *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
  *****************************************************************************/
@@ -28,18 +28,16 @@
 // plasma vertex shader program
 const char* g_pVSPlasma =
     "precision mediump float;"
-    "attribute vec4  qr_vPosition;"
-    "uniform   float qr_uTime;"
-    "uniform   vec2  qr_uSize;"
-    "uniform   mat4  qr_uProjection;"
-    "uniform   mat4  qr_uModelview;"
-    "varying   float qr_fTime;"
-    "varying   vec2  qr_fSize;"
+    "attribute vec3  mini_vPosition;"
+    "uniform   float mini_uTime;"
+    "uniform   vec2  mini_uSize;"
+    "varying   float mini_fTime;"
+    "varying   vec2  mini_fSize;"
     "void main(void)"
     "{"
-    "    qr_fSize    = qr_uSize;"
-    "    qr_fTime    = qr_uTime;"
-    "    gl_Position = qr_uProjection * qr_uModelview * qr_vPosition;"
+    "    mini_fSize  = mini_uSize;"
+    "    mini_fTime  = mini_uTime;"
+    "    gl_Position = vec4(mini_vPosition, 1.0);"
     "}";
 //------------------------------------------------------------------------------
 // plasma fragment shader program. NOTE the above used plasma algorithm is based on Bidouille.org
@@ -47,21 +45,21 @@ const char* g_pVSPlasma =
 // http://www.bidouille.org/prog/plasma
 const char* g_pFSPlasma =
     "precision mediump float;"
-    "varying float qr_fTime;"
-    "varying vec2  qr_fSize;"
+    "varying float mini_fTime;"
+    "varying vec2  mini_fSize;"
     "void main(void)"
     "{"
     "    const float pi      = 3.1415926535897932384626433832795;"
     "    vec2        vK      = vec2(0.34, 0.25);"
-    "    vec2        vCoords = vec2((gl_FragCoord.x / qr_fSize.x) * 100.0,"
-    "                               (gl_FragCoord.y / qr_fSize.y) * 100.0);"
+    "    vec2        vCoords = vec2((gl_FragCoord.x / mini_fSize.x) * 100.0,"
+    "                               (gl_FragCoord.y / mini_fSize.y) * 100.0);"
     "    float v             = 0.0;"
     "    vec2  c             = vCoords * (vK - (vK / 2.0));"
-    "    v                  += sin((c.x + qr_fTime));"
-    "    v                  += sin((c.y + qr_fTime) / 2.0);"
-    "    v                  += sin((c.x + c.y + qr_fTime) / 2.0);"
-    "    c                  += vK / 2.0 * vec2(sin(qr_fTime / 3.0), cos(qr_fTime / 2.0));"
-    "    v                  += sin(sqrt(c.x * c.x + c.y * c.y + 1.0) + qr_fTime);"
+    "    v                  += sin((c.x + mini_fTime));"
+    "    v                  += sin((c.y + mini_fTime) / 2.0);"
+    "    v                  += sin((c.x + c.y + mini_fTime) / 2.0);"
+    "    c                  += vK / 2.0 * vec2(sin(mini_fTime / 3.0), cos(mini_fTime / 2.0));"
+    "    v                  += sin(sqrt(c.x * c.x + c.y * c.y + 1.0) + mini_fTime);"
     "    v                   = v / 2.0;"
     "    vec3  col           = vec3(1, sin(pi * v), cos(pi * v));"
     "    gl_FragColor        = vec4(col * 0.5 + 0.5, 1);"
@@ -120,8 +118,8 @@ void __fastcall TMainForm::FormShow(TObject *Sender)
 void __fastcall TMainForm::FormResize(TObject* pSender)
 {
     // update the viewport
-    CreateViewport(ClientWidth, ClientHeight);
-}
+    glViewport(0, 0, ClientWidth, ClientHeight);
+}
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormPaint(TObject* pSender)
 {
@@ -171,49 +169,16 @@ void TMainForm::DisableOpenGL(HWND hwnd, HDC hDC, HGLRC hRC)
     ReleaseDC(hwnd, hDC);
 }
 //------------------------------------------------------------------------------
-void TMainForm::CreateViewport(float w, float h)
-{
-    // get orthogonal matrix
-    float left;
-    float right;
-    float top;
-    float bottom;
-    float zNear;
-    float zFar;
-
-    // create the OpenGL viewport
-    glViewport(0, 0, w, h);
-
-    // transform the width and height to keep the correct aspect ratio
-    w /= h;
-    h /= h;
-
-    // calculate the screen bounds (in the OpenGL view)
-    left   = -(w * 0.5f);
-    right  =  (w * 0.5f);
-    top    =  (h * 0.5f);
-    bottom = -(h * 0.5f);
-    zNear  = -1.0f;
-    zFar   =  1.0f;
-
-    MINI_Matrix matrix;
-    miniGetOrtho(&left, &right, &bottom, &top, &zNear, &zFar, &matrix);
-
-    // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
-    glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
-}
-//------------------------------------------------------------------------------
 void TMainForm::InitScene(int w, int h)
 {
     // compile, link and use shader
-    m_ShaderProgram = miniCompileShaders(g_pVSPlasma, g_pFSPlasma);
+    m_ShaderProgram = miniCompileShaders(g_pVSPlasma, g_pFSPlasma);
     glUseProgram(m_ShaderProgram);
 
     // get shader attributes
-    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram,  "qr_vPosition");
-    m_TimeSlot            = glGetUniformLocation(m_ShaderProgram, "qr_uTime");
-    m_SizeSlot            = glGetUniformLocation(m_ShaderProgram, "qr_uSize");
+    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram,  "mini_vPosition");
+    m_TimeSlot            = glGetUniformLocation(m_ShaderProgram, "mini_uTime");
+    m_SizeSlot            = glGetUniformLocation(m_ShaderProgram, "mini_uSize");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -227,7 +192,7 @@ void TMainForm::InitScene(int w, int h)
     glFrontFace(GL_CCW);
 
     // create the viewport
-    CreateViewport(w, h);
+    glViewport(0, 0, w, h);
 
     m_VertexFormat.m_UseNormals  = 0;
     m_VertexFormat.m_UseTextures = 0;
@@ -241,10 +206,10 @@ void TMainForm::InitScene(int w, int h)
                       &m_pSurfaceVB,
                       &m_SurfaceVertexCount);
 
-    // notify shader about screen size
-    glUniform2f(m_SizeSlot, w, h);
+    // notify shader about screen size
+    glUniform2f(m_SizeSlot, w, h);
 }
-//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 void TMainForm::DeleteScene()
 {
     // delete surface vertices
@@ -276,22 +241,10 @@ void TMainForm::UpdateScene(float elapsedTime)
 //------------------------------------------------------------------------------
 void TMainForm::DrawScene()
 {
-    MINI_Matrix modelViewMatrix;
-
     miniBeginScene(0.0f, 0.0f, 0.0f, 1.0f);
 
-    // simply get the identity matrix
-    miniGetIdentity(&modelViewMatrix);
-
-    // connect model view matrix to shader
-    GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "qr_uModelview");
-    glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
-
     // draw the plasma
-    miniDrawSurface(m_pSurfaceVB,
-                    m_SurfaceVertexCount,
-                    &m_VertexFormat,
-                    &m_Shader);
+    miniDrawSurface(m_pSurfaceVB, m_SurfaceVertexCount, &m_VertexFormat, &m_Shader);
 
     miniEndScene();
 }

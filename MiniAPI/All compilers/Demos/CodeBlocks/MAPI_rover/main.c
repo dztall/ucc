@@ -31,20 +31,17 @@
 void CreateViewport(float w, float h);
 
 //------------------------------------------------------------------------------
-MINI_Shader        g_Shader;
-GLuint             g_ShaderProgram    = 0;
-float*             g_pVertices        = 0;
-unsigned           g_VertexCount      = 0;
-MINI_MdlCmds*      g_pMdlCmds         = 0;
-MINI_Index*        g_pIndexes         = 0;
-unsigned           g_IndexCount       = 0;
-float              g_Angle            = 0.0f;
-float              g_RotationSpeed    = 0.1f;
-float              g_Time             = 0.0f;
-float              g_Interval         = 0.0f;
-const unsigned int g_FPS              = 15;
-int                g_SceneInitialized = 0;
-MINI_VertexFormat  g_VertexFormat;
+MINI_Shader       g_Shader;
+GLuint            g_ShaderProgram    = 0;
+float*            g_pVertices        = 0;
+unsigned          g_VertexCount      = 0;
+MINI_MdlCmds*     g_pMdlCmds         = 0;
+MINI_Index*       g_pIndexes         = 0;
+unsigned          g_IndexCount       = 0;
+float             g_Angle            = 0.0f;
+float             g_RotationSpeed    = 0.1f;
+int               g_SceneInitialized = 0;
+MINI_VertexFormat g_VertexFormat;
 //------------------------------------------------------------------------------
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -137,7 +134,7 @@ void CreateViewport(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -147,8 +144,8 @@ void InitScene(int w, int h)
     g_ShaderProgram = miniCompileShaders(miniGetVSColored(), miniGetFSColored());
     glUseProgram(g_ShaderProgram);
 
-    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
+    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "mini_vPosition");
+    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "mini_vColor");
 
     // create the viewport
     CreateViewport(w, h);
@@ -171,9 +168,6 @@ void InitScene(int w, int h)
                     &g_pMdlCmds,
                     &g_pIndexes,
                     &g_IndexCount);
-
-    // calculate frame interval
-    g_Interval = 1000.0f / g_FPS;
 
     g_SceneInitialized = 1;
 }
@@ -213,20 +207,8 @@ void DeleteScene()
 //------------------------------------------------------------------------------
 void UpdateScene(float elapsedTime)
 {
-    unsigned int frameCount = 0;
-
-    // calculate next time
-    g_Time += (elapsedTime * 1000.0f);
-
-    // count frames to skip
-    while (g_Time > g_Interval)
-    {
-        g_Time -= g_Interval;
-        ++frameCount;
-    }
-
     // calculate next rotation angle
-    g_Angle += (g_RotationSpeed * frameCount);
+    g_Angle += (g_RotationSpeed * elapsedTime * 10.0f);
 
     // is rotating angle out of bounds?
     while (g_Angle >= 6.28f)
@@ -288,7 +270,7 @@ void DrawScene()
     miniMatrixMultiply(&modelViewMatrix, &scaleMatrix,     &modelViewMatrix);
 
     // connect model view matrix to shader
-    modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
+    modelviewUniform = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // draw the rover model

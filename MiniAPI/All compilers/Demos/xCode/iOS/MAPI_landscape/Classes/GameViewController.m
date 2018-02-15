@@ -4,7 +4,7 @@
  * Description : A landscape generator based on a grayscale image, swipe to  *
  *               left or right to increase or decrease the rotation speed    *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -34,9 +34,6 @@
     float             m_MapScale;
     float             m_Angle;
     float             m_RotationSpeed;
-    float             m_Time;
-    float             m_Interval;
-    unsigned int      m_FPS;
     GLuint            m_TextureIndex;
     GLuint            m_TexSamplerSlot;
     MINI_Mesh*        m_pLandscapeMesh;
@@ -109,9 +106,6 @@
     m_MapScale       = 0.2f;
     m_Angle          = 0.0f;
     m_RotationSpeed  = 0.02f;
-    m_Time           = 0.0f;
-    m_Interval       = 0.0f;
-    m_FPS            = 15;
     m_TextureIndex   = GL_INVALID_VALUE;
     m_TexSamplerSlot = 0;
     m_pLandscapeMesh = 0;
@@ -214,7 +208,7 @@
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //----------------------------------------------------------------------------
@@ -229,10 +223,10 @@
     glUseProgram(m_ShaderProgram);
 
     // get shader attributes
-    m_Shader.m_VertexSlot   = glGetAttribLocation(m_ShaderProgram, "qr_vPosition");
-    m_Shader.m_ColorSlot    = glGetAttribLocation(m_ShaderProgram, "qr_vColor");
-    m_Shader.m_TexCoordSlot = glGetAttribLocation(m_ShaderProgram, "qr_vTexCoord");
-    m_TexSamplerSlot        = glGetAttribLocation(m_ShaderProgram, "qr_sColorMap");
+    m_Shader.m_VertexSlot   = glGetAttribLocation(m_ShaderProgram, "mini_vPosition");
+    m_Shader.m_ColorSlot    = glGetAttribLocation(m_ShaderProgram, "mini_vColor");
+    m_Shader.m_TexCoordSlot = glGetAttribLocation(m_ShaderProgram, "mini_vTexCoord");
+    m_TexSamplerSlot        = glGetAttribLocation(m_ShaderProgram, "mini_sColorMap");
 
     // get the screen rect
     CGRect screenRect = [[UIScreen mainScreen] bounds];
@@ -289,9 +283,6 @@
     m_TextureIndex = miniLoadTexture(pTextureFileName);
 
     free(pTextureFileName);
-
-    // calculate frame interval
-    m_Interval = 1000.0f / m_FPS;
 }
 //----------------------------------------------------------------------------
 - (void) DeleteScene
@@ -314,20 +305,8 @@
 //----------------------------------------------------------------------------
 - (void) UpdateScene :(float)elapsedTime
 {
-    unsigned int frameCount = 0;
-
-    // calculate next time
-    m_Time += (elapsedTime * 1000.0f);
-
-    // count frames to skip
-    while (m_Time > m_Interval)
-    {
-        m_Time -= m_Interval;
-        ++frameCount;
-    }
-
     // calculate next rotation angle
-    m_Angle += (m_RotationSpeed * frameCount);
+    m_Angle += (m_RotationSpeed * elapsedTime * 10.0f);
 
     // is rotating angle out of bounds?
     while (m_Angle >= 6.28f)
@@ -362,7 +341,7 @@
     miniMatrixMultiply(&yRotateMatrix, &translateMatrix, &modelViewMatrix);
 
     // connect model view matrix to shader
-    GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "qr_uModelview");
+    GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // configure texture to draw

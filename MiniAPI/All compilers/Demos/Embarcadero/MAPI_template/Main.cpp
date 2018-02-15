@@ -3,7 +3,7 @@
  *****************************************************************************
  * Description : Main form in which a MiniAPI project can be created         *
  * Developer   :                                                             *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -71,7 +71,7 @@ void __fastcall TMainForm::FormResize(TObject* pSender)
 {
     // update the viewport
     CreateViewport(ClientWidth, ClientHeight);
-}
+}
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormPaint(TObject* pSender)
 {
@@ -136,19 +136,19 @@ void TMainForm::CreateViewport(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
 void TMainForm::InitScene(int w, int h)
 {
     // compile, link and use shader
-    m_ShaderProgram = miniCompileShaders(miniGetVSColored(), miniGetFSColored());
+    m_ShaderProgram = miniCompileShaders(miniGetVSColored(), miniGetFSColored());
     glUseProgram(m_ShaderProgram);
 
     // get shader attributes
-    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "qr_vPosition");
-    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "qr_vColor");
+    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "mini_vPosition");
+    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "mini_vColor");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -161,9 +161,9 @@ void TMainForm::InitScene(int w, int h)
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
-    // todo: write code here
-}
-//------------------------------------------------------------------------------
+    // todo: write code here
+}
+//------------------------------------------------------------------------------
 void TMainForm::DeleteScene()
 {
     // todo: write code here

@@ -4,14 +4,14 @@
  * Description : This module provides the functions required to draw the     *
  *               objects inside a scene                                      *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
  *****************************************************************************/
 
-#ifndef QR_MIiniRendererH
-#define QR_MIiniRendererH
+#ifndef MiniRendererH
+#define MiniRendererH
 
 // mini API
 #include "MiniCommon.h"
@@ -53,7 +53,7 @@ typedef enum
         /**
         * Ends to draw a scene
         */
-        void miniEndScene();
+        void miniEndScene(void);
 
         /**
         * Draws a vertex buffer
@@ -108,6 +108,46 @@ typedef enum
                               unsigned           vertexCount,
                               MINI_VertexFormat* pVertexFormat,
                               MINI_Shader*       pShader);
+
+        /**
+        * Draws a disk
+        *@param pVertices - disk vertex buffer
+        *@param vertexCount - vertex count in buffer
+        *@param pVertexFormat - vertex format to use
+        *@param pShader - shader parameters
+        */
+        void miniDrawDisk(float*             pVertices,
+                          unsigned           vertexCount,
+                          MINI_VertexFormat* pVertexFormat,
+                          MINI_Shader*       pShader);
+
+        /**
+        * Draws a ring
+        *@param pVertices - ring vertex buffer
+        *@param vertexCount - vertex count in buffer
+        *@param pVertexFormat - vertex format to use
+        *@param pShader - shader parameters
+        */
+        void miniDrawRing(float*             pVertices,
+                          unsigned           vertexCount,
+                          MINI_VertexFormat* pVertexFormat,
+                          MINI_Shader*       pShader);
+
+        /**
+        * Draws a spiral
+        *@param pVertices - spiral vertex buffer
+        *@param vertexCount - vertex count in buffer
+        *@param pIndexes - spiral indices buffer
+        *@param indexCount - indice count in buffer
+        *@param pVertexFormat - vertex format to use
+        *@param pShader - shader parameters
+        */
+        void miniDrawSpiral(float*             pVertices,
+                            unsigned           vertexCount,
+                            MINI_Index*        pIndexes,
+                            unsigned           indexCount,
+                            MINI_VertexFormat* pVertexFormat,
+                            MINI_Shader*       pShader);
 
         /**
         * Draws a MDL model

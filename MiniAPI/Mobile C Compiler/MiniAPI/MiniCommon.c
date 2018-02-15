@@ -4,7 +4,7 @@
  * Description : This module provides the common functions and declarations  *
  *               used by the whole API                                       *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -19,13 +19,19 @@
 //----------------------------------------------------------------------------
 // File functions
 //----------------------------------------------------------------------------
-int miniGetFileSize(const char* pFileName)
+long miniGetFileSize(const char* pFileName)
 {
     FILE* pFile;
-    int   fileSize;
+    long  fileSize;
+
+    // open the file
+    pFile = fopen(pFileName, "rb");
+
+    // succeeded?
+    if (!pFile)
+        return 0;
 
     // measure the file size
-    pFile = fopen(pFileName, "rb");
     fseek(pFile, 0, SEEK_END);
     fileSize = ftell(pFile);
     fclose(pFile);
@@ -60,7 +66,7 @@ void miniMax(const float* pA, const float* pB, float* pR)
 int miniValueIsBetween(const float* pV,
                        const float* pS,
                        const float* pE,
-                       const float* pEpsylon)
+                       const float* pTolerance)
 {
     float minVal;
     float maxVal;
@@ -69,7 +75,7 @@ int miniValueIsBetween(const float* pV,
     miniMax(pS, pE, &maxVal);
 
     // check if each value is between start and end limits considering tolerance
-    if (*pV >= (minVal - *pEpsylon) && *pV <= (maxVal + *pEpsylon))
+    if (*pV >= (minVal - *pTolerance) && *pV <= (maxVal + *pTolerance))
         return 1;
 
     return 0;

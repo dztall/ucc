@@ -4,7 +4,7 @@
  * Description : This module provides a ray casting engine to draw a small   *
  *               game level like Wolfenstein                                 *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -350,7 +350,7 @@ void miniDrawLevelItem(const MINI_Vector3*       pTranslate,
     miniMatrixMultiply(&rotateMatrix, &translateMatrix, &modelViewMatrix);
 
     // connect model view matrix to shader
-    modelviewUniform = glGetUniformLocation(pDrawInfo->m_ShaderProgram, "qr_uModelview");
+    modelviewUniform = glGetUniformLocation(pDrawInfo->m_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // draw the item
@@ -399,7 +399,7 @@ void miniDrawLevel(const MINI_LevelItem*     pLevel,
     }
 
     // connect model view matrix to shader
-    viewUniform = glGetUniformLocation(pDrawInfo->m_ShaderProgram, "qr_uView");
+    viewUniform = glGetUniformLocation(pDrawInfo->m_ShaderProgram, "mini_uView");
     glUniformMatrix4fv(viewUniform, 1, 0, &viewMatrix.m_Table[0][0]);
 
     // iterate through the level items to draw
@@ -559,7 +559,7 @@ void miniDrawLevel(const MINI_LevelItem*     pLevel,
         miniGetTranslateMatrix(&t, &modelViewMatrix);
 
         // connect model view matrix to shader
-        modelViewUniform = glGetUniformLocation(pDrawInfo->m_ShaderProgram, "qr_uModelview");
+        modelViewUniform = glGetUniformLocation(pDrawInfo->m_ShaderProgram, "mini_uModelview");
         glUniformMatrix4fv(modelViewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
         // bind soil texture

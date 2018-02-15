@@ -111,27 +111,25 @@ const int g_Level5[15] =
     0, 1, 1, 1, 0,
 };
 //------------------------------------------------------------------------------
-MINI_Shader            g_Shader;
-MINI_Screen            g_Screen;
-MINI_Ball              g_Ball;
-MINI_Bar               g_Bar;
-MINI_Block             g_Blocks[15];
-float*                 g_pBarVertices       = 0;
-unsigned               g_BarVerticesCount   = 0;
-float*                 g_pBlockVertices     = 0;
-unsigned               g_BlockVerticesCount = 0;
-float*                 g_pBallVertices      = 0;
-MINI_Index*            g_pBallIndexes       = 0;
-unsigned               g_BallVerticesCount  = 0;
-unsigned               g_BallIndexCount     = 0;
-int                    g_BlockColumns       = 5;
-int                    g_BlockLines         = 3;
-int                    g_Level              = 0;
-int                    g_SceneInitialized   = 0;
-static ALCdevice*      g_pOpenALDevice      = 0;
-static ALCcontext*     g_pOpenALContext     = 0;
-MINI_VertexFormat      g_VertexFormat;
-GLuint                 g_ShaderProgram;
+MINI_Shader        g_Shader;
+MINI_Screen        g_Screen;
+MINI_Ball          g_Ball;
+MINI_Bar           g_Bar;
+MINI_Block         g_Blocks[15];
+float*             g_pBarVertices       = 0;
+unsigned           g_BarVerticesCount   = 0;
+float*             g_pBlockVertices     = 0;
+unsigned           g_BlockVerticesCount = 0;
+float*             g_pBallVertices      = 0;
+unsigned           g_BallVerticesCount  = 0;
+int                g_BlockColumns       = 5;
+int                g_BlockLines         = 3;
+int                g_Level              = 0;
+int                g_SceneInitialized   = 0;
+static ALCdevice*  g_pOpenALDevice      = 0;
+static ALCcontext* g_pOpenALContext     = 0;
+MINI_VertexFormat  g_VertexFormat;
+GLuint             g_ShaderProgram;
 //------------------------------------------------------------------------------
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -290,7 +288,7 @@ void CreateViewport(float w, float h)
                  &ortho);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &ortho.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -313,8 +311,8 @@ void InitScene(int w, int h)
     glUseProgram(g_ShaderProgram);
 
     // get vertex and color slots
-    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
+    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "mini_vPosition");
+    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "mini_vColor");
 
     // create the viewport and configure the screen
     CreateViewport(w, h);
@@ -371,23 +369,23 @@ void InitScene(int w, int h)
     g_VertexFormat.m_UseTextures = 0;
     g_VertexFormat.m_UseColors   = 1;
 
-    // generate sphere to draw
-    miniCreateSphere(&g_Ball.m_Geometry.m_Radius,
-                     20,
-                     50,
-                     0xFFFF00FF,
-                     &g_VertexFormat,
-                     &g_pBallVertices,
-                     &g_BallVerticesCount,
-                     &g_pBallIndexes,
-                     &g_BallIndexCount);
+    // generate disk to draw
+    miniCreateDisk(0.0f,
+                   0.0f,
+                   g_Ball.m_Geometry.m_Radius,
+                   20,
+                   0xFFFF00FF,
+                  &g_VertexFormat,
+                  &g_pBallVertices,
+                  &g_BallVerticesCount);
 
     surfaceWidth  = 0.06f;
     surfaceHeight = 0.0125f;
 
+    // create a surface for the bar
     miniCreateSurface(&surfaceWidth,
                       &surfaceHeight,
-                      0xFF0033FF,
+                       0xFF0033FF,
                       &g_VertexFormat,
                       &g_pBarVertices,
                       &g_BarVerticesCount);
@@ -403,9 +401,10 @@ void InitScene(int w, int h)
     g_pBarVertices[25] = 0.2f;
     g_pBarVertices[26] = 0.4f;
 
+    // create a surface for the blocks
     miniCreateSurface(&surfaceWidth,
                       &surfaceHeight,
-                      0x0000FFFF,
+                       0x0000FFFF,
                       &g_VertexFormat,
                       &g_pBlockVertices,
                       &g_BlockVerticesCount);
@@ -473,13 +472,6 @@ void InitScene(int w, int h)
 void DeleteScene()
 {
     g_SceneInitialized = 0;
-
-    // delete ball index table
-    if (g_pBallIndexes)
-    {
-        free(g_pBallIndexes);
-        g_pBallIndexes = 0;
-    }
 
     // delete ball vertices
     if (g_pBallVertices)
@@ -774,16 +766,11 @@ void DrawScene()
     miniGetTranslateMatrix(&t, &modelViewMatrix);
 
     // connect model view matrix to shader
-    GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
+    GLint modelviewUniform = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // draw the ball
-    miniDrawSphere(g_pBallVertices,
-                   g_BallVerticesCount,
-                   g_pBallIndexes,
-                   g_BallIndexCount,
-                   &g_VertexFormat,
-                   &g_Shader);
+    miniDrawDisk(g_pBallVertices, g_BallVerticesCount, &g_VertexFormat, &g_Shader);
 
     // is bar currently exploding?
     if (!g_Bar.m_Exploding)

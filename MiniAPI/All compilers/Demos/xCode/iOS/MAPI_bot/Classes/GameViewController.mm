@@ -3,7 +3,7 @@
  *****************************************************************************
  * Description : An intelligent bot demo                                     *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -69,50 +69,50 @@ const int g_BotPath[] =
 //------------------------------------------------------------------------------
 const char* g_BotVS =
 "precision mediump float;"
-"attribute vec4  qr_vPosition;"
-"attribute vec4  qr_vColor;"
-"attribute vec2  qr_vTexCoord;"
-"uniform   mat4  qr_uProjection;"
-"uniform   mat4  qr_uView;"
-"uniform   mat4  qr_uModelview;"
-"uniform   float qr_uAlpha;"
-"uniform   float qr_uFadeFactor;"
-"uniform   int   qr_uRedFilter;"
-"varying   vec4  qr_fColor;"
-"varying   vec2  qr_fTexCoord;"
-"varying   float qr_fAlpha;"
-"varying   float qr_fRedFilter;"
-"varying   float qr_fFadeFactor;"
+"attribute vec4  mini_vPosition;"
+"attribute vec4  mini_vColor;"
+"attribute vec2  mini_vTexCoord;"
+"uniform   mat4  mini_uProjection;"
+"uniform   mat4  mini_uView;"
+"uniform   mat4  mini_uModelview;"
+"uniform   float mini_uAlpha;"
+"uniform   float mini_uFadeFactor;"
+"uniform   int   mini_uRedFilter;"
+"varying   vec4  mini_fColor;"
+"varying   vec2  mini_fTexCoord;"
+"varying   float mini_fAlpha;"
+"varying   float mini_fRedFilter;"
+"varying   float mini_fFadeFactor;"
 "void main(void)"
 "{"
-"    qr_fColor      = qr_vColor;"
-"    qr_fTexCoord   = qr_vTexCoord;"
-"    qr_fAlpha      = qr_uAlpha;"
-"    qr_fFadeFactor = qr_uFadeFactor;"
-"    gl_Position    = qr_uProjection * qr_uView * qr_uModelview * qr_vPosition;"
+"    mini_fColor      = mini_vColor;"
+"    mini_fTexCoord   = mini_vTexCoord;"
+"    mini_fAlpha      = mini_uAlpha;"
+"    mini_fFadeFactor = mini_uFadeFactor;"
+"    gl_Position    = mini_uProjection * mini_uView * mini_uModelview * mini_vPosition;"
 ""
-"    if (qr_uRedFilter == 1)"
-"        qr_fRedFilter = 1.0;"
+"    if (mini_uRedFilter == 1)"
+"        mini_fRedFilter = 1.0;"
 "    else"
-"        qr_fRedFilter = 0.0;"
+"        mini_fRedFilter = 0.0;"
 "}";
 //------------------------------------------------------------------------------
 const char* g_BotFS =
 "precision mediump float;"
-"uniform sampler2D  qr_sColorMap;"
-"varying lowp vec4  qr_fColor;"
-"varying      vec2  qr_fTexCoord;"
-"varying      float qr_fAlpha;"
-"varying      float qr_fRedFilter;"
-"varying      float qr_fFadeFactor;"
+"uniform sampler2D  mini_sColorMap;"
+"varying lowp vec4  mini_fColor;"
+"varying      vec2  mini_fTexCoord;"
+"varying      float mini_fAlpha;"
+"varying      float mini_fRedFilter;"
+"varying      float mini_fFadeFactor;"
 "void main(void)"
 "{"
-"    vec4 color = qr_fColor * texture2D(qr_sColorMap, qr_fTexCoord);"
+"    vec4 color = mini_fColor * texture2D(mini_sColorMap, mini_fTexCoord);"
 ""
-"    if (qr_fRedFilter > 0.5)"
-"        gl_FragColor = vec4(color.x, 0.0, 0.0, qr_fAlpha);"
+"    if (mini_fRedFilter > 0.5)"
+"        gl_FragColor = vec4(color.x, 0.0, 0.0, mini_fAlpha);"
 "    else"
-"        gl_FragColor = vec4(color.x * qr_fFadeFactor, color.y * qr_fFadeFactor, color.z * qr_fFadeFactor, qr_fAlpha);"
+"        gl_FragColor = vec4(color.x * mini_fFadeFactor, color.y * mini_fFadeFactor, color.z * mini_fFadeFactor, mini_fAlpha);"
 "}";
 //------------------------------------------------------------------------------
 // MINI_CallbackManager
@@ -1016,15 +1016,15 @@ void MINI_CallbackManager::ExecuteTasks(float elapsedTime, MINI_BotItem* pItems)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //----------------------------------------------------------------------------
 - (void)InitScene
 {
     float          bulletRadius;
-    unsigned int   playerStepSoundFileLen;
-    unsigned int   playerFireSoundFileLen;
+    unsigned       playerStepSoundFileLen;
+    unsigned       playerFireSoundFileLen;
     unsigned char* pPlayerStepSndBuffer;
     unsigned char* pPlayerFireSndBuffer;
     MINI_Texture   texture;
@@ -1036,13 +1036,13 @@ void MINI_CallbackManager::ExecuteTasks(float elapsedTime, MINI_BotItem* pItems)
     glUseProgram(m_ShaderProgram);
     
     // get shader attributes
-    m_Shader.m_VertexSlot   = glGetAttribLocation(m_ShaderProgram,  "qr_vPosition");
-    m_Shader.m_ColorSlot    = glGetAttribLocation(m_ShaderProgram,  "qr_vColor");
-    m_Shader.m_TexCoordSlot = glGetAttribLocation(m_ShaderProgram,  "qr_vTexCoord");
-    m_TexSamplerSlot        = glGetAttribLocation(m_ShaderProgram,  "qr_sColorMap");
-    m_AlphaSlot             = glGetUniformLocation(m_ShaderProgram, "qr_uAlpha");
-    m_FadeFactorSlot        = glGetUniformLocation(m_ShaderProgram, "qr_uFadeFactor");
-    m_RedFilterSlot         = glGetUniformLocation(m_ShaderProgram, "qr_uRedFilter");
+    m_Shader.m_VertexSlot   = glGetAttribLocation(m_ShaderProgram,  "mini_vPosition");
+    m_Shader.m_ColorSlot    = glGetAttribLocation(m_ShaderProgram,  "mini_vColor");
+    m_Shader.m_TexCoordSlot = glGetAttribLocation(m_ShaderProgram,  "mini_vTexCoord");
+    m_TexSamplerSlot        = glGetAttribLocation(m_ShaderProgram,  "mini_sColorMap");
+    m_AlphaSlot             = glGetUniformLocation(m_ShaderProgram, "mini_uAlpha");
+    m_FadeFactorSlot        = glGetUniformLocation(m_ShaderProgram, "mini_uFadeFactor");
+    m_RedFilterSlot         = glGetUniformLocation(m_ShaderProgram, "mini_uRedFilter");
     
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -1175,9 +1175,9 @@ void MINI_CallbackManager::ExecuteTasks(float elapsedTime, MINI_BotItem* pItems)
     [MiniObjectiveCHelper ResourceToFileName :@"fire_and_reload" :@"wav" :&playerFireSoundFileName];
 
     // get the sound files length
-    playerStepSoundFileLen = miniGetFileSize(playerStepSoundFileName);
-    playerFireSoundFileLen = miniGetFileSize(playerFireSoundFileName);
-    
+    playerStepSoundFileLen = unsigned(miniGetFileSize(playerStepSoundFileName));
+    playerFireSoundFileLen = unsigned(miniGetFileSize(playerFireSoundFileName));
+
     // allocate buffers
     pPlayerStepSndBuffer = (unsigned char*)calloc(playerStepSoundFileLen, sizeof(unsigned char));
     pPlayerFireSndBuffer = (unsigned char*)calloc(playerFireSoundFileLen, sizeof(unsigned char));
@@ -1637,7 +1637,7 @@ void MINI_CallbackManager::ExecuteTasks(float elapsedTime, MINI_BotItem* pItems)
     miniMatrixMultiply(&combinedMatrixLevel2, &translateMatrix, &modelViewMatrix);
     
     // connect model view matrix to shader
-    modelviewUniform = glGetUniformLocation(m_ShaderProgram, "qr_uModelview");
+    modelviewUniform = glGetUniformLocation(m_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
     
     // bind the model texture

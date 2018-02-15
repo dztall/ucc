@@ -4,7 +4,7 @@
  * Description : A simple rover model, swipe to left or right to increase or *
  *               decrease the rotation speed                                 *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -35,10 +35,7 @@
     unsigned          m_IndexCount;
     GLuint            m_ShaderProgram;
     float             m_Angle;
-    float             m_Time;
-    float             m_Interval;
     float             m_RotationSpeed;
-    unsigned int      m_FPS;
     CFTimeInterval    m_PreviousTime;
 }
 
@@ -109,10 +106,7 @@
     m_IndexCount    = 0;
     m_ShaderProgram = 0;
     m_Angle         = 0.0f;
-    m_Time          = 0.0f;
-    m_Interval      = 0.0f;
     m_RotationSpeed = 0.1f;
-    m_FPS           = 15;
     m_PreviousTime  = CACurrentMediaTime();
 
     // add a swipe gesture (to the left) to the view
@@ -173,7 +167,7 @@
     const CFTimeInterval now            =  CACurrentMediaTime();
     const double         elapsedTime    = (now - m_PreviousTime);
                          m_PreviousTime =  now;
-    
+
     [self UpdateScene :elapsedTime];
     [self DrawScene];
 }
@@ -214,7 +208,7 @@
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //----------------------------------------------------------------------------
@@ -224,8 +218,8 @@
     m_ShaderProgram = miniCompileShaders(miniGetVSColored(), miniGetFSColored());
     glUseProgram(m_ShaderProgram);
 
-    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "qr_vPosition");
-    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "qr_vColor");
+    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "mini_vPosition");
+    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "mini_vColor");
 
     // get the screen rect
     CGRect screenRect = [[UIScreen mainScreen] bounds];
@@ -251,9 +245,6 @@
                     &m_pMdlCmds,
                     &m_pIndexes,
                     &m_IndexCount);
-
-    // calculate frame interval
-    m_Interval = 1000.0f / m_FPS;
 }
 //----------------------------------------------------------------------------
 - (void) DeleteScene
@@ -289,20 +280,8 @@
 //----------------------------------------------------------------------------
 - (void) UpdateScene :(float)elapsedTime
 {
-    unsigned int frameCount = 0;
-
-    // calculate next time
-    m_Time += (elapsedTime * 1000.0f);
-
-    // count frames to skip
-    while (m_Time > m_Interval)
-    {
-        m_Time -= m_Interval;
-        ++frameCount;
-    }
-
     // calculate next rotation angle
-    m_Angle += (m_RotationSpeed * frameCount);
+    m_Angle += (m_RotationSpeed * elapsedTime * 10.0f);
 
     // is rotating angle out of bounds?
     while (m_Angle >= 6.28f)
@@ -364,7 +343,7 @@
     miniMatrixMultiply(&modelViewMatrix, &scaleMatrix,     &modelViewMatrix);
 
     // connect model view matrix to shader
-    modelviewUniform = glGetUniformLocation(m_ShaderProgram, "qr_uModelview");
+    modelviewUniform = glGetUniformLocation(m_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // draw the rover model

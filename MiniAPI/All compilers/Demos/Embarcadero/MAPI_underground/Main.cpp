@@ -5,7 +5,7 @@
  *               Doom or Wolfenstein. Press the up or down arrow keys to     *
  *               walk, and the left or right arrow keys to rotate            *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -49,21 +49,21 @@ const char* g_pLevelMap =
 //---------------------------------------------------------------------------
 const char* miniVSTextured2 =
     "precision mediump float;"
-    "attribute vec4 qr_vPosition;"
-    "attribute vec4 qr_vColor;"
-    "attribute vec2 qr_vTexCoord;"
-    "uniform   mat4 qr_uProjection;"
-    "uniform   mat4 qr_uView;"
-    "uniform   mat4 qr_uModelview;"
-    "varying   vec4 qr_fColor;"
-    "varying   vec2 qr_fTexCoord;"
+    "attribute vec4 mini_vPosition;"
+    "attribute vec4 mini_vColor;"
+    "attribute vec2 mini_vTexCoord;"
+    "uniform   mat4 mini_uProjection;"
+    "uniform   mat4 mini_uView;"
+    "uniform   mat4 mini_uModelview;"
+    "varying   vec4 mini_fColor;"
+    "varying   vec2 mini_fTexCoord;"
     "void main(void)"
     "{"
-    "    qr_fColor    = qr_vColor;"
-    "    qr_fTexCoord = qr_vTexCoord;"
-    "    gl_Position  = qr_uProjection * qr_uView * qr_uModelview * qr_vPosition;"
+    "    mini_fColor    = mini_vColor;"
+    "    mini_fTexCoord = mini_vTexCoord;"
+    "    gl_Position  = mini_uProjection * mini_uView * mini_uModelview * mini_vPosition;"
     "}";
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 TMainForm* MainForm;
 //---------------------------------------------------------------------------
 __fastcall TMainForm::TMainForm(TComponent* pOwner) :
@@ -136,7 +136,7 @@ void __fastcall TMainForm::FormResize(TObject* pSender)
 {
     // update the viewport
     CreateViewport(ClientWidth, ClientHeight);
-}
+}
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormPaint(TObject* pSender)
 {
@@ -224,7 +224,7 @@ void TMainForm::CreateViewport(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -235,10 +235,10 @@ void TMainForm::InitScene(int w, int h)
     glUseProgram(m_ShaderProgram);
 
     // get shader attributes
-    m_Shader.m_VertexSlot   = glGetAttribLocation(m_ShaderProgram, "qr_vPosition");
-    m_Shader.m_ColorSlot    = glGetAttribLocation(m_ShaderProgram, "qr_vColor");
-    m_Shader.m_TexCoordSlot = glGetAttribLocation(m_ShaderProgram, "qr_vTexCoord");
-    m_TexSamplerSlot        = glGetAttribLocation(m_ShaderProgram, "qr_sColorMap");
+    m_Shader.m_VertexSlot   = glGetAttribLocation(m_ShaderProgram, "mini_vPosition");
+    m_Shader.m_ColorSlot    = glGetAttribLocation(m_ShaderProgram, "mini_vColor");
+    m_Shader.m_TexCoordSlot = glGetAttribLocation(m_ShaderProgram, "mini_vTexCoord");
+    m_TexSamplerSlot        = glGetAttribLocation(m_ShaderProgram, "mini_sColorMap");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);

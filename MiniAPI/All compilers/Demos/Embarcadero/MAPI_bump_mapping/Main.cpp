@@ -4,8 +4,8 @@
  * Description : A bump mapped stone wall with diffuse light, hover with     *
  *               mouse on the wall to modify the light position              *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
- *               free to copy or redistribute this file, modify it, or use   *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
  *****************************************************************************/
@@ -32,37 +32,37 @@
 //------------------------------------------------------------------------------
 const char* g_pVSDiffuseBumpMap =
     "precision mediump float;"
-    "attribute vec4 qr_vPosition;"
-    "attribute vec4 qr_vColor;"
-    "attribute vec2 qr_vTexCoord;"
-    "uniform   vec3 qr_vLightPos;"
-    "uniform   mat4 qr_uProjection;"
-    "uniform   mat4 qr_uModelview;"
-    "varying   vec4 qr_fColor;"
-    "varying   vec2 qr_fTexCoord;"
-    "varying   vec3 qr_fLightPos;"
+    "attribute vec4 mini_vPosition;"
+    "attribute vec4 mini_vColor;"
+    "attribute vec2 mini_vTexCoord;"
+    "uniform   vec3 mini_vLightPos;"
+    "uniform   mat4 mini_uProjection;"
+    "uniform   mat4 mini_uModelview;"
+    "varying   vec4 mini_fColor;"
+    "varying   vec2 mini_fTexCoord;"
+    "varying   vec3 mini_fLightPos;"
     "void main(void)"
     "{"
-    "    qr_fColor    = qr_vColor;"
-    "    qr_fTexCoord = qr_vTexCoord;"
-    "    qr_fLightPos = qr_vLightPos;"
-    "    gl_Position  = qr_uProjection * qr_uModelview * qr_vPosition;"
+    "    mini_fColor    = mini_vColor;"
+    "    mini_fTexCoord = mini_vTexCoord;"
+    "    mini_fLightPos = mini_vLightPos;"
+    "    gl_Position  = mini_uProjection * mini_uModelview * mini_vPosition;"
     "}";
 //------------------------------------------------------------------------------
 // NOTE this shader was written on the base of the following article:
 // http://www.swiftless.com/tutorials/glsl/8_bump_mapping.html
 const char* g_pFSDiffuseBumpMap =
     "precision mediump float;"
-    "uniform sampler2D qr_sColorMap;"
-    "uniform sampler2D qr_sBumpMap;"
-    "varying lowp vec4 qr_fColor;"
-    "varying      vec2 qr_fTexCoord;"
-    "varying      vec3 qr_fLightPos;"
+    "uniform sampler2D mini_sColorMap;"
+    "uniform sampler2D mini_sBumpMap;"
+    "varying lowp vec4 mini_fColor;"
+    "varying      vec2 mini_fTexCoord;"
+    "varying      vec3 mini_fLightPos;"
     "void main(void)"
     "{"
-    "    vec3  normal  = normalize(texture2D(qr_sBumpMap, qr_fTexCoord).rgb * 2.0 - 1.0);"
-    "    float diffuse = clamp(dot(normal, qr_fLightPos), 0.0, 2.5);"
-    "    vec3  color   = diffuse * texture2D(qr_sColorMap, qr_fTexCoord).rgb;"
+    "    vec3  normal  = normalize(texture2D(mini_sBumpMap, mini_fTexCoord).rgb * 2.0 - 1.0);"
+    "    float diffuse = clamp(dot(normal, mini_fLightPos), 0.0, 2.5);"
+    "    vec3  color   = diffuse * texture2D(mini_sColorMap, mini_fTexCoord).rgb;"
     "    gl_FragColor  = vec4(color, 1.0);"
     "}";
 //---------------------------------------------------------------------------
@@ -117,7 +117,7 @@ void __fastcall TMainForm::FormResize(TObject* pSender)
 {
     // update the viewport
     CreateViewport(ClientWidth, ClientHeight);
-}
+}
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormPaint(TObject* pSender)
 {
@@ -188,23 +188,23 @@ void TMainForm::CreateViewport(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
 void TMainForm::InitScene(int w, int h)
 {
     // compile, link and use shader
-    m_ShaderProgram = miniCompileShaders(g_pVSDiffuseBumpMap, g_pFSDiffuseBumpMap);
+    m_ShaderProgram = miniCompileShaders(g_pVSDiffuseBumpMap, g_pFSDiffuseBumpMap);
     glUseProgram(m_ShaderProgram);
 
     // get shader attributes
-    m_Shader.m_VertexSlot   = glGetAttribLocation(m_ShaderProgram,  "qr_vPosition");
-    m_Shader.m_ColorSlot    = glGetAttribLocation(m_ShaderProgram,  "qr_vColor");
-    m_Shader.m_TexCoordSlot = glGetAttribLocation(m_ShaderProgram,  "qr_vTexCoord");
-    m_LightPos              = glGetUniformLocation(m_ShaderProgram, "qr_vLightPos");
-    m_TexSamplerSlot        = glGetUniformLocation(m_ShaderProgram, "qr_sColorMap");
-    m_BumpMapSamplerSlot    = glGetUniformLocation(m_ShaderProgram, "qr_sBumpMap");
+    m_Shader.m_VertexSlot   = glGetAttribLocation(m_ShaderProgram,  "mini_vPosition");
+    m_Shader.m_ColorSlot    = glGetAttribLocation(m_ShaderProgram,  "mini_vColor");
+    m_Shader.m_TexCoordSlot = glGetAttribLocation(m_ShaderProgram,  "mini_vTexCoord");
+    m_LightPos              = glGetUniformLocation(m_ShaderProgram, "mini_vLightPos");
+    m_TexSamplerSlot        = glGetUniformLocation(m_ShaderProgram, "mini_sColorMap");
+    m_BumpMapSamplerSlot    = glGetUniformLocation(m_ShaderProgram, "mini_sBumpMap");
 
     // notify shader about default light position
     glUniform3f(m_LightPos, 0.0f, 0.0f, 2.0f);
@@ -283,7 +283,7 @@ void TMainForm::DrawScene()
     miniGetTranslateMatrix(&t, &modelViewMatrix);
 
     // connect model view matrix to shader
-    GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "qr_uModelview");
+    GLint modelviewUniform = glGetUniformLocation(m_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // enable OpenGL texturing engine

@@ -4,8 +4,8 @@
  * Description : A textured sphere representing the earth, press the left or *
  *               right arrow keys to increase or decrease the rotation speed *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
- *               free to copy or redistribute this file, modify it, or use   *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
+ *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
  *****************************************************************************/
@@ -52,24 +52,21 @@ class TMainForm : public TForm
         virtual __fastcall ~TMainForm();
 
     private:
-        HDC                m_hDC;
-        HGLRC              m_hRC;
-        MINI_Shader        m_Shader;
-        GLuint             m_ShaderProgram;
-        float*             m_pVertexBuffer;
-        unsigned int       m_VertexCount;
-        MINI_Index*        m_pIndexes;
-        unsigned int       m_IndexCount;
-        float              m_Radius;
-        float              m_Angle;
-        float              m_RotationSpeed;
-        float              m_Time;
-        float              m_Interval;
-        const unsigned int m_FPS;
-        GLuint             m_TextureIndex;
-        GLuint             m_TexSamplerSlot;
-        MINI_VertexFormat  m_VertexFormat;
-        unsigned __int64   m_PreviousTime;
+        HDC               m_hDC;
+        HGLRC             m_hRC;
+        MINI_Shader       m_Shader;
+        GLuint            m_ShaderProgram;
+        float*            m_pVertexBuffer;
+        unsigned int      m_VertexCount;
+        MINI_Index*       m_pIndexes;
+        unsigned int      m_IndexCount;
+        float             m_Radius;
+        float             m_Angle;
+        float             m_RotationSpeed;
+        GLuint            m_TextureIndex;
+        GLuint            m_TexSamplerSlot;
+        MINI_VertexFormat m_VertexFormat;
+        unsigned __int64  m_PreviousTime;
 
         /**
         * Enables OpenGL

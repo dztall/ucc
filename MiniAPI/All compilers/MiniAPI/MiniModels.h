@@ -4,7 +4,7 @@
  * Description : This module provides the functions to generate models like  *
  *               characters, landscapes, ...                                 *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -264,7 +264,7 @@ typedef struct
 
         /**
         * Reads MDL texture coordinates
-        *@param pVertex - MDL file
+        *@param pFile - MDL file
         *@param[out] pTexCoord - MDL texture coordinates structure to populate
         */
         void miniReadMDLTextureCoord(FILE* pFile, MINI_MDLTextureCoord* pTexCoord);
@@ -303,7 +303,7 @@ typedef struct
 
         /**
         * Uncompresses the texture
-        *@param pParser - model parser
+        *@param pSkin - model skin
         *@param index - texture index
         *@param[out] pTexture - texture
         */

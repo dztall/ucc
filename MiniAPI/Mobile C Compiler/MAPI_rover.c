@@ -4,7 +4,7 @@
  * Description : A simple rover model, swipe to left or right to increase or *
  *               decrease the rotation speed                                 *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -48,19 +48,16 @@
         GLuint g_Framebuffer, g_Renderbuffer;
     #endif
 #endif
-MINI_Shader        g_Shader;
-MINI_VertexFormat  g_VertexFormat;
-float*             g_pVertices     = 0;
-unsigned           g_VertexCount   = 0;
-MINI_MdlCmds*      g_pMdlCmds      = 0;
-MINI_Index*        g_pIndexes      = 0;
-unsigned           g_IndexCount    = 0;
-GLuint             g_ShaderProgram = 0;
-float              g_Angle         = 0.0f;
-float              g_Time          = 0.0f;
-float              g_Interval      = 0.0f;
-float              g_RotationSpeed = 0.1f;
-const unsigned int g_FPS           = 15;
+MINI_Shader       g_Shader;
+MINI_VertexFormat g_VertexFormat;
+float*            g_pVertices     = 0;
+unsigned          g_VertexCount   = 0;
+MINI_MdlCmds*     g_pMdlCmds      = 0;
+MINI_Index*       g_pIndexes      = 0;
+unsigned          g_IndexCount    = 0;
+GLuint            g_ShaderProgram = 0;
+float             g_Angle         = 0.0f;
+float             g_RotationSpeed = 0.1f;
 //------------------------------------------------------------------------------
 void ApplyMatrix(float w, float h)
 {
@@ -74,7 +71,7 @@ void ApplyMatrix(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -100,8 +97,8 @@ void on_GLES2_Init(int view_w, int view_h)
     g_ShaderProgram = miniCompileShaders(miniGetVSColored(), miniGetFSColored());
     glUseProgram(g_ShaderProgram);
 
-    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "qr_vPosition");
-    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "qr_vColor");
+    g_Shader.m_VertexSlot = glGetAttribLocation(g_ShaderProgram, "mini_vPosition");
+    g_Shader.m_ColorSlot  = glGetAttribLocation(g_ShaderProgram, "mini_vColor");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -121,9 +118,6 @@ void on_GLES2_Init(int view_w, int view_h)
                     &g_pMdlCmds,
                     &g_pIndexes,
                     &g_IndexCount);
-
-    // calculate frame interval
-    g_Interval = 1000.0f / g_FPS;
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
@@ -165,20 +159,8 @@ void on_GLES2_Size(int view_w, int view_h)
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
 {
-    unsigned int frameCount = 0;
-
-    // calculate next time
-    g_Time += (timeStep_sec * 1000.0f);
-
-    // count frames to skip
-    while (g_Time > g_Interval)
-    {
-        g_Time -= g_Interval;
-        ++frameCount;
-    }
-
     // calculate next rotation angle
-    g_Angle += (g_RotationSpeed * frameCount);
+    g_Angle += (g_RotationSpeed * timeStep_sec * 10.0f);
 
     // is rotating angle out of bounds?
     while (g_Angle >= 6.28f)
@@ -240,7 +222,7 @@ void on_GLES2_Render()
     miniMatrixMultiply(&modelViewMatrix, &scaleMatrix,     &modelViewMatrix);
 
     // connect model view matrix to shader
-    modelviewUniform = glGetUniformLocation(g_ShaderProgram, "qr_uModelview");
+    modelviewUniform = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // draw the rover model
@@ -249,8 +231,8 @@ void on_GLES2_Render()
                   g_pMdlCmds,
                   g_pIndexes,
                   g_IndexCount,
-                  &g_VertexFormat,
-                  &g_Shader);
+                 &g_VertexFormat,
+                 &g_Shader);
 
     miniEndScene();
 }

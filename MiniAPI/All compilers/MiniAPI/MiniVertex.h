@@ -4,7 +4,7 @@
  * Description : This module provides the functions required to manage       *
  *               geometrical vertices                                        *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -64,7 +64,7 @@ typedef struct
 
         /**
         * Calculates vertex stride
-        *@param[in, out] pVertexFormat, vertex format for which stride should be calculated
+        *@param[in, out] pVertexFormat - vertex format for which stride should be calculated
         */
         void miniCalculateStride(MINI_VertexFormat* pVertexFormat);
 

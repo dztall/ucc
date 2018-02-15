@@ -4,7 +4,7 @@
  * Description : A simple rover model, press the left or right arrow keys to *
  *               increase or decrease the rotation speed                     *
  * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2017, this file is part of the Minimal API. You are  *
+ * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
  *               it for your own projects, commercial or not. This file is   *
  *               provided "as is", without ANY WARRANTY OF ANY KIND          *
@@ -38,9 +38,6 @@ __fastcall TMainForm::TMainForm(TComponent* pOwner) :
     m_IndexCount(0),
     m_Angle(0.0f),
     m_RotationSpeed(0.1f),
-    m_Time(0.0f),
-    m_Interval(0.0f),
-    m_FPS(15),
     m_PreviousTime(0)
 {
     // enable OpenGL
@@ -82,7 +79,7 @@ void __fastcall TMainForm::FormResize(TObject* pSender)
 {
     // update the viewport
     CreateViewport(ClientWidth, ClientHeight);
-}
+}
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormPaint(TObject* pSender)
 {
@@ -156,18 +153,18 @@ void TMainForm::CreateViewport(float w, float h)
     miniGetPerspective(&fov, &aspect, &zNear, &zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "qr_uProjection");
+    GLint projectionUniform = glGetUniformLocation(m_ShaderProgram, "mini_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
 void TMainForm::InitScene(int w, int h)
 {
     // compile, link and use shader
-    m_ShaderProgram = miniCompileShaders(miniGetVSColored(), miniGetFSColored());
+    m_ShaderProgram = miniCompileShaders(miniGetVSColored(), miniGetFSColored());
     glUseProgram(m_ShaderProgram);
 
-    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "qr_vPosition");
-    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "qr_vColor");
+    m_Shader.m_VertexSlot = glGetAttribLocation(m_ShaderProgram, "mini_vPosition");
+    m_Shader.m_ColorSlot  = glGetAttribLocation(m_ShaderProgram, "mini_vColor");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -180,18 +177,15 @@ void TMainForm::InitScene(int w, int h)
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
-    // create the rover
-    miniCreateRover(&m_VertexFormat,
+    // create the rover
+    miniCreateRover(&m_VertexFormat,
                     &m_pVertices,
                     &m_VertexCount,
                     &m_pMdlCmds,
                     &m_pIndexes,
                     &m_IndexCount);
-
-    // calculate frame interval
-    m_Interval = 1000.0f / m_FPS;
 }
-//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 void TMainForm::DeleteScene()
 {
     // delete model commands
@@ -225,20 +219,8 @@ void TMainForm::DeleteScene()
 //------------------------------------------------------------------------------
 void TMainForm::UpdateScene(float elapsedTime)
 {
-    unsigned int frameCount = 0;
-
-    // calculate next time
-    m_Time += (elapsedTime * 1000.0f);
-
-    // count frames to skip
-    while (m_Time > m_Interval)
-    {
-        m_Time -= m_Interval;
-        ++frameCount;
-    }
-
     // calculate next rotation angle
-    m_Angle += (m_RotationSpeed * frameCount);
+    m_Angle += (m_RotationSpeed * elapsedTime * 10.0f);
 
     // is rotating angle out of bounds?
     while (m_Angle >= 6.28f)
@@ -300,7 +282,7 @@ void TMainForm::DrawScene()
     miniMatrixMultiply(&modelViewMatrix, &scaleMatrix,     &modelViewMatrix);
 
     // connect model view matrix to shader
-    modelviewUniform = glGetUniformLocation(m_ShaderProgram, "qr_uModelview");
+    modelviewUniform = glGetUniformLocation(m_ShaderProgram, "mini_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // draw the rover model
