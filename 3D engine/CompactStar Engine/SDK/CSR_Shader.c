@@ -124,7 +124,7 @@ CSR_Shader* csrShaderLoadFromStr(const char*               pVertex,
     CSR_Buffer* pFS;
     CSR_Shader* pShader;
 
-    // validate the input
+    // validate the inputs
     if (!pVertex || !vertexLength || !pFragment || !fragmentLength)
         return 0;
 
@@ -295,6 +295,105 @@ void csrShaderEnable(const CSR_Shader* pShader)
     glUseProgram(pShader->m_ProgramID);
 }
 //---------------------------------------------------------------------------
+// Shader item functions
+//---------------------------------------------------------------------------
+CSR_ShaderItem* csrShaderItemCreate(void)
+{
+    // create a new shader item
+    CSR_ShaderItem* pSI = (CSR_ShaderItem*)malloc(sizeof(CSR_ShaderItem));
+
+    // succeeded?
+    if (!pSI)
+        return 0;
+
+    // initialize the shader item content
+    csrShaderItemInit(pSI);
+
+    return pSI;
+}
+//---------------------------------------------------------------------------
+void csrShaderItemRelease(CSR_ShaderItem* pSI)
+{
+    // no shader item to release?
+    if (!pSI)
+        return;
+
+    // do release the file name?
+    if (pSI->m_pFileName)
+        free(pSI->m_pFileName);
+
+    // do release the shader content?
+    if (pSI->m_pContent)
+        free(pSI->m_pContent);
+
+    // do release the shader?
+    if (pSI->m_pShader)
+        csrShaderRelease(pSI->m_pShader);
+}
+//---------------------------------------------------------------------------
+void csrShaderItemInit(CSR_ShaderItem* pSI)
+{
+    // no shader item to initialize?
+    if (!pSI)
+        return;
+
+    // initialize the shader item content
+    pSI->m_pFileName = 0;
+    pSI->m_pContent  = 0;
+    pSI->m_pShader   = 0;
+}
+//---------------------------------------------------------------------------
+// Shader array functions
+//---------------------------------------------------------------------------
+CSR_ShaderArray* csrShaderArrayCreate(void)
+{
+    // create a new shader array
+    CSR_ShaderArray* pSA = (CSR_ShaderArray*)malloc(sizeof(CSR_ShaderArray));
+
+    // succeeded?
+    if (!pSA)
+        return 0;
+
+    // initialize the shader array content
+    csrShaderArrayInit(pSA);
+
+    return pSA;
+}
+//---------------------------------------------------------------------------
+void csrShaderArrayRelease(CSR_ShaderArray* pSA)
+{
+    size_t i;
+
+    // no shader array to release?
+    if (!pSA)
+        return;
+
+    // do free the shader items?
+    if (pSA->m_pItem)
+    {
+        // iterate through shader items and release their content
+        for (i = 0; i < pSA->m_Count; ++i)
+            csrShaderItemRelease(&pSA->m_pItem[i]);
+
+        // free the shader items
+        free(pSA->m_pItem);
+    }
+
+    // free the shader array
+    free(pSA);
+}
+//---------------------------------------------------------------------------
+void csrShaderArrayInit(CSR_ShaderArray* pSA)
+{
+    // no shader array to initialize?
+    if (!pSA)
+        return;
+
+    // initialize the shader array content
+    pSA->m_pItem = 0;
+    pSA->m_Count = 0;
+}
+//---------------------------------------------------------------------------
 // Static buffer functions
 //---------------------------------------------------------------------------
 CSR_StaticBuffer* csrStaticBufferCreate(const CSR_Shader* pShader, const CSR_Buffer* pBuffer)
@@ -305,7 +404,7 @@ CSR_StaticBuffer* csrStaticBufferCreate(const CSR_Shader* pShader, const CSR_Buf
     if (!pShader)
         return 0;
 
-    // validate the input
+    // validate the inputs
     if (!pBuffer || !pBuffer->m_Length)
         return 0;
 

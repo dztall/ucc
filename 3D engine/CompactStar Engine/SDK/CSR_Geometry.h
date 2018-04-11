@@ -484,6 +484,24 @@ typedef struct
         */
         void csrMat4Unproject(const CSR_Matrix4* pP, const CSR_Matrix4* pV, CSR_Ray3* pR);
 
+        /**
+        * Gets the x, y and z translation from a matrix
+        *@param pM - matrix
+        *@param[out] pX - translation on x axis
+        *@param[out] pY - translation on y axis
+        *@param[out] pZ - translation on z axis
+        */
+        void csrMat4TranslationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ);
+
+        /**
+        * Gets the x, y and z rotation angles from a matrix
+        *@param pM - matrix
+        *@param[out] pX - angle on x axis in radian
+        *@param[out] pY - angle on y axis in radian
+        *@param[out] pZ - angle on z axis in radian
+        */
+        void csrMat4RotationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ);
+
         //-------------------------------------------------------------------
         // Quaternion functions
         //-------------------------------------------------------------------

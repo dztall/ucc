@@ -161,6 +161,62 @@ typedef struct
     CSR_MDLFrame* m_pFrame;
 } CSR_MDLFrameGroup;
 
+/**
+* WaveFront vertex
+*/
+typedef struct
+{
+    float* m_pData;
+    size_t m_Count;
+} CSR_WavefrontVertex;
+
+/**
+* WaveFront normal
+*/
+typedef struct
+{
+    float* m_pData;
+    size_t m_Count;
+} CSR_WavefrontNormal;
+
+/**
+* WaveFront texture coordinate
+*/
+typedef struct
+{
+    float* m_pData;
+    size_t m_Count;
+} CSR_WavefrontTexCoord;
+
+/**
+* WaveFront face
+*/
+typedef struct
+{
+    int*   m_pData;
+    size_t m_Count;
+} CSR_WavefrontFace;
+
+/**
+* WaveFront group
+*/
+typedef struct
+{
+    CSR_WavefrontVertex*   m_pVertex;
+    CSR_WavefrontNormal*   m_pNormal;
+    CSR_WavefrontTexCoord* m_pUV;
+    CSR_WavefrontFace*     m_pFace;
+} CSR_WavefrontGroup;
+
+/**
+* WaveFront object
+*/
+typedef struct
+{
+    CSR_WavefrontGroup* m_pGroup;
+    size_t              m_Count;
+} CSR_WavefrontObject;
+
 //---------------------------------------------------------------------------
 // Callbacks
 //---------------------------------------------------------------------------
@@ -169,8 +225,9 @@ typedef struct
 * Called when a texture was read in a model
 *@param index - texture index in the model
 *@param pPixelBuffer - pixel buffer containing the read texture
+*@param[in, out] pNoGPU - if 1, the texture will not be loaded on the GPU while model is loading
 */
-typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBuffer);
+typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBuffer, int* pNoGPU);
 
 #ifdef __cplusplus
     extern "C"
@@ -420,7 +477,7 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         * Updates the MDL model indexes (e.g. before getting the next mesh to show)
         *@param pMDL - MDL model
         *@param fps - frame per seconds to apply
-        *@aram animationIndex - animation index
+        *@param animationIndex - animation index
         *@param[in, out] pTextureIndex - texture index, new texture index on function ends
         *@param[in, out] pModelIndex - model index, new model index on function ends
         *@param[in, out] pMeshIndex - mesh index, new mesh index on function ends
@@ -537,11 +594,11 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@return a pixel buffer containing the texture, 0 on error
         *@note The pixel buffer must be released when no longer used, see csrPixelBufferRelease()
         */
-        CSR_PixelBuffer* csrMDLUncompressTexture(const CSR_MDLSkin*   pSkin,
-                                                 const CSR_Buffer*    pPalette,
-                                                       size_t         width,
-                                                       size_t         height,
-                                                       size_t         index);
+        CSR_PixelBuffer* csrMDLUncompressTexture(const CSR_MDLSkin* pSkin,
+                                                 const CSR_Buffer*  pPalette,
+                                                       size_t       width,
+                                                       size_t       height,
+                                                       size_t       index);
 
         /**
         * Uncompresses a MDL vertex
@@ -588,6 +645,173 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
                                   CSR_MDLSkin*         pSkin,
                                   CSR_MDLTextureCoord* pTexCoord,
                                   CSR_MDLPolygon*      pPolygon);
+
+        //-------------------------------------------------------------------
+        // MDL model functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Create a mesh from a buffer containing a WaveFront file
+        *@param pBuffer - buffer containing the WaveFront file
+        *@param pVertFormat - model vertex format, if 0 the default format will be used
+        *@param pVertCulling - model vertex culling, if 0 the default culling will be used
+        *@param pMaterial - mesh material, if 0 the default material will be used
+        *@param fOnGetVertexColor - get vertex color callback function to use, 0 if not used
+        *@param fOnTextureRead - called when a texture is read
+        *@return model containing the WaveFront file on success, otherwise 0
+        *@note The model content should be released using the csrModelRelease when useless
+        */
+        CSR_Model* csrWaveFrontCreate(const CSR_Buffer*           pBuffer,
+                                      const CSR_VertexFormat*     pVertFormat,
+                                      const CSR_VertexCulling*    pVertCulling,
+                                      const CSR_Material*         pMaterial,
+                                      const CSR_fOnGetVertexColor fOnGetVertexColor,
+                                      const CSR_fOnTextureRead    fOnTextureRead);
+
+        /**
+        * Opens a WaveFront file
+        *@param pFileName - WaveFront file name to open
+        *@param pVertFormat - model vertex format, if 0 the default format will be used
+        *@param pVertCulling - model vertex culling, if 0 the default culling will be used
+        *@param pMaterial - mesh material, if 0 the default material will be used
+        *@param fOnGetVertexColor - get vertex color callback function to use, 0 if not used
+        *@param fOnTextureRead - called when a texture is read
+        *@return model containing the WaveFront file on success, otherwise 0
+        *@note The model content should be released using the csrModelRelease when useless
+        */
+        CSR_Model* csrWaveFrontOpen(const char*                 pFileName,
+                                    const CSR_VertexFormat*     pVertFormat,
+                                    const CSR_VertexCulling*    pVertCulling,
+                                    const CSR_Material*         pMaterial,
+                                    const CSR_fOnGetVertexColor fOnGetVertexColor,
+                                    const CSR_fOnTextureRead    fOnTextureRead);
+
+        /**
+        * Reads a commented line from a WaveFront buffer
+        *@param pBuffer - source huffer to read from
+        *@param[in, out] pChar - last read char
+        *@param[in, out] pIndex - char index
+        */
+        void csrWaveFrontReadComment(const CSR_Buffer* pBuffer, char* pChar, size_t* pIndex);
+
+        /**
+        * Reads a vertex from the WaveFront file
+        *@param pBuffer - buffer containing the WaveFront file
+        *@param[in, out] pChar - last read char, new read char on function ends
+        *@param[in, out] pIndex - last read char index, new read char index on function ends
+        *@param[in, out] pVertex - vertex array in which the new read vertex should be added
+        */
+        void csrWaveFrontReadVertex(const CSR_Buffer*          pBuffer,
+                                          char*                pChar,
+                                          size_t*              pIndex,
+                                          CSR_WavefrontVertex* pVertex);
+
+        /**
+        * Reads a normal from the WaveFront file
+        *@param pBuffer - buffer containing the WaveFront file
+        *@param[in, out] pChar - last read char, new read char on function ends
+        *@param[in, out] pIndex - last read char index, new read char index on function ends
+        *@param[in, out] pNormal - normal array in which the new read normal should be added
+        */
+        void csrWaveFrontReadNormal(const CSR_Buffer*          pBuffer,
+                                          char*                pChar,
+                                          size_t*              pIndex,
+                                          CSR_WavefrontNormal* pNormal);
+
+        /**
+        * Reads a texture coordinate from the WaveFront file
+        *@param pBuffer - buffer containing the WaveFront file
+        *@param[in, out] pChar - last read char, new read char on function ends
+        *@param[in, out] pIndex - last read char index, new read char index on function ends
+        *@param[in, out] pTexCoord - texture coordinate array in which the new read texture coordinate should be added
+        */
+        void csrWaveFrontReadTextureCoordinate(const CSR_Buffer*            pBuffer,
+                                                     char*                  pChar,
+                                                     size_t*                pIndex,
+                                                     CSR_WavefrontTexCoord* pTexCoord);
+
+        /**
+        * Reads a face from the WaveFront file
+        *@param pBuffer - buffer containing the WaveFront file
+        *@param[in, out] pChar - last read char, new read char on function ends
+        *@param[in, out] pIndex - last read char index, new read char index on function ends
+        *@param[in, out] pFace - face array in which the new read face should be added
+        */
+        void csrWaveFrontReadFace(const CSR_Buffer*        pBuffer,
+                                        char*              pChar,
+                                        size_t*            pIndex,
+                                        CSR_WavefrontFace* pFace);
+
+        /**
+        * Reads an unknown line from a WaveFront buffer
+        *@param pBuffer - source huffer to read from
+        *@param[in, out] pChar - last read char
+        *@param[in, out] pIndex - char index
+        */
+        void csrWaveFrontReadUnknown(const CSR_Buffer* pBuffer, char* pChar, size_t* pIndex);
+
+        /**
+        * Converts a read value to float and adds it in an array
+        *@param pBuffer - buffer containing the value to convert
+        *@param pArray[in, out] - float array in which the value should be added
+        *@param pCount[in, out] - array count
+        */
+        void csrWaveFrontConvertFloat(const char* pBuffer, float** pArray, size_t* pCount);
+
+        /**
+        * Converts a read value to int and adds it in an array
+        *@param pBuffer - buffer containing the value to convert
+        *@param pArray[in, out] - int array in which the value should be added
+        *@param pCount[in, out] - array count
+        */
+        void csrWaveFrontConvertInt(const char* pBuffer, int** pArray, size_t* pCount);
+
+        /**
+        * Builds a face from WaveFront data
+        *@param pVertex - vertex array read in WaveFront file
+        *@param pNormal - normal array read in WaveFront file
+        *@param pUV - texture coordinates array read in WaveFront file
+        *@param pFace - face array read in WaveFront file
+        *@param pVertFormat - model vertex format, if 0 the default format will be used
+        *@param pVertCulling - model vertex culling, if 0 the default culling will be used
+        *@param pMaterial - mesh material, if 0 the default material will be used
+        *@param objectChanging - if 1, a new object should be created
+        *@param groupChanging - if 1, a new group should be created
+        *@param[in, out] pModel - model in which the WaveFront data should be built
+        *@param fOnGetVertexColor - get vertex color callback function to use, 0 if not used
+        *@param fOnTextureRead - called when a texture is read
+        *@return 1 on success, otherwise 0
+        */
+        int csrWaveFrontBuildFace(const CSR_WavefrontVertex*   pVertex,
+                                  const CSR_WavefrontNormal*   pNormal,
+                                  const CSR_WavefrontTexCoord* pUV,
+                                  const CSR_WavefrontFace*     pFace,
+                                  const CSR_VertexFormat*      pVertFormat,
+                                  const CSR_VertexCulling*     pVertCulling,
+                                  const CSR_Material*          pMaterial,
+                                        int                    objectChanging,
+                                        int                    groupChanging,
+                                        CSR_Model*             pModel,
+                                  const CSR_fOnGetVertexColor  fOnGetVertexColor,
+                                  const CSR_fOnTextureRead     fOnTextureRead);
+
+        /**
+        * Builds a vertex buffer from a WaveFront data
+        *@param pVertex - vertex array read in WaveFront file
+        *@param pNormal - normal array read in WaveFront file
+        *@param pUV - texture coordinates array read in WaveFront file
+        *@param pFace - face array read in WaveFront file
+        *@param[in, out] pVB - vertex buffer in which the WaveFront data should be built
+        *@param fOnGetVertexColor - get vertex color callback function to use, 0 if not used
+        *@param fOnTextureRead - called when a texture is read
+        */
+        void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
+                                           const CSR_WavefrontNormal*   pNormal,
+                                           const CSR_WavefrontTexCoord* pUV,
+                                           const CSR_WavefrontFace*     pFace,
+                                                 CSR_VertexBuffer*      pVB,
+                                           const CSR_fOnGetVertexColor  fOnGetVertexColor,
+                                           const CSR_fOnTextureRead     fOnTextureRead);
 
 #ifdef __cplusplus
     }

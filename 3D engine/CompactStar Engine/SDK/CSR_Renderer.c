@@ -1,7 +1,7 @@
 /****************************************************************************
  * ==> CSR_Renderer --------------------------------------------------------*
  ****************************************************************************
- * Description : This module provides the functions to draw a scene         *
+ * Description : This module provides the draw functions                    *
  * Developer   : Jean-Milost Reymond                                        *
  * Copyright   : 2017 - 2018, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
@@ -155,7 +155,7 @@
         // unbind the texture buffer
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        // set the scene size
+        // set the viewport size
         pMSAA->m_Width  = width;
         pMSAA->m_Height = height;
         pMSAA->m_Factor = factor;
@@ -327,9 +327,9 @@
 #endif
 //---------------------------------------------------------------------------
 #ifndef CSR_OPENGL_2_ONLY
-    void csrMSAASceneBegin(float r, float g, float b, float a, const CSR_MSAA* pMSAA)
+    void csrMSAADrawBegin(const CSR_Color* pColor, const CSR_MSAA* pMSAA)
     {
-        // do apply a multisample antialiasing on the scene
+        // do apply a multisample antialiasing?
         if (pMSAA && pMSAA->m_pShader)
         {
             // enable the MSAA shader
@@ -338,20 +338,20 @@
             // enable multisampling
             glEnable(GL_MULTISAMPLE);
 
-            // bind the frame buffer on which the scene should be drawn
+            // bind the frame buffer on which the final rendering should be performed
             glBindFramebuffer(GL_FRAMEBUFFER, pMSAA->m_FrameBufferID);
         }
 
-        // begin the scene
-        csrSceneBegin(r, g, b, a);
+        // begin the draw
+        csrDrawBegin(pColor);
     }
 #endif
 //---------------------------------------------------------------------------
 #ifndef CSR_OPENGL_2_ONLY
-    void csrMSAASceneEnd(const CSR_MSAA* pMSAA)
+    void csrMSAADrawEnd(const CSR_MSAA* pMSAA)
     {
-        // end the scene
-        csrSceneEnd();
+        // end the draw
+        csrDrawEnd();
 
         // do finalize the multisampling antialiasing effect?
         if (pMSAA && pMSAA->m_pShader && pMSAA->m_pStaticBuffer)
@@ -370,7 +370,7 @@
             // enable the MSAA shader
             csrShaderEnable(pMSAA->m_pShader);
 
-            // blit the multisampled buffer containing the drawn scene to the output texture buffer
+            // blit the multisampled buffer containing the drawing to the output texture buffer
             glBindFramebuffer(GL_READ_FRAMEBUFFER, pMSAA->m_FrameBufferID);
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, pMSAA->m_TextureBufferID);
             glBlitFramebuffer(0,
@@ -433,26 +433,45 @@
     }
 #endif
 //---------------------------------------------------------------------------
-// Scene functions
+// Draw private functions
 //---------------------------------------------------------------------------
-void csrSceneBegin(float r, float g, float b, float a)
+void csrDrawArray(const CSR_VertexBuffer* pVB, size_t vertexCount)
 {
-    // clear scene background and depth buffer
-    glClearColor(r, g, b, a);
+    // search for array type to draw
+    switch (pVB->m_Format.m_Type)
+    {
+        case CSR_VT_Triangles:     glDrawArrays(GL_TRIANGLES,      0, vertexCount); break;
+        case CSR_VT_TriangleStrip: glDrawArrays(GL_TRIANGLE_STRIP, 0, vertexCount); break;
+        case CSR_VT_TriangleFan:   glDrawArrays(GL_TRIANGLE_FAN,   0, vertexCount); break;
+    }
+}
+//---------------------------------------------------------------------------
+// Draw functions
+//---------------------------------------------------------------------------
+void csrDrawBegin(const CSR_Color* pColor)
+{
+    // no background color?
+    if (!pColor)
+        return;
+
+    // clear background and depth buffer
+    glClearColor(pColor->m_R, pColor->m_G, pColor->m_B, pColor->m_A);
     glClearDepthf(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // configure the OpenGL depth testing for the scene
+    // configure the OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LEQUAL);
     glDepthRangef(0.0f, 1.0f);
 }
 //---------------------------------------------------------------------------
-void csrSceneEnd()
+void csrDrawEnd(void)
 {}
 //---------------------------------------------------------------------------
-void csrSceneDrawMesh(const CSR_Mesh* pMesh, CSR_Shader* pShader)
+void csrDrawVertexBuffer(const CSR_VertexBuffer* pVB,
+                         const CSR_Shader*       pShader,
+                         const CSR_Array*        pMatrixArray)
 {
     GLvoid* pCoords;
     GLvoid* pNormals;
@@ -461,6 +480,183 @@ void csrSceneDrawMesh(const CSR_Mesh* pMesh, CSR_Shader* pShader)
     size_t  i;
     size_t  offset;
     size_t  vertexCount;
+
+    // no vertex buffer to draw?
+    if (!pVB)
+        return;
+
+    // no shader?
+    if (!pShader)
+        return;
+
+    // check if vertex buffer is empty, skip to next if yes
+    if (!pVB->m_Count || !pVB->m_Format.m_Stride)
+        return;
+
+    // configure the culling
+    switch (pVB->m_Culling.m_Type)
+    {
+        case CSR_CT_None:  glDisable(GL_CULL_FACE); glCullFace(GL_NONE);           break;
+        case CSR_CT_Front: glEnable(GL_CULL_FACE);  glCullFace(GL_FRONT);          break;
+        case CSR_CT_Back:  glEnable(GL_CULL_FACE);  glCullFace(GL_BACK);           break;
+        case CSR_CT_Both:  glEnable(GL_CULL_FACE);  glCullFace(GL_FRONT_AND_BACK); break;
+        default:           glDisable(GL_CULL_FACE); glCullFace(GL_NONE);           break;
+    }
+
+    // configure the culling face
+    switch (pVB->m_Culling.m_Face)
+    {
+        case CSR_CF_CW:  glFrontFace(GL_CW);  break;
+        case CSR_CF_CCW: glFrontFace(GL_CCW); break;
+    }
+
+    // configure the alpha blending
+    if (pVB->m_Material.m_Transparent)
+    {
+        glEnable(GL_BLEND);
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
+    else
+        glDisable(GL_BLEND);
+
+    // configure the wireframe mode
+    #ifndef CSR_OPENGL_2_ONLY
+        if (pVB->m_Material.m_Wireframe)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        else
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    #endif
+
+    // enable vertex slot
+    glEnableVertexAttribArray(pShader->m_VertexSlot);
+
+    // enable normal slot
+    if (pVB->m_Format.m_HasNormal)
+        glEnableVertexAttribArray(pShader->m_NormalSlot);
+
+    // enable texture slot
+    if (pVB->m_Format.m_HasTexCoords)
+        glEnableVertexAttribArray(pShader->m_TexCoordSlot);
+
+    // enable color slot
+    if (pVB->m_Format.m_HasPerVertexColor)
+        glEnableVertexAttribArray(pShader->m_ColorSlot);
+
+    offset = 0;
+
+    // send vertices to shader
+    pCoords = &pVB->m_pData[offset];
+    glVertexAttribPointer(pShader->m_VertexSlot,
+                          3,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          pVB->m_Format.m_Stride * sizeof(float),
+                          pCoords);
+
+    offset += 3;
+
+    // vertices have normals?
+    if (pVB->m_Format.m_HasNormal)
+    {
+        // send normals to shader
+        pNormals = &pVB->m_pData[offset];
+        glVertexAttribPointer(pShader->m_TexCoordSlot,
+                              3,
+                              GL_FLOAT,
+                              GL_FALSE,
+                              pVB->m_Format.m_Stride * sizeof(float),
+                              pNormals);
+
+        offset += 3;
+    }
+
+    // vertices have UV texture coordinates?
+    if (pVB->m_Format.m_HasTexCoords)
+    {
+        // send textures to shader
+        pTexCoords = &pVB->m_pData[offset];
+        glVertexAttribPointer(pShader->m_TexCoordSlot,
+                              2,
+                              GL_FLOAT,
+                              GL_FALSE,
+                              pVB->m_Format.m_Stride * sizeof(float),
+                              pTexCoords);
+
+        offset += 2;
+    }
+
+    // vertices have per-vertex color?
+    if (pVB->m_Format.m_HasPerVertexColor)
+    {
+        // send colors to shader
+        pColors = &pVB->m_pData[offset];
+        glVertexAttribPointer(pShader->m_ColorSlot,
+                              4,
+                              GL_FLOAT,
+                              GL_FALSE,
+                              pVB->m_Format.m_Stride * sizeof(float),
+                              pColors);
+    }
+    else
+    if (pShader->m_ColorSlot != -1)
+    {
+        // get the color component values
+        const float r = (float)((pVB->m_Material.m_Color >> 24) & 0xFF) / 255.0f;
+        const float g = (float)((pVB->m_Material.m_Color >> 16) & 0xFF) / 255.0f;
+        const float b = (float)((pVB->m_Material.m_Color >> 8)  & 0xFF) / 255.0f;
+        const float a = (float) (pVB->m_Material.m_Color        & 0xFF) / 255.0f;
+
+        // connect the vertex color to the shader
+        glVertexAttrib4f(pShader->m_ColorSlot, r, g, b, a);
+    }
+
+    // calculate the vertex count
+    vertexCount = pVB->m_Count / pVB->m_Format.m_Stride;
+
+    // do draw the vertex buffer several times?
+    if (pMatrixArray && pMatrixArray->m_Count)
+        // yes, iterate through each matrix to use to draw the vertex buffer
+        for (i = 0; i < pMatrixArray->m_Count; ++i)
+        {
+            // get the model matrix slot from shader
+            const GLint slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uModel");
+
+            // found it?
+            if (slot < 0)
+                continue;
+
+            // connect the model matrix to the shader
+            glUniformMatrix4fv(slot, 1, 0, &((CSR_Matrix4*)pMatrixArray->m_pItem[i].m_pData)->m_Table[0][0]);
+
+            // draw the next buffer
+            csrDrawArray(pVB, vertexCount);
+        }
+    else
+        // no, draw the buffer
+        csrDrawArray(pVB, vertexCount);
+
+    // disable vertices slots from shader
+    glDisableVertexAttribArray(pShader->m_VertexSlot);
+
+    // disable normal slot
+    if (pVB->m_Format.m_HasNormal)
+        glDisableVertexAttribArray(pShader->m_NormalSlot);
+
+    // disable texture slot
+    if (pVB->m_Format.m_HasTexCoords)
+        glDisableVertexAttribArray(pShader->m_TexCoordSlot);
+
+    // disable color slot
+    if (pVB->m_Format.m_HasPerVertexColor)
+        glDisableVertexAttribArray(pShader->m_ColorSlot);
+}
+//---------------------------------------------------------------------------
+void csrDrawMesh(const CSR_Mesh*   pMesh,
+                 const CSR_Shader* pShader,
+                 const CSR_Array*  pMatrixArray)
+{
+    size_t i;
 
     // no mesh to draw?
     if (!pMesh)
@@ -476,41 +672,6 @@ void csrSceneDrawMesh(const CSR_Mesh* pMesh, CSR_Shader* pShader)
     // iterate through the vertex buffers composing the mesh to draw
     for (i = 0; i < pMesh->m_Count; ++i)
     {
-        // configure the culling
-        switch (pMesh->m_pVB[i].m_Culling.m_Type)
-        {
-            case CSR_CT_None:  glDisable(GL_CULL_FACE); glCullFace(GL_NONE);           break;
-            case CSR_CT_Front: glEnable(GL_CULL_FACE);  glCullFace(GL_FRONT);          break;
-            case CSR_CT_Back:  glEnable(GL_CULL_FACE);  glCullFace(GL_BACK);           break;
-            case CSR_CT_Both:  glEnable(GL_CULL_FACE);  glCullFace(GL_FRONT_AND_BACK); break;
-            default:           glDisable(GL_CULL_FACE); glCullFace(GL_NONE);           break;
-        }
-
-        // configure the culling face
-        switch (pMesh->m_pVB[i].m_Culling.m_Face)
-        {
-            case CSR_CF_CW:  glFrontFace(GL_CW);  break;
-            case CSR_CF_CCW: glFrontFace(GL_CCW); break;
-        }
-
-        // configure the alpha blending
-        if (pMesh->m_pVB[i].m_Material.m_Transparent)
-        {
-            glEnable(GL_BLEND);
-            glBlendEquation(GL_FUNC_ADD);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        }
-        else
-            glDisable(GL_BLEND);
-
-        // configure the wireframe mode
-        #ifndef CSR_OPENGL_2_ONLY
-            if (pMesh->m_pVB[i].m_Material.m_Wireframe)
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            else
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        #endif
-
         // vertices have UV texture coordinates?
         if (pMesh->m_pVB[i].m_Format.m_HasTexCoords)
         {
@@ -537,136 +698,30 @@ void csrSceneDrawMesh(const CSR_Mesh* pMesh, CSR_Shader* pShader)
             }
         }
 
-        // check if vertex buffer is empty, skip to next if yes
-        if (!pMesh->m_pVB[i].m_Count || !pMesh->m_pVB[i].m_Format.m_Stride)
-            continue;
-
-        // enable position slot
-        glEnableVertexAttribArray(pShader->m_VertexSlot);
-
-        // enable normal slot
-        if (pMesh->m_pVB[i].m_Format.m_HasNormal)
-            glEnableVertexAttribArray(pShader->m_NormalSlot);
-
-        // enable texture slot
-        if (pMesh->m_pVB[i].m_Format.m_HasTexCoords)
-            glEnableVertexAttribArray(pShader->m_TexCoordSlot);
-
-        // enable color slot
-        if (pMesh->m_pVB[i].m_Format.m_HasPerVertexColor)
-            glEnableVertexAttribArray(pShader->m_ColorSlot);
-
-        offset = 0;
-
-        // send vertices to shader
-        pCoords = &pMesh->m_pVB[i].m_pData[offset];
-        glVertexAttribPointer(pShader->m_VertexSlot,
-                              3,
-                              GL_FLOAT,
-                              GL_FALSE,
-                              pMesh->m_pVB[i].m_Format.m_Stride * sizeof(float),
-                              pCoords);
-
-        offset += 3;
-
-        // vertices have normals?
-        if (pMesh->m_pVB[i].m_Format.m_HasNormal)
-        {
-            // send normals to shader
-            pNormals = &pMesh->m_pVB[i].m_pData[offset];
-            glVertexAttribPointer(pShader->m_TexCoordSlot,
-                                  3,
-                                  GL_FLOAT,
-                                  GL_FALSE,
-                                  pMesh->m_pVB[i].m_Format.m_Stride * sizeof(float),
-                                  pNormals);
-
-            offset += 3;
-        }
-
-        // vertices have UV texture coordinates?
-        if (pMesh->m_pVB[i].m_Format.m_HasTexCoords)
-        {
-            // send textures to shader
-            pTexCoords = &pMesh->m_pVB[i].m_pData[offset];
-            glVertexAttribPointer(pShader->m_TexCoordSlot,
-                                  2,
-                                  GL_FLOAT,
-                                  GL_FALSE,
-                                  pMesh->m_pVB[i].m_Format.m_Stride * sizeof(float),
-                                  pTexCoords);
-
-            offset += 2;
-        }
-
-        // vertices have per-vertex color?
-        if (pMesh->m_pVB[i].m_Format.m_HasPerVertexColor)
-        {
-            // send colors to shader
-            pColors = &pMesh->m_pVB[i].m_pData[offset];
-            glVertexAttribPointer(pShader->m_ColorSlot,
-                                  4,
-                                  GL_FLOAT,
-                                  GL_FALSE,
-                                  pMesh->m_pVB[i].m_Format.m_Stride * sizeof(float),
-                                  pColors);
-        }
-        else
-        if (pShader->m_ColorSlot != -1)
-        {
-            // get the color component values
-            const float r = (float)((pMesh->m_pVB[i].m_Material.m_Color >> 24) & 0xFF) / 255.0f;
-            const float g = (float)((pMesh->m_pVB[i].m_Material.m_Color >> 16) & 0xFF) / 255.0f;
-            const float b = (float)((pMesh->m_pVB[i].m_Material.m_Color >> 8)  & 0xFF) / 255.0f;
-            const float a = (float) (pMesh->m_pVB[i].m_Material.m_Color        & 0xFF) / 255.0f;
-
-            // connect the vertex color to the shader
-            glVertexAttrib4f(pShader->m_ColorSlot, r, g, b, a);
-        }
-
-        // calculate the vertex count
-        vertexCount = pMesh->m_pVB[i].m_Count / pMesh->m_pVB[i].m_Format.m_Stride;
-
-        // draw the buffer
-        switch (pMesh->m_pVB[i].m_Format.m_Type)
-        {
-            case CSR_VT_Triangles:     glDrawArrays(GL_TRIANGLES,      0, vertexCount); break;
-            case CSR_VT_TriangleStrip: glDrawArrays(GL_TRIANGLE_STRIP, 0, vertexCount); break;
-            case CSR_VT_TriangleFan:   glDrawArrays(GL_TRIANGLE_FAN,   0, vertexCount); break;
-        }
-
-        // disable vertices slots from shader
-        glDisableVertexAttribArray(pShader->m_VertexSlot);
-
-        // disable normal slot
-        if (pMesh->m_pVB[i].m_Format.m_HasNormal)
-            glDisableVertexAttribArray(pShader->m_NormalSlot);
-
-        // disable texture slot
-        if (pMesh->m_pVB[i].m_Format.m_HasTexCoords)
-            glDisableVertexAttribArray(pShader->m_TexCoordSlot);
-
-        // disable color slot
-        if (pMesh->m_pVB[i].m_Format.m_HasPerVertexColor)
-            glDisableVertexAttribArray(pShader->m_ColorSlot);
+        // draw the next mesh vertex buffer
+        csrDrawVertexBuffer(&pMesh->m_pVB[i], pShader, pMatrixArray);
     }
 }
 //---------------------------------------------------------------------------
-void csrSceneDrawModel(const CSR_Model* pModel, size_t index, CSR_Shader* pShader)
+void csrDrawModel(const CSR_Model*  pModel,
+                        size_t      index,
+                  const CSR_Shader* pShader,
+                  const CSR_Array*  pMatrixArray)
 {
     // no model to draw?
     if (!pModel)
         return;
 
     // draw the model mesh
-    csrSceneDrawMesh(&pModel->m_pMesh[index % pModel->m_MeshCount], pShader);
+    csrDrawMesh(&pModel->m_pMesh[index % pModel->m_MeshCount], pShader, pMatrixArray);
 }
 //---------------------------------------------------------------------------
-void csrSceneDrawMDL(const CSR_MDL*    pMDL,
-                           CSR_Shader* pShader,
-                           size_t      textureIndex,
-                           size_t      modelIndex,
-                           size_t      meshIndex)
+void csrDrawMDL(const CSR_MDL*    pMDL,
+                const CSR_Shader* pShader,
+                const CSR_Array*  pMatrixArray,
+                      size_t      textureIndex,
+                      size_t      modelIndex,
+                      size_t      meshIndex)
 {
     // get the current model mesh to draw
     const CSR_Mesh* pMesh = csrMDLGetMesh(pMDL, modelIndex, meshIndex);
@@ -694,6 +749,6 @@ void csrSceneDrawMDL(const CSR_MDL*    pMDL,
         }
 
     // draw the model mesh
-    csrSceneDrawMesh(pMesh, pShader);
+    csrDrawMesh(pMesh, pShader, pMatrixArray);
 }
 //---------------------------------------------------------------------------

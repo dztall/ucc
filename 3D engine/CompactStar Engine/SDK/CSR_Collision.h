@@ -22,11 +22,15 @@
 #include "CSR_Vertex.h"
 
 //---------------------------------------------------------------------------
-// Structures
+// Prototypes
 //---------------------------------------------------------------------------
 
 // Aligned-axis bounding box tree node prototype
 typedef struct CSR_AABBNode CSR_AABBNode;
+
+//---------------------------------------------------------------------------
+// Structures
+//---------------------------------------------------------------------------
 
 /**
 * Aligned-axis bounding box tree node
@@ -39,6 +43,27 @@ struct CSR_AABBNode
     CSR_Box*                  m_pBox;
     CSR_IndexedPolygonBuffer* m_pPolygonBuffer;
 };
+
+/**
+* Collision model info
+*/
+typedef struct
+{
+    void*  m_pItem;
+    size_t m_MatrixIndex;
+    size_t m_AABBTreeItem;
+} CSR_CollisionModelInfo;
+
+/**
+* Collision info
+*/
+typedef struct
+{
+    int                m_Collision;
+    CSR_Plane          m_SlidingPlane;
+    CSR_Polygon3Buffer m_Polygons;
+    CSR_Array*         m_pModels;
+} CSR_CollisionInfo;
 
 #ifdef __cplusplus
     extern "C"
@@ -69,8 +94,8 @@ struct CSR_AABBNode
         * Resolves AABB tree
         *@param pRay - ray against which tree items will be tested
         *@param pNode - root or parent node to resolve
-        *@param[out] pPolygons - polygons belonging to boxes hit by ray
         *@param deep - tree deep level, used internally, should be set to 0
+        *@param[out] pPolygons - polygons belonging to boxes hit by ray
         *@return 1 on success, otherwise 0
         */
         int csrAABBTreeResolve(const CSR_Ray3*           pRay,
@@ -83,13 +108,42 @@ struct CSR_AABBNode
         *@param[in, out] pNode - node for which content should be released
         *@note Only the node content is released, the node itself is not released
         */
-        void csrAABBTreeNodeRelease(CSR_AABBNode* pNode);
+        void csrAABBTreeNodeContentRelease(CSR_AABBNode* pNode);
 
         /**
-        * Releases an AABB tree
+        * Releases an AABB tree node and all his children
         *@param[in, out] pNode - AABB tree root node to release from
         */
-        void csrAABBTreeRelease(CSR_AABBNode* pNode);
+        void csrAABBTreeNodeRelease(CSR_AABBNode* pNode);
+
+        //-------------------------------------------------------------------
+        // Collision info functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Creates a collision info
+        *@return newly created collision info, 0 on error
+        *@note The collision info must be released when no longer used, see csrCollisionInfoRelease()
+        */
+        CSR_CollisionInfo* csrCollisionInfoCreate(void);
+
+        /**
+        * Releases a collision info
+        *@param[in, out] pCI - collision info to release
+        */
+        void csrCollisionInfoRelease(CSR_CollisionInfo* pCI);
+
+        /**
+        * Initializes a collision info structure
+        *@param[in, out] pCI - collision info to initialize
+        */
+        void csrCollisionInfoInit(CSR_CollisionInfo* pCI);
+
+        /**
+        * Calculates the sliding plane from a collision info structure
+        *@param[in, out] pCI - collision info for which the sliding plane should be calculated
+        */
+        void csrCollisionInfoCalculateSlidingPlane(CSR_CollisionInfo* pCollisionInfo);
 
 #ifdef __cplusplus
     }

@@ -1,7 +1,7 @@
 /****************************************************************************
  * ==> CSR_Renderer --------------------------------------------------------*
  ****************************************************************************
- * Description : This module provides the functions to draw a scene         *
+ * Description : This module provides the draw functions                    *
  * Developer   : Jean-Milost Reymond                                        *
  * Copyright   : 2017 - 2018, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
@@ -17,6 +17,8 @@
 #define CSR_RendererH
 
 // compactStar engine
+#include "CSR_Common.h"
+#include "CSR_Vertex.h"
 #include "CSR_Model.h"
 #include "CSR_Shader.h"
 
@@ -94,71 +96,89 @@
         #endif
 
         /**
-        * Begins to draw an antialiased scene
-        *@param r - scene background color red component in percent (between 0.0f and 1.0f)
-        *@param g - scene background color green component in percent (between 0.0f and 1.0f)
-        *@param b - scene background color blue component in percent (between 0.0f and 1.0f)
-        *@param a - scene background color alpha component in percent (between 0.0f and 1.0f)
+        * Begins to draw with antialiasing
+        *@param pColor - scene background color
         *@param pMSAA - multisample antialiasing to apply
         */
         #ifndef CSR_OPENGL_2_ONLY
-            void csrMSAASceneBegin(float r, float g, float b, float a, const CSR_MSAA* pMSAA);
+            void csrMSAADrawBegin(const CSR_Color* pColor, const CSR_MSAA* pMSAA);
         #endif
 
         /**
-        * Ends to draw an antialiased scene
+        * Ends to draw with antialiasing
         *@param pMSAA - applied multisample antialiasing
         */
         #ifndef CSR_OPENGL_2_ONLY
-            void csrMSAASceneEnd(const CSR_MSAA* pMSAA);
+            void csrMSAADrawEnd(const CSR_MSAA* pMSAA);
         #endif
 
         //-------------------------------------------------------------------
-        // Scene functions
+        // Draw functions
         //-------------------------------------------------------------------
 
         /**
-        * Begins to draw a scene
-        *@param r - scene background color red component in percent (between 0.0f and 1.0f)
-        *@param g - scene background color green component in percent (between 0.0f and 1.0f)
-        *@param b - scene background color blue component in percent (between 0.0f and 1.0f)
-        *@param a - scene background color alpha component in percent (between 0.0f and 1.0f)
+        * Begins to draw
+        *@param pColor - scene background color
         */
-        void csrSceneBegin(float r, float g, float b, float a);
+        void csrDrawBegin(const CSR_Color* pColor);
 
         /**
-        * Ends to draw a scene
+        * Ends to draw
         */
-        void csrSceneEnd(void);
+        void csrDrawEnd(void);
+
+        /**
+        * Draws a vertex buffer in a scene
+        *@param pVB - vertex buffer to draw
+        *@param pShader - shader to use to draw the vertex buffer
+        *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
+        *                      matrix currently connected in the shader will be used
+        *@note The shader must be first enabled with the csrShaderEnable() function
+        */
+        void csrDrawVertexBuffer(const CSR_VertexBuffer* pVB,
+                                 const CSR_Shader*       pShader,
+                                 const CSR_Array*        pMatrixArray);
 
         /**
         * Draws a mesh in a scene
         *@param pMesh - mesh to draw
         *@param pShader - shader to use to draw the mesh
+        *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
+        *                      matrix currently connected in the shader will be used
         */
-        void csrSceneDrawMesh(const CSR_Mesh* pMesh, CSR_Shader* pShader);
+        void csrDrawMesh(const CSR_Mesh*   pMesh,
+                         const CSR_Shader* pShader,
+                         const CSR_Array*  pMatrixArray);
 
         /**
         * Draws a model in a scene
         *@param pModel - model to draw
         *@param index - model mesh index
         *@param pShader - shader to use to draw the mesh
+        *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
+        *                      matrix currently connected in the shader will be used
         */
-        void csrSceneDrawModel(const CSR_Model* pModel, size_t index, CSR_Shader* pShader);
+        void csrDrawModel(const CSR_Model*  pModel,
+                                size_t      index,
+                          const CSR_Shader* pShader,
+                          const CSR_Array*  pMatrixArray);
 
         /**
         * Draws a MDL model in a scene
         *@param pMDL - MDL model to draw
         *@param pShader - shader to use to draw the model
+        *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
+        *                      matrix currently connected in the shader will be used
         *@param textureIndex - texture index
         *@param modelIndex - model index
         *@param meshIndex - mesh index
         */
-        void csrSceneDrawMDL(const CSR_MDL*    pMDL,
-                                   CSR_Shader* pShader,
-                                   size_t      textureIndex,
-                                   size_t      modelIndex,
-                                   size_t      meshIndex);
+        void csrDrawMDL(const CSR_MDL*    pMDL,
+                        const CSR_Shader* pShader,
+                        const CSR_Array*  pMatrixArray,
+                              size_t      textureIndex,
+                              size_t      modelIndex,
+                              size_t      meshIndex);
 
 #ifdef __cplusplus
     }

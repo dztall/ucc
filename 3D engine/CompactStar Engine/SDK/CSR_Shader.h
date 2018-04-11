@@ -41,6 +41,25 @@ typedef struct
 } CSR_Shader;
 
 /**
+* Shader item
+*/
+typedef struct
+{
+    char*       m_pFileName;
+    char*       m_pContent;
+    CSR_Shader* m_pShader;
+} CSR_ShaderItem;
+
+/**
+* Shader array
+*/
+typedef struct
+{
+    CSR_ShaderItem* m_pItem;
+    size_t          m_Count;
+} CSR_ShaderArray;
+
+/**
 * Static buffer, it's a buffer which the content was moved to a shader, i.e. on the GPU side
 */
 typedef struct
@@ -158,6 +177,53 @@ typedef void (*CSR_fOnLinkStaticVB)(const CSR_Shader* pShader, const void* pCust
         void csrShaderEnable(const CSR_Shader* pShader);
 
         //-------------------------------------------------------------------
+        // Shader item functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Creates a shader item
+        *@return newly created shader item, 0 on error
+        *@note The shader item must be released when no longer used, see csrShaderItemRelease()
+        */
+        CSR_ShaderItem* csrShaderItemCreate(void);
+
+        /**
+        * Releases a shader item content
+        *@param[in, out] pTI - shader item for which the content should be released
+        *@note Only the item content is released, the item itself is not released
+        */
+        void csrShaderItemContentRelease(CSR_ShaderItem* pSI);
+
+        /**
+        * Initializes a shader item structure
+        *@param[in, out] pTI - shader item to initialize
+        */
+        void csrShaderItemInit(CSR_ShaderItem* pSI);
+
+        //-------------------------------------------------------------------
+        // Shader array functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Creates a shader array
+        *@return newly created shader array, 0 on error
+        *@note The shader array must be released when no longer used, see csrShaderArrayRelease()
+        */
+        CSR_ShaderArray* csrShaderArrayCreate(void);
+
+        /**
+        * Releases a shader array
+        *@param[in, out] pSA - shader array to release
+        */
+        void csrShaderArrayRelease(CSR_ShaderArray* pSA);
+
+        /**
+        * Initializes a shader array
+        *@param[in, out] pSA - shader list to initialize
+        */
+        void csrShaderArrayInit(CSR_ShaderArray* pSA);
+
+        //-------------------------------------------------------------------
         // Static buffer functions
         //-------------------------------------------------------------------
 
@@ -165,7 +231,7 @@ typedef void (*CSR_fOnLinkStaticVB)(const CSR_Shader* pShader, const void* pCust
         * Creates a static buffer
         *@param pShader - shader that will contain the buffer
         *@param pSA - shader attributes
-        *@aram pBuffer - buffer to make static
+        *@param pBuffer - buffer to make static
         *@return newly created static buffer, 0 on error
         *@note Once the static buffer is created, the source buffer may be deleted or reused for
         *      another task

@@ -437,6 +437,53 @@ void csrMat4Unproject(const CSR_Matrix4* pP, const CSR_Matrix4* pV, CSR_Ray3* pR
         pR->m_InvDir.m_Z = 1.0f / pR->m_Dir.m_Z;
 }
 //---------------------------------------------------------------------------
+void csrMat4TranslationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ)
+{
+    *pX = pM->m_Table[3][0];
+    *pY = pM->m_Table[3][1];
+    *pZ = pM->m_Table[3][2];
+}
+//---------------------------------------------------------------------------
+void csrMat4RotationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ)
+{
+    float rx;
+    float ry;
+    float C;
+
+    // calculate the y angle
+    *pY = asin(pM->m_Table[2][0]);
+     C  = cos(*pY);
+
+    // gimbal lock?
+    if (fabs(C) > 0.0005f)
+    {
+        // calculate the x angle
+         rx =  pM->m_Table[2][2] / C;
+         ry = -pM->m_Table[2][1] / C;
+        *pX =  atan2(ry, rx);
+
+        // calculate the z angle
+         rx =  pM->m_Table[0][0] / C;
+         ry = -pM->m_Table[1][0] / C;
+        *pZ =  atan2(ry, rx);
+    }
+    else
+    {
+        // in this case x is always 0
+        *pX  = 0.0f;
+
+        // calculate the z angle
+         rx = pM->m_Table[1][1];
+         ry = pM->m_Table[0][1];
+        *pZ = atan2(ry, rx);
+    }
+
+    // limit the resulting angles between the max possible value
+    *pX = fmod(*pX, M_PI);
+    *pY = fmod(*pY, M_PI);
+    *pZ = fmod(*pZ, M_PI);
+}
+//---------------------------------------------------------------------------
 // Quaternion functions
 //---------------------------------------------------------------------------
 void csrQuatFromAxis(float angle, const CSR_Vector3* pAxis, CSR_Quaternion* pR)

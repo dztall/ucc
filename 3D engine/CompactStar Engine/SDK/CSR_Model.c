@@ -652,8 +652,8 @@ CSR_Mesh* csrShapeCreateSphere(      float                 radius,
         return 0;
 
     // initialize global values
-    majorStep    = (M_PI          / slices);
-    minorStep    = ((2.0f * M_PI) / stacks);
+    majorStep = (M_PI          / slices);
+    minorStep = ((2.0f * M_PI) / stacks);
 
     // iterate through vertex slices
     for (i = 0; i < slices; ++i)
@@ -1595,6 +1595,8 @@ CSR_MDL* csrMDLCreate(const CSR_Buffer*           pBuffer,
         // iterate through textures to extract
         for (i = 0; i < pSkin->m_Count; ++i)
         {
+            int noGPU = 0;
+
             // extract texture from model
             pPixelBuffer = csrMDLUncompressTexture(pSkin,
                                                    pPalette,
@@ -1616,75 +1618,79 @@ CSR_MDL* csrMDLCreate(const CSR_Buffer*           pBuffer,
 
             // notify that a texture was read
             if (fOnTextureRead)
-                fOnTextureRead(i, pPixelBuffer);
+                fOnTextureRead(i, pPixelBuffer, &noGPU);
 
-            // is a default texture?
-            if (pPixelBuffer->m_DataLength <= 16)
+            // can load the texture on the GPU?
+            if (!noGPU)
             {
-                unsigned color;
-
-                free(pPixelBuffer->m_pData);
-
-                // recreate a 4 * 4 * 3 pixel buffer
-                pPixelBuffer->m_DataLength = 48;
-                pPixelBuffer->m_pData      = (unsigned char*)malloc(pPixelBuffer->m_DataLength);
-
-                // succeeded?
-                if (!pPixelBuffer->m_pData)
+                // is a default texture?
+                if (pPixelBuffer->m_DataLength <= 48)
                 {
-                    // release the MDL object used for the loading
-                    csrMDLReleaseObjects(pHeader, pFrameGroup, pSkin, pTexCoord, pPolygon);
+                    unsigned color;
 
-                    // release the model
-                    csrMDLRelease(pMDL);
+                    free(pPixelBuffer->m_pData);
 
-                    return 0;
+                    // recreate a 4 * 4 * 3 pixel buffer
+                    pPixelBuffer->m_DataLength = 48;
+                    pPixelBuffer->m_pData      = (unsigned char*)malloc(pPixelBuffer->m_DataLength);
+
+                    // succeeded?
+                    if (!pPixelBuffer->m_pData)
+                    {
+                        // release the MDL object used for the loading
+                        csrMDLReleaseObjects(pHeader, pFrameGroup, pSkin, pTexCoord, pPolygon);
+
+                        // release the model
+                        csrMDLRelease(pMDL);
+
+                        return 0;
+                    }
+
+                    // get the texture color from material
+                    if (pMaterial)
+                        color = pMaterial->m_Color;
+                    else
+                    {
+                        // create a default material (because the model vertex buffer is still not created)
+                        CSR_Material material;
+                        csrMaterialInit(&material);
+
+                        color = material.m_Color;
+                    }
+
+                    // initialize the buffer
+                    for (j = 0; j < 16; ++j)
+                    {
+                        // set color data
+                        ((unsigned char*)pPixelBuffer->m_pData)[ j * 3]      = ((color >> 24) & 0xFF);
+                        ((unsigned char*)pPixelBuffer->m_pData)[(j * 3) + 1] = ((color >> 16) & 0xFF);
+                        ((unsigned char*)pPixelBuffer->m_pData)[(j * 3) + 2] = ((color >> 8)  & 0xFF);
+                    }
                 }
 
-                // get the texture color from material
-                if (pMaterial)
-                    color = pMaterial->m_Color;
-                else
-                {
-                    // create a default material (because the model vertex buffer is still not created)
-                    CSR_Material material;
-                    csrMaterialInit(&material);
+                // create new OpenGL texture
+                glGenTextures(1, &pMDL->m_pTexture[i].m_TextureID);
+                glBindTexture(GL_TEXTURE_2D, pMDL->m_pTexture[i].m_TextureID);
 
-                    color = material.m_Color;
-                }
+                // set texture filtering
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-                // initialize the buffer
-                for (j = 0; j < 16; ++j)
-                {
-                    // set color data
-                    ((unsigned char*)pPixelBuffer->m_pData)[ j * 3]      = ((color >> 24) & 0xFF);
-                    ((unsigned char*)pPixelBuffer->m_pData)[(j * 3) + 1] = ((color >> 16) & 0xFF);
-                    ((unsigned char*)pPixelBuffer->m_pData)[(j * 3) + 2] = ((color >> 8)  & 0xFF);
-                }
+                // set texture wrapping mode
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+                // generate texture from bitmap data. NOTE MDL textures are always provided in 24 bit RGB
+                glTexImage2D(GL_TEXTURE_2D,
+                             0,
+                             GL_RGB,
+                             pPixelBuffer->m_Width,
+                             pPixelBuffer->m_Height,
+                             0,
+                             GL_RGB,
+                             GL_UNSIGNED_BYTE,
+                             pPixelBuffer->m_pData);
             }
-
-            // create new OpenGL texture
-            glGenTextures(1, &pMDL->m_pTexture[i].m_TextureID);
-            glBindTexture(GL_TEXTURE_2D, pMDL->m_pTexture[i].m_TextureID);
-
-            // set texture filtering
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-            // set texture wrapping mode
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-            // generate texture from bitmap data. NOTE MDL textures are always provided in 24 bit RGB
-            glTexImage2D(GL_TEXTURE_2D,
-                         0,
-                         GL_RGB,
-                         pPixelBuffer->m_Width,
-                         pPixelBuffer->m_Height,
-                         0,
-                         GL_RGB,
-                         GL_UNSIGNED_BYTE,
-                         pPixelBuffer->m_pData);
 
             // release the pixel buffer
             csrPixelBufferRelease(pPixelBuffer);
@@ -1821,7 +1827,7 @@ CSR_MDL* csrMDLOpen(const char*                 pFileName,
     CSR_Buffer* pBuffer;
     CSR_MDL*    pMDL;
 
-    // open the sound file
+    // open the model file
     pBuffer = csrFileOpen(pFileName);
 
     // succeeded?
@@ -2404,11 +2410,11 @@ int csrMDLReadFrameGroup(const CSR_Buffer*        pBuffer,
     return 1;
 }
 //---------------------------------------------------------------------------
-CSR_PixelBuffer* csrMDLUncompressTexture(const CSR_MDLSkin*   pSkin,
-                                         const CSR_Buffer*    pPalette,
-                                               size_t         width,
-                                               size_t         height,
-                                               size_t         index)
+CSR_PixelBuffer* csrMDLUncompressTexture(const CSR_MDLSkin* pSkin,
+                                         const CSR_Buffer*  pPalette,
+                                               size_t       width,
+                                               size_t       height,
+                                               size_t       index)
 {
     size_t           offset;
     size_t           i;
@@ -2424,6 +2430,7 @@ CSR_PixelBuffer* csrMDLUncompressTexture(const CSR_MDLSkin*   pSkin,
         return 0;
 
     // populate the pixel buffer and calculate the start offset
+    pPB->m_ImageType    = CSR_IT_Raw;
     pPB->m_PixelType    = CSR_PT_RGB;
     pPB->m_Width        = width;
     pPB->m_Height       = height;
@@ -2649,5 +2656,791 @@ void csrMDLReleaseObjects(CSR_MDLHeader*       pHeader,
     free(pTexCoord);
     free(pPolygon);
     free(pFrameGroup);
+}
+//------------------------------------------------------------------------------
+// WaveFront functions
+//------------------------------------------------------------------------------
+CSR_Model* csrWaveFrontCreate(const CSR_Buffer*           pBuffer,
+                              const CSR_VertexFormat*     pVertFormat,
+                              const CSR_VertexCulling*    pVertCulling,
+                              const CSR_Material*         pMaterial,
+                              const CSR_fOnGetVertexColor fOnGetVertexColor,
+                              const CSR_fOnTextureRead    fOnTextureRead)
+{
+    size_t                 i;
+    int                    objectChanging;
+    int                    groupChanging;
+    char                   ch;
+    char                   buffer[256];
+    CSR_WavefrontVertex*   pVertex;
+    CSR_WavefrontNormal*   pNormal;
+    CSR_WavefrontTexCoord* pUV;
+    CSR_WavefrontFace*     pFace;
+    CSR_Model*             pModel;
+
+    // validate the input
+    if (!pBuffer)
+        return 0;
+
+    // create a model
+    pModel = csrModelCreate();
+
+    // succeeded?
+    if (!pModel)
+        return 0;
+
+    pVertex          = (CSR_WavefrontVertex*)  malloc(sizeof(CSR_WavefrontVertex));
+    pNormal          = (CSR_WavefrontNormal*)  malloc(sizeof(CSR_WavefrontNormal));
+    pUV              = (CSR_WavefrontTexCoord*)malloc(sizeof(CSR_WavefrontTexCoord));
+    pFace            = (CSR_WavefrontFace*)    malloc(sizeof(CSR_WavefrontFace));
+    pVertex->m_pData = 0;
+    pVertex->m_Count = 0;
+    pNormal->m_pData = 0;
+    pNormal->m_Count = 0;
+    pUV->m_pData     = 0;
+    pUV->m_Count     = 0;
+    pFace->m_pData   = 0;
+    pFace->m_Count   = 0;
+    objectChanging   = 0;
+    groupChanging    = 0;
+
+    // iterate through wavefront chars
+    for (i = 0; i < pBuffer->m_Length; ++i)
+    {
+        // get the next char
+        ch = ((char*)pBuffer->m_pData)[i];
+
+        // dispatch char
+        switch (ch)
+        {
+            // found commented line
+            case '#':
+                csrWaveFrontReadComment(pBuffer, &ch, &i);
+                continue;
+
+            case 'v':
+                // do begin to read a new wavefront object or group?
+                if (objectChanging || groupChanging)
+                {
+                    objectChanging = 0;
+                    groupChanging  = 0;
+                }
+
+                // check if line contains a normal or a texture coordinate
+                if (i + 1 < pBuffer->m_Length)
+                {
+                    // line contains a normal
+                    if (((char*)pBuffer->m_pData)[i + 1] == 'n')
+                    {
+                        ++i;
+                        csrWaveFrontReadNormal(pBuffer, &ch, &i, pNormal);
+                        continue;
+                    }
+
+                    // line contains a texture coordinate
+                    if (((char*)pBuffer->m_pData)[i + 1] == 't')
+                    {
+                        ++i;
+                        csrWaveFrontReadTextureCoordinate(pBuffer, &ch, &i, pUV);
+                        continue;
+                    }
+                }
+
+                // line contains a vertex
+                csrWaveFrontReadVertex(pBuffer, &ch, &i, pVertex);
+                continue;
+
+            case 'f':
+                // line contains a face
+                csrWaveFrontReadFace(pBuffer, &ch, &i, pFace);
+
+                // build the face
+                if (!csrWaveFrontBuildFace(pVertex,
+                                           pNormal,
+                                           pUV,
+                                           pFace,
+                                           pVertFormat,
+                                           pVertCulling,
+                                           pMaterial,
+                                           objectChanging,
+                                           0,
+                                           pModel,
+                                           fOnGetVertexColor,
+                                           fOnTextureRead))
+                {
+                    // free the model
+                    csrModelRelease(pModel);
+
+                    // free the local buffers
+                    free(pVertex->m_pData);
+                    free(pNormal->m_pData);
+                    free(pUV->m_pData);
+                    free(pFace->m_pData);
+                    free(pVertex);
+                    free(pNormal);
+                    free(pUV);
+                    free(pFace);
+
+                    return 0;
+                }
+
+                // free the local face buffer
+                free(pFace->m_pData);
+
+                // reset the values
+                pFace->m_pData = 0;
+                pFace->m_Count = 0;
+
+                groupChanging = 1;
+                continue;
+
+            case 'o':
+                // line contains an object
+                csrWaveFrontReadUnknown(pBuffer, &ch, &i);
+                objectChanging = 1;
+                continue;
+
+            case 'g':
+                // line contains a polygon group
+                csrWaveFrontReadUnknown(pBuffer, &ch, &i);
+                groupChanging = 1;
+                continue;
+
+            default:
+                // unknown line, skip it
+                csrWaveFrontReadUnknown(pBuffer, &ch, &i);
+                continue;
+        }
+    }
+
+    // free the local buffers
+    free(pVertex->m_pData);
+    free(pNormal->m_pData);
+    free(pUV->m_pData);
+    free(pFace->m_pData);
+    free(pVertex);
+    free(pNormal);
+    free(pUV);
+    free(pFace);
+
+    return pModel;
+}
+//------------------------------------------------------------------------------
+CSR_Model* csrWaveFrontOpen(const char*                 pFileName,
+                            const CSR_VertexFormat*     pVertFormat,
+                            const CSR_VertexCulling*    pVertCulling,
+                            const CSR_Material*         pMaterial,
+                            const CSR_fOnGetVertexColor fOnGetVertexColor,
+                            const CSR_fOnTextureRead    fOnTextureRead)
+{
+    CSR_Buffer* pBuffer;
+    CSR_Model*  pModel;
+
+    // open the model file
+    pBuffer = csrFileOpen(pFileName);
+
+    // succeeded?
+    if (!pBuffer || !pBuffer->m_Length)
+    {
+        csrBufferRelease(pBuffer);
+        return 0;
+    }
+
+    // create the mesh from the file content
+    pModel = csrWaveFrontCreate(pBuffer,
+                                pVertFormat,
+                                pVertCulling,
+                                pMaterial,
+                                fOnGetVertexColor,
+                                fOnTextureRead);
+
+    // release the file buffer (no longer required)
+    csrBufferRelease(pBuffer);
+
+    return pModel;
+}
+//---------------------------------------------------------------------------
+void csrWaveFrontReadComment(const CSR_Buffer* pBuffer, char* pChar, size_t* pIndex)
+{
+    // skip line
+    while (*pChar != '\r' && *pChar != '\n' && *pIndex < pBuffer->m_Length)
+    {
+        // go to next char
+        ++(*pIndex);
+        *pChar = ((char*)pBuffer->m_pData)[*pIndex];
+
+        // skip all following separators
+        while (*pChar == ' ' && *pChar == '\r' && *pChar == '\n' && *pIndex < pBuffer->m_Length)
+        {
+            // go to next char
+            ++(*pIndex);
+            *pChar = ((char*)pBuffer->m_pData)[*pIndex];
+        }
+    }
+}
+//---------------------------------------------------------------------------
+void csrWaveFrontReadVertex(const CSR_Buffer*          pBuffer,
+                                  char*                pChar,
+                                  size_t*              pIndex,
+                                  CSR_WavefrontVertex* pVertex)
+{
+    char   line[256];
+    size_t lineIndex;
+    int    doExit;
+
+    lineIndex = 0;
+    doExit    = 0;
+
+    // read the line
+    while (*pIndex < pBuffer->m_Length)
+    {
+        // dispatch the next char
+        switch (*pChar)
+        {
+            case '\r':
+            case '\n':
+                doExit = 1;
+
+            case ' ':
+                // skip all following separators
+                while (*pChar == ' ' && *pChar == '\r' && *pChar == '\n' && *pIndex < pBuffer->m_Length)
+                {
+                    // go to next char
+                    ++(*pIndex);
+                    *pChar = ((char*)pBuffer->m_pData)[*pIndex];
+                }
+
+                // somehing to parse?
+                if (lineIndex)
+                    csrWaveFrontConvertFloat(line, &pVertex->m_pData, &pVertex->m_Count);
+
+                // do exit the loop?
+                if (doExit)
+                    return;
+
+                lineIndex = 0;
+                break;
+
+            default:
+                // keep only numeric values
+                if ((*pChar >= '0' && *pChar <= '9') || *pChar == '-' || *pChar == '.')
+                {
+                    line[lineIndex]     = *pChar;
+                    line[lineIndex + 1] = '\0';
+                    ++lineIndex;
+                }
+
+                break;
+        }
+
+        // go to next char
+        ++(*pIndex);
+        *pChar = ((char*)pBuffer->m_pData)[*pIndex];
+    }
+}
+//---------------------------------------------------------------------------
+void csrWaveFrontReadNormal(const CSR_Buffer*          pBuffer,
+                                  char*                pChar,
+                                  size_t*              pIndex,
+                                  CSR_WavefrontNormal* pNormal)
+{
+    char   line[256];
+    size_t lineIndex;
+    int    doExit;
+
+    lineIndex = 0;
+    doExit    = 0;
+
+    // read the line
+    while (*pIndex < pBuffer->m_Length)
+    {
+        // dispatch the next char
+        switch (*pChar)
+        {
+            case '\r':
+            case '\n':
+                doExit = 1;
+
+            case ' ':
+                // skip all following separators
+                while (*pChar == ' ' && *pChar == '\r' && *pChar == '\n' && *pIndex < pBuffer->m_Length)
+                {
+                    // go to next char
+                    ++(*pIndex);
+                    *pChar = ((char*)pBuffer->m_pData)[*pIndex];
+                }
+
+                // somehing to parse?
+                if (lineIndex)
+                    csrWaveFrontConvertFloat(line, &pNormal->m_pData, &pNormal->m_Count);
+
+                // do exit the loop?
+                if (doExit)
+                    return;
+
+                lineIndex = 0;
+                break;
+
+            default:
+                // keep only numeric values
+                if ((*pChar >= '0' && *pChar <= '9') || *pChar == '-' || *pChar == '.')
+                {
+                    line[lineIndex]     = *pChar;
+                    line[lineIndex + 1] = '\0';
+                    ++lineIndex;
+                }
+
+                break;
+        }
+
+        // go to next char
+        ++(*pIndex);
+        *pChar = ((char*)pBuffer->m_pData)[*pIndex];
+    }
+}
+//---------------------------------------------------------------------------
+void csrWaveFrontReadTextureCoordinate(const CSR_Buffer*            pBuffer,
+                                             char*                  pChar,
+                                             size_t*                pIndex,
+                                             CSR_WavefrontTexCoord* pTexCoord)
+{
+    char   line[256];
+    size_t lineIndex;
+    int    doExit;
+
+    lineIndex = 0;
+    doExit    = 0;
+
+    // read the line
+    while (*pIndex < pBuffer->m_Length)
+    {
+        // dispatch the next char
+        switch (*pChar)
+        {
+            case '\r':
+            case '\n':
+                doExit = 1;
+
+            case ' ':
+                // skip all following separators
+                while (*pChar == ' ' && *pChar == '\r' && *pChar == '\n' && *pIndex < pBuffer->m_Length)
+                {
+                    // go to next char
+                    ++(*pIndex);
+                    *pChar = ((char*)pBuffer->m_pData)[*pIndex];
+                }
+
+                // somehing to parse?
+                if (lineIndex)
+                    csrWaveFrontConvertFloat(line, &pTexCoord->m_pData, &pTexCoord->m_Count);
+
+                // do exit the loop?
+                if (doExit)
+                    return;
+
+                lineIndex = 0;
+                break;
+
+            default:
+                // keep only numeric values
+                if ((*pChar >= '0' && *pChar <= '9') || *pChar == '-' || *pChar == '.')
+                {
+                    line[lineIndex]     = *pChar;
+                    line[lineIndex + 1] = '\0';
+                    ++lineIndex;
+                }
+
+                break;
+        }
+
+        // go to next char
+        ++(*pIndex);
+        *pChar = ((char*)pBuffer->m_pData)[*pIndex];
+    }
+}
+//---------------------------------------------------------------------------
+void csrWaveFrontReadFace(const CSR_Buffer*        pBuffer,
+                                char*              pChar,
+                                size_t*            pIndex,
+                                CSR_WavefrontFace* pFace)
+{
+    char   line[256];
+    size_t lineIndex;
+    int    doExit;
+
+    lineIndex = 0;
+    doExit    = 0;
+
+    // read the line
+    while (*pIndex < pBuffer->m_Length)
+    {
+        // dispatch the next char
+        switch (*pChar)
+        {
+            case '\r':
+            case '\n':
+                doExit = 1;
+
+            case ' ':
+            case '/':
+                // skip all following separators
+                while (*pChar == ' ' && *pChar == '\r' && *pChar == '\n' && *pIndex < pBuffer->m_Length)
+                {
+                    // go to next char
+                    ++(*pIndex);
+                    *pChar = ((char*)pBuffer->m_pData)[*pIndex];
+                }
+
+                // somehing to parse?
+                if (lineIndex)
+                    csrWaveFrontConvertInt(line, &pFace->m_pData, &pFace->m_Count);
+
+                // do exit the loop?
+                if (doExit)
+                    return;
+
+                lineIndex = 0;
+                break;
+
+            default:
+                // keep only numeric values
+                if ((*pChar >= '0' && *pChar <= '9') || *pChar == '-')
+                {
+                    line[lineIndex]     = *pChar;
+                    line[lineIndex + 1] = '\0';
+                    ++lineIndex;
+                }
+
+                break;
+        }
+
+        // go to next char
+        ++(*pIndex);
+        *pChar = ((char*)pBuffer->m_pData)[*pIndex];
+    }
+}
+//---------------------------------------------------------------------------
+void csrWaveFrontReadUnknown(const CSR_Buffer* pBuffer, char* pChar, size_t* pIndex)
+{
+    // skip line
+    while (*pChar != '\r' && *pChar != '\n' && *pIndex < pBuffer->m_Length)
+    {
+        // go to next char
+        ++(*pIndex);
+        *pChar = ((char*)pBuffer->m_pData)[*pIndex];
+
+        // skip all following separators
+        while (*pChar == ' ' && *pChar == '\r' && *pChar == '\n' && *pIndex < pBuffer->m_Length)
+        {
+            // go to next char
+            ++(*pIndex);
+            *pChar = ((char*)pBuffer->m_pData)[*pIndex];
+        }
+    }
+}
+//---------------------------------------------------------------------------
+void csrWaveFrontConvertFloat(const char* pBuffer, float** pArray, size_t* pCount)
+{
+    size_t index;
+
+    // allocate memory for new value in array
+    float* pData = (float*)csrMemoryAlloc(*pArray, sizeof(float), *pCount + 1);
+
+    // succeeded?
+    if (!pData)
+        return;
+
+    // keep the data index
+    index = *pCount;
+
+    // update the array
+    *pArray = pData;
+    ++(*pCount);
+
+    // convert string to float and add it to array
+    (*pArray)[index] = atof(pBuffer);
+}
+//---------------------------------------------------------------------------
+void csrWaveFrontConvertInt(const char* pBuffer, int** pArray, size_t* pCount)
+{
+    size_t index;
+
+    // allocate memory for new value in array
+    int* pData = (int*)csrMemoryAlloc(*pArray, sizeof(int), *pCount + 1);
+
+    // succeeded?
+    if (!pData)
+        return;
+
+    // keep the data index
+    index = *pCount;
+
+    // update the array
+    *pArray = pData;
+    ++(*pCount);
+
+    // convert string to float and add it to array
+    (*pArray)[index] = atoi(pBuffer);
+}
+//---------------------------------------------------------------------------
+int csrWaveFrontBuildFace(const CSR_WavefrontVertex*   pVertex,
+                          const CSR_WavefrontNormal*   pNormal,
+                          const CSR_WavefrontTexCoord* pUV,
+                          const CSR_WavefrontFace*     pFace,
+                          const CSR_VertexFormat*      pVertFormat,
+                          const CSR_VertexCulling*     pVertCulling,
+                          const CSR_Material*          pMaterial,
+                                int                    objectChanging,
+                                int                    groupChanging,
+                                CSR_Model*             pModel,
+                          const CSR_fOnGetVertexColor  fOnGetVertexColor,
+                          const CSR_fOnTextureRead     fOnTextureRead)
+{
+    CSR_Mesh*         pMesh;
+    CSR_VertexBuffer* pVB;
+
+    pMesh = 0;
+    pVB   = 0;
+
+    // do build the previous group or object?
+    if (pVertex->m_Count && pFace->m_Count)
+    {
+        // do create a new mesh?
+        if (objectChanging || !pModel->m_MeshCount)
+        {
+            CSR_Mesh* pNewMesh;
+
+            // create a new mesh in the model
+            pNewMesh = (CSR_Mesh*)csrMemoryAlloc(pModel->m_pMesh,
+                                                 sizeof(CSR_Mesh),
+                                                 pModel->m_MeshCount + 1);
+
+            // succeeded?
+            if (!pNewMesh)
+                return 0;
+
+            // keep the current mesh to update
+            pMesh = &pNewMesh[pModel->m_MeshCount];
+
+            // update the model meshes
+            pModel->m_pMesh = pNewMesh;
+            ++pModel->m_MeshCount;
+        }
+        else
+            pMesh = &pModel->m_pMesh[pModel->m_MeshCount - 1];
+
+        // do create a new vertex buffer?
+        if (groupChanging || !pMesh->m_pVB)
+        {
+            CSR_VertexBuffer* pNewVB;
+
+            // create a new vertex buffer in the mesh
+            pNewVB = (CSR_VertexBuffer*)csrMemoryAlloc(pMesh->m_pVB,
+                                                       sizeof(CSR_VertexBuffer),
+                                                       pMesh->m_Count + 1);
+
+            // succeeded?
+            if (!pNewVB)
+                return 0;
+
+            // keep the current vertex buffer to update
+            pVB = &pNewVB[pMesh->m_Count];
+
+            // update the model meshes
+            pMesh->m_pVB = pNewVB;
+            ++pMesh->m_Count;
+
+            // initialize the newly created vertex buffer
+            csrVertexBufferInit(pVB);
+
+            // apply the user wished vertex format
+            if (pVertFormat)
+                pVB->m_Format = *pVertFormat;
+
+            // apply the user wished vertex culling
+            if (pVertCulling)
+                pVB->m_Culling = *pVertCulling;
+            else
+            {
+                // otherwise configure the default culling
+                pVB->m_Culling.m_Type = CSR_CT_None;
+                pVB->m_Culling.m_Face = CSR_CF_CW;
+            }
+
+            // apply the user wished material
+            if (pMaterial)
+                pVB->m_Material = *pMaterial;
+
+            // configure the vertex format type
+            pVB->m_Format.m_Type         = CSR_VT_Triangles;
+            pVB->m_Format.m_HasNormal    = pNormal->m_Count ? pVertFormat->m_HasNormal    : 0;
+            pVB->m_Format.m_HasTexCoords = pUV->m_Count     ? pVertFormat->m_HasTexCoords : 0;
+
+            // calculate the stride
+            csrVertexFormatCalculateStride(&pVB->m_Format);
+        }
+        else
+            pVB = &pMesh->m_pVB[pMesh->m_Count - 1];
+
+        // build the next buffer
+        csrWaveFrontBuildVertexBuffer(pVertex,
+                                      pNormal,
+                                      pUV,
+                                      pFace,
+                                      pVB,
+                                      fOnGetVertexColor,
+                                      fOnTextureRead);
+    }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
+void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
+                                   const CSR_WavefrontNormal*   pNormal,
+                                   const CSR_WavefrontTexCoord* pUV,
+                                   const CSR_WavefrontFace*     pFace,
+                                         CSR_VertexBuffer*      pVB,
+                                   const CSR_fOnGetVertexColor  fOnGetVertexColor,
+                                   const CSR_fOnTextureRead     fOnTextureRead)
+{
+    size_t i;
+    size_t faceStride;
+    size_t dataIndex;
+    int    baseVertexIndex;
+    int    baseNormalIndex;
+    int    baseUVIndex;
+
+    faceStride = 1;
+
+    // wavefront faces are organized as triangle fan, so get the first vertex
+    // and build all others from it
+    baseVertexIndex = (pFace->m_pData[0] - 1) * 3;
+
+    // get the first normal
+    if (pNormal->m_Count)
+    {
+        baseNormalIndex = (pFace->m_pData[1] - 1) * 3;
+        ++faceStride;
+    }
+
+    // get the first texture coordinate
+    if (pUV->m_Count)
+    {
+        baseUVIndex = (pFace->m_pData[2] - 1) * 2;
+        ++faceStride;
+    }
+
+    // iterate through remaining indices
+    for (i = 1; i <= (pFace->m_Count / faceStride) - 2; ++i)
+    {
+        CSR_Vector3 vertex;
+        CSR_Vector3 normal;
+        CSR_Vector2 uv;
+
+        // build polygon vertex 1
+        int vertexIndex =                                baseVertexIndex;
+        int normalIndex = pVB->m_Format.m_HasNormal    ? baseNormalIndex : 0;
+        int uvIndex     = pVB->m_Format.m_HasTexCoords ? baseUVIndex     : 0;
+
+        // set vertex data
+        vertex.m_X = pVertex->m_pData[vertexIndex];
+        vertex.m_Y = pVertex->m_pData[vertexIndex + 1];
+        vertex.m_Z = pVertex->m_pData[vertexIndex + 2];
+
+        // vertex has a normal?
+        if (pVB->m_Format.m_HasNormal)
+        {
+            // set normal data
+            normal.m_X = pNormal->m_pData[normalIndex];
+            normal.m_Y = pNormal->m_pData[normalIndex + 1];
+            normal.m_Z = pNormal->m_pData[normalIndex + 2];
+        }
+
+        // vertex has UV texture coordinates?
+        if (pVB->m_Format.m_HasTexCoords)
+        {
+            // set texture data
+            uv.m_X = pUV->m_pData[uvIndex];
+            uv.m_Y = pUV->m_pData[uvIndex + 1];
+        }
+
+        // add the vertex to the buffer
+        csrVertexBufferAdd(&vertex,
+                            &normal,
+                            &uv,
+                             vertexIndex,
+                             fOnGetVertexColor,
+                             pVB);
+
+        // build polygon vertex 2
+        vertexIndex =                                (pFace->m_pData[ i * faceStride]      - 1) * 3;
+        normalIndex = pVB->m_Format.m_HasNormal    ? (pFace->m_pData[(i * faceStride) + 1] - 1) * 3 : 0;
+        uvIndex     = pVB->m_Format.m_HasTexCoords ? (pFace->m_pData[(i * faceStride) + 2] - 1) * 2 : 0;
+
+        // set vertex data
+        vertex.m_X = pVertex->m_pData[vertexIndex];
+        vertex.m_Y = pVertex->m_pData[vertexIndex + 1];
+        vertex.m_Z = pVertex->m_pData[vertexIndex + 2];
+
+        // vertex has a normal?
+        if (pVB->m_Format.m_HasNormal)
+        {
+            // set normal data
+            normal.m_X = pNormal->m_pData[normalIndex];
+            normal.m_Y = pNormal->m_pData[normalIndex + 1];
+            normal.m_Z = pNormal->m_pData[normalIndex + 2];
+        }
+
+        // vertex has UV texture coordinates?
+        if (pVB->m_Format.m_HasTexCoords)
+        {
+            // set texture data
+            uv.m_X = pUV->m_pData[uvIndex];
+            uv.m_Y = pUV->m_pData[uvIndex + 1];
+        }
+
+        // add the vertex to the buffer
+        csrVertexBufferAdd(&vertex,
+                           &normal,
+                           &uv,
+                            vertexIndex,
+                            fOnGetVertexColor,
+                            pVB);
+
+        // build polygon vertex 3
+        vertexIndex =                                (pFace->m_pData[ (i + 1) * faceStride]      - 1) * 3;
+        normalIndex = pVB->m_Format.m_HasNormal    ? (pFace->m_pData[((i + 1) * faceStride) + 1] - 1) * 3 : 0;
+        uvIndex     = pVB->m_Format.m_HasTexCoords ? (pFace->m_pData[((i + 1) * faceStride) + 2] - 1) * 2 : 0;
+
+        // set vertex data
+        vertex.m_X = pVertex->m_pData[vertexIndex];
+        vertex.m_Y = pVertex->m_pData[vertexIndex + 1];
+        vertex.m_Z = pVertex->m_pData[vertexIndex + 2];
+
+        // vertex has a normal?
+        if (pVB->m_Format.m_HasNormal)
+        {
+            // set normal data
+            normal.m_X = pNormal->m_pData[normalIndex];
+            normal.m_Y = pNormal->m_pData[normalIndex + 1];
+            normal.m_Z = pNormal->m_pData[normalIndex + 2];
+        }
+
+        // vertex has UV texture coordinates?
+        if (pVB->m_Format.m_HasTexCoords)
+        {
+            // set texture data
+            uv.m_X = pUV->m_pData[uvIndex];
+            uv.m_Y = pUV->m_pData[uvIndex + 1];
+        }
+
+        // add the vertex to the buffer
+        csrVertexBufferAdd(&vertex,
+                           &normal,
+                           &uv,
+                            vertexIndex,
+                            fOnGetVertexColor,
+                            pVB);
+    }
 }
 //---------------------------------------------------------------------------
