@@ -40,9 +40,8 @@
 #include "SDK/CSR_Shader.h"
 #include "SDK/CSR_Renderer.h"
 
-#if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
-    #include <ccr.h>
-#endif
+// libraries
+#include <ccr.h>
 
 //------------------------------------------------------------------------------
 unsigned char g_VSProgram[] = "precision mediump float;"
@@ -64,12 +63,6 @@ unsigned char g_FSProgram[] = "precision mediump float;"
                               "    gl_FragColor = mini_fColor;"
                               "}";
 //------------------------------------------------------------------------------
-// renderer buffers should no more be generated since CCR version 1.1
-#if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-    #ifndef _OS_ANDROID_
-        GLuint g_Renderbuffer, g_Framebuffer;
-    #endif
-#endif
 CSR_Shader*        g_pShader              = 0;
 CSR_Mesh*          g_pMesh                = 0;
 CSR_AABBNode*      g_pAABBRoot            = 0;
@@ -82,6 +75,7 @@ float              g_Time                 = 0.0f;
 float              g_Interval             = 0.0f;
 const unsigned int g_FPS                  = 15;
 CSR_Rect           g_View;
+CSR_Color          g_Background;
 CSR_Matrix4        g_ProjectionMatrix;
 CSR_Matrix4        g_ViewMatrix;
 float              g_PolygonArray[21];
@@ -106,27 +100,18 @@ void ApplyMatrix(float w, float h)
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
 {
-    // renderer buffers should no more be generated since CCR version 1.1
-    #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-        #ifndef _OS_ANDROID_
-            // generate and bind in memory frame buffers to render to
-            glGenRenderbuffers(1, &g_Renderbuffer);
-            glBindRenderbuffer(GL_RENDERBUFFER, g_Renderbuffer);
-            glGenFramebuffers(1,&g_Framebuffer);
-            glBindFramebuffer(GL_FRAMEBUFFER, g_Framebuffer);
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER,
-                                      GL_COLOR_ATTACHMENT0,
-                                      GL_RENDERBUFFER,
-                                      g_Renderbuffer);
-        #endif
-    #endif
-
     CSR_Buffer*      pVSBuffer;
     CSR_Buffer*      pFSBuffer;
     unsigned char*   pVSProgram;
     unsigned char*   pFSProgram;
     CSR_VertexFormat vertexFormat;
     CSR_Material     material;
+
+    // initialize the scene background color
+    g_Background.m_R = 0.0f;
+    g_Background.m_G = 0.0f;
+    g_Background.m_B = 0.0f;
+    g_Background.m_A = 1.0f;
 
     // initialize the viewbox
     g_View.m_Min.m_X = 0.0f;
@@ -193,7 +178,7 @@ void on_GLES2_Init(int view_w, int view_h)
 void on_GLES2_Final()
 {
     // delete aabb tree
-    csrAABBTreeRelease(g_pAABBRoot);
+    csrAABBTreeNodeRelease(g_pAABBRoot);
     g_pAABBRoot = 0;
 
     // delete mesh
@@ -264,7 +249,7 @@ void on_GLES2_Render()
     CSR_Mesh           polygonMesh;
     CSR_VertexBuffer   polygonVB;
 
-    csrSceneBegin(0.0f, 0.0f, 0.0f, 1.0f);
+    csrDrawBegin(&g_Background);
 
     // set translation
     t.m_X =  0.0f;
@@ -348,7 +333,7 @@ void on_GLES2_Render()
             if (!pNewPolygonsToDraw)
             {
                 free(pPolygonsToDraw);
-                csrSceneEnd();
+                csrDrawEnd();
                 return;
             }
 
@@ -367,7 +352,7 @@ void on_GLES2_Render()
         free(polygons.m_pPolygon);
 
     // draw the sphere
-    csrSceneDrawMesh(g_pMesh, g_pShader);
+    csrDrawMesh(g_pMesh, g_pShader, 0);
 
     // enable position and color slots
     glEnableVertexAttribArray(g_pShader->m_VertexSlot);
@@ -413,7 +398,7 @@ void on_GLES2_Render()
         g_PolygonArray[16] = pPolygonsToDraw[i].m_Vertex[2].m_Z;
 
         // draw the polygon
-        csrSceneDrawMesh(&polygonMesh, g_pShader);
+        csrDrawMesh(&polygonMesh, g_pShader, 0);
     }
 
     if (polygonsToDrawCount)
@@ -423,7 +408,7 @@ void on_GLES2_Render()
     glDisableVertexAttribArray(g_pShader->m_VertexSlot);
     glDisableVertexAttribArray(g_pShader->m_ColorSlot);
 
-    csrSceneEnd();
+    csrDrawEnd();
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchBegin(float x, float y)

@@ -65,8 +65,12 @@ SDL_Texture*     g_pTexture         = 0;
 SDL_Renderer*    g_pRenderer        = 0;
 SDL_Texture*     g_pTexture         = 0;
 //------------------------------------------------------------------------------
-void OnTextureRead(const CSR_PixelBuffer* pPixelBuffer)
+void OnTextureRead(size_t index, const CSR_PixelBuffer* pPixelBuffer, int* pNoGPU)
 {
+    // disable the texture loading on the GPU
+    if (pNoGPU)
+        *pNoGPU = 1;
+
     // no pixel buffer?
     if (!pPixelBuffer)
         return;
