@@ -57,7 +57,7 @@ int csrAABBTreeFromIndexedPolygonBuffer(const CSR_IndexedPolygonBuffer* pIPB,
     // succeeded?
     if (!pNode->m_pBox || !pNode->m_pPolygonBuffer)
     {
-        csrAABBTreeNodeRelease(pNode);
+        csrAABBTreeNodeContentRelease(pNode);
         return 0;
     }
 
@@ -70,7 +70,7 @@ int csrAABBTreeFromIndexedPolygonBuffer(const CSR_IndexedPolygonBuffer* pIPB,
     {
         csrIndexedPolygonBufferRelease(pLeftPolygons);
         csrIndexedPolygonBufferRelease(pRightPolygons);
-        csrAABBTreeNodeRelease(pNode);
+        csrAABBTreeNodeContentRelease(pNode);
         return 0;
     }
 
@@ -117,7 +117,7 @@ int csrAABBTreeFromIndexedPolygonBuffer(const CSR_IndexedPolygonBuffer* pIPB,
             {
                 csrIndexedPolygonBufferRelease(pLeftPolygons);
                 csrIndexedPolygonBufferRelease(pRightPolygons);
-                csrAABBTreeNodeRelease(pNode);
+                csrAABBTreeNodeContentRelease(pNode);
                 return 0;
             }
 
@@ -140,7 +140,7 @@ int csrAABBTreeFromIndexedPolygonBuffer(const CSR_IndexedPolygonBuffer* pIPB,
             {
                 csrIndexedPolygonBufferRelease(pLeftPolygons);
                 csrIndexedPolygonBufferRelease(pRightPolygons);
-                csrAABBTreeNodeRelease(pNode);
+                csrAABBTreeNodeContentRelease(pNode);
                 return 0;
             }
 
@@ -172,7 +172,7 @@ int csrAABBTreeFromIndexedPolygonBuffer(const CSR_IndexedPolygonBuffer* pIPB,
             {
                 csrIndexedPolygonBufferRelease(pLeftPolygons);
                 csrIndexedPolygonBufferRelease(pRightPolygons);
-                csrAABBTreeNodeRelease(pNode);
+                csrAABBTreeNodeContentRelease(pNode);
                 return 0;
             }
 
@@ -198,7 +198,7 @@ int csrAABBTreeFromIndexedPolygonBuffer(const CSR_IndexedPolygonBuffer* pIPB,
             {
                 csrIndexedPolygonBufferRelease(pLeftPolygons);
                 csrIndexedPolygonBufferRelease(pRightPolygons);
-                csrAABBTreeNodeRelease(pNode);
+                csrAABBTreeNodeContentRelease(pNode);
                 return 0;
             }
 
@@ -286,7 +286,7 @@ CSR_AABBNode* csrAABBTreeFromMesh(const CSR_Mesh* pMesh)
     // tree was populated successfully?
     if (!success)
     {
-        csrAABBTreeRelease(pRoot);
+        csrAABBTreeNodeRelease(pRoot);
         return 0;
     }
 
@@ -387,7 +387,7 @@ int csrAABBTreeResolve(const CSR_Ray3*           pRay,
     return (leftResolved || rightResolved);
 }
 //---------------------------------------------------------------------------
-void csrAABBTreeNodeRelease(CSR_AABBNode* pNode)
+void csrAABBTreeNodeContentRelease(CSR_AABBNode* pNode)
 {
     // release the bounding box
     if (pNode->m_pBox)
@@ -408,23 +408,73 @@ void csrAABBTreeNodeRelease(CSR_AABBNode* pNode)
     }
 }
 //---------------------------------------------------------------------------
-void csrAABBTreeRelease(CSR_AABBNode* pNode)
+void csrAABBTreeNodeRelease(CSR_AABBNode* pNode)
 {
     if (!pNode)
         return;
 
     // release all children on left side
     if (pNode->m_pLeft)
-        csrAABBTreeRelease(pNode->m_pLeft);
+        csrAABBTreeNodeRelease(pNode->m_pLeft);
 
     // release all children on right side
     if (pNode->m_pRight)
-        csrAABBTreeRelease(pNode->m_pRight);
+        csrAABBTreeNodeRelease(pNode->m_pRight);
 
     // delete node content
-    csrAABBTreeNodeRelease(pNode);
+    csrAABBTreeNodeContentRelease(pNode);
 
     // delete node
     free(pNode);
+}
+//---------------------------------------------------------------------------
+// Collision info functions
+//---------------------------------------------------------------------------
+CSR_CollisionInfo* csrCollisionInfoCreate(void)
+{
+    // create a new collision info
+    CSR_CollisionInfo* pCI = (CSR_CollisionInfo*)malloc(sizeof(CSR_CollisionInfo));
+
+    // succeeded?
+    if (!pCI)
+        return 0;
+
+    // initialize the collision info content
+    csrCollisionInfoInit(pCI);
+
+    return pCI;
+}
+//---------------------------------------------------------------------------
+void csrCollisionInfoRelease(CSR_CollisionInfo* pCI)
+{
+    size_t i;
+
+    // no collision info to release?
+    if (!pCI)
+        return;
+
+    // free the polygon buffer
+    if (pCI->m_Polygons.m_pPolygon)
+        free(pCI->m_Polygons.m_pPolygon);
+
+    // free the model array
+    if (pCI->m_pModels)
+        csrArrayRelease(pCI->m_pModels);
+
+    // free the scene
+    free(pCI);
+}
+//---------------------------------------------------------------------------
+void csrCollisionInfoInit(CSR_CollisionInfo* pCI)
+{
+    // no collision info to initialize?
+    if (!pCI)
+        return;
+
+    // initialize the collision info
+    pCI->m_Collision           = 0;
+    pCI->m_Polygons.m_pPolygon = 0;
+    pCI->m_Polygons.m_Count    = 0;
+    pCI->m_pModels             = 0;
 }
 //---------------------------------------------------------------------------

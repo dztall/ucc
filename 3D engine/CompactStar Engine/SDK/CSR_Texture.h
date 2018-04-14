@@ -24,6 +24,14 @@
 //---------------------------------------------------------------------------
 
 /**
+* Image type
+*/
+typedef enum
+{
+    CSR_IT_Raw
+} CSR_EImageType;
+
+/**
 * Pixel type
 */
 typedef enum
@@ -45,6 +53,7 @@ typedef enum
 */
 typedef struct
 {
+    CSR_EImageType m_ImageType;
     CSR_EPixelType m_PixelType;
     unsigned       m_Width;
     unsigned       m_Height;
@@ -53,6 +62,25 @@ typedef struct
     size_t         m_DataLength;
     void*          m_pData;
 } CSR_PixelBuffer;
+
+/**
+* Texture item
+*/
+typedef struct
+{
+    CSR_PixelBuffer* m_pBuffer;
+    char*            m_pFileName;
+    GLuint           m_ID;
+} CSR_TextureItem;
+
+/**
+* Texture array
+*/
+typedef struct
+{
+    CSR_TextureItem* m_pItem;
+    size_t           m_Count;
+} CSR_TextureArray;
 
 /**
 * Texture shader (i.e. the GPU loaded textures that should be connected to the shader)
@@ -89,6 +117,53 @@ typedef struct
         *@param[in, out] pPB - pixel buffer to initialize
         */
         void csrPixelBufferInit(CSR_PixelBuffer* pPB);
+
+        //-------------------------------------------------------------------
+        // Texture item functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Creates a texture item
+        *@return newly created texture item, 0 on error
+        *@note The texture item must be released when no longer used, see csrTextureItemContentRelease()
+        */
+        CSR_TextureItem* csrTextureItemCreate(void);
+
+        /**
+        * Releases a texture item content
+        *@param[in, out] pTI - texture item for which the content should be released
+        *@note Only the item content is released, the item itself is not released
+        */
+        void csrTextureItemContentRelease(CSR_TextureItem* pTI);
+
+        /**
+        * Initializes a texture item
+        *@param[in, out] pTI - texture item to initialize
+        */
+        void csrTextureItemInit(CSR_TextureItem* pTI);
+
+        //-------------------------------------------------------------------
+        // Texture array functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Creates a texture array
+        *@return newly created texture array, 0 on error
+        *@note The texture array must be released when no longer used, see csrTextureArrayRelease()
+        */
+        CSR_TextureArray* csrTextureArrayCreate(void);
+
+        /**
+        * Releases a texture array
+        *@param[in, out] pTA - texture array to release
+        */
+        void csrTextureArrayRelease(CSR_TextureArray* pTA);
+
+        /**
+        * Initializes a texture array structure
+        *@param[in, out] pTA - texture array to initialize
+        */
+        void csrTextureArrayInit(CSR_TextureArray* pTA);
 
         //-------------------------------------------------------------------
         // Texture shader functions

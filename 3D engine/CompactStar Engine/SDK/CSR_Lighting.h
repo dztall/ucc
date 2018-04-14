@@ -17,6 +17,7 @@
 #define CSR_LightingH
 
 // compactStar engine
+#include "CSR_Common.h"
 #include "CSR_Geometry.h"
 
 //---------------------------------------------------------------------------

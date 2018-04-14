@@ -16,17 +16,21 @@
 #ifndef CSR_CollisionH
 #define CSR_CollisionH
 
-// compactStart engine
+// compactStar engine
 #include "CSR_Common.h"
 #include "CSR_Geometry.h"
 #include "CSR_Vertex.h"
 
 //---------------------------------------------------------------------------
-// Structures
+// Prototypes
 //---------------------------------------------------------------------------
 
 // Aligned-axis bounding box tree node prototype
 typedef struct CSR_AABBNode CSR_AABBNode;
+
+//---------------------------------------------------------------------------
+// Structures
+//---------------------------------------------------------------------------
 
 /**
 * Aligned-axis bounding box tree node
@@ -39,6 +43,26 @@ struct CSR_AABBNode
     CSR_Box*                  m_pBox;
     CSR_IndexedPolygonBuffer* m_pPolygonBuffer;
 };
+
+/**
+* Collision model info
+*/
+typedef struct
+{
+    void*  m_pItem;        // scene item against which a collision happened
+    size_t m_MatrixIndex;  // index of the model matrix in the scene item
+    size_t m_AABBTreeItem; // index of the AABB tree in the scene item
+} CSR_CollisionModelInfo;
+
+/**
+* Collision info
+*/
+typedef struct
+{
+    int                m_Collision; // if 1 a collision happened, if 0 no collision happened
+    CSR_Polygon3Buffer m_Polygons;  // all the found polygons in collision
+    CSR_Array*         m_pModels;   // models owning one or several polygons in collision
+} CSR_CollisionInfo;
 
 #ifdef __cplusplus
     extern "C"
@@ -61,7 +85,7 @@ struct CSR_AABBNode
         * Gets an AABB tree from a mesh
         *@param pMesh - mesh
         *@return aligned-axis bounding box tree root node, 0 on error
-        *@note The AABB tree must be released when no longer used, see csrAABBTreeRelease()
+        *@note The AABB tree must be released when no longer used, see csrAABBTreeNodeRelease()
         */
         CSR_AABBNode* csrAABBTreeFromMesh(const CSR_Mesh* pMesh);
 
@@ -69,8 +93,8 @@ struct CSR_AABBNode
         * Resolves AABB tree
         *@param pRay - ray against which tree items will be tested
         *@param pNode - root or parent node to resolve
-        *@param[out] pPolygons - polygons belonging to boxes hit by ray
         *@param deep - tree deep level, used internally, should be set to 0
+        *@param[out] pPolygons - polygons belonging to boxes hit by ray
         *@return 1 on success, otherwise 0
         */
         int csrAABBTreeResolve(const CSR_Ray3*           pRay,
@@ -83,13 +107,36 @@ struct CSR_AABBNode
         *@param[in, out] pNode - node for which content should be released
         *@note Only the node content is released, the node itself is not released
         */
-        void csrAABBTreeNodeRelease(CSR_AABBNode* pNode);
+        void csrAABBTreeNodeContentRelease(CSR_AABBNode* pNode);
 
         /**
-        * Releases an AABB tree
+        * Releases an AABB tree node and all his children
         *@param[in, out] pNode - AABB tree root node to release from
         */
-        void csrAABBTreeRelease(CSR_AABBNode* pNode);
+        void csrAABBTreeNodeRelease(CSR_AABBNode* pNode);
+
+        //-------------------------------------------------------------------
+        // Collision info functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Creates a collision info
+        *@return newly created collision info, 0 on error
+        *@note The collision info must be released when no longer used, see csrCollisionInfoRelease()
+        */
+        CSR_CollisionInfo* csrCollisionInfoCreate(void);
+
+        /**
+        * Releases a collision info
+        *@param[in, out] pCI - collision info to release
+        */
+        void csrCollisionInfoRelease(CSR_CollisionInfo* pCI);
+
+        /**
+        * Initializes a collision info structure
+        *@param[in, out] pCI - collision info to initialize
+        */
+        void csrCollisionInfoInit(CSR_CollisionInfo* pCI);
 
 #ifdef __cplusplus
     }
