@@ -183,7 +183,7 @@ typedef void (*CSR_fOnLinkStaticVB)(const CSR_Shader* pShader, const void* pCust
         /**
         * Creates a shader item
         *@return newly created shader item, 0 on error
-        *@note The shader item must be released when no longer used, see csrShaderItemRelease()
+        *@note The shader item must be released when no longer used, see csrShaderItemContentRelease()
         */
         CSR_ShaderItem* csrShaderItemCreate(void);
 

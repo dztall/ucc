@@ -17,6 +17,7 @@
 
 // std
 #include <stdlib.h>
+#include <math.h>
 
 //---------------------------------------------------------------------------
 // Scene context functions
@@ -147,6 +148,7 @@ void csrSceneItemInit(CSR_SceneItem* pSceneItem)
     if (!pSceneItem)
         return;
 
+    // initialize the scene item
     pSceneItem->m_pModel        = 0;
     pSceneItem->m_Type          = CSR_MT_Model;
     pSceneItem->m_pMatrixArray  = 0;
@@ -960,6 +962,142 @@ void csrSceneDraw(const CSR_Scene* pScene, const CSR_SceneContext* pContext)
         csrDrawEnd();
 }
 //---------------------------------------------------------------------------
+void csrSceneArcBallToMatrix(float radius, float angleX, float angleY, CSR_Matrix4* pR)
+{
+    CSR_Vector3 axis;
+    CSR_Matrix4 cameraMatrixX;
+    CSR_Matrix4 cameraMatrixY;
+    CSR_Matrix4 cameraMatrixXY;
+    CSR_Matrix4 cameraMatrix;
+    CSR_Camera  camera;
+
+    // validate the input
+    if (!pR)
+        return;
+
+    // are angles out of bounds?
+    angleX = fmod(angleX, M_PI * 2.0f);
+    angleY = fmod(angleY, M_PI * 2.0f);
+
+    // create a matrix for the rotation on the X axis
+    axis.m_X = 1.0f;
+    axis.m_Y = 0.0f;
+    axis.m_Z = 0.0f;
+    csrMat4Rotate(angleX, &axis, &cameraMatrixX);
+
+    // create a matrix for the rotation on the Y axis
+    axis.m_X = 0.0f;
+    axis.m_Y = 1.0f;
+    axis.m_Z = 0.0f;
+    csrMat4Rotate(angleY, &axis, &cameraMatrixY);
+
+    // combine the rotation matrices
+    csrMat4Multiply(&cameraMatrixY, &cameraMatrixX, &cameraMatrixXY);
+
+    // configure the camera
+    camera.m_Position.m_X =  0.0f;
+    camera.m_Position.m_Y =  0.0f;
+    camera.m_Position.m_Z = -radius;
+    camera.m_xAngle       =  0.0f;
+    camera.m_yAngle       =  0.0f;
+    camera.m_zAngle       =  0.0f;
+    camera.m_Factor.m_X   =  1.0f;
+    camera.m_Factor.m_Y   =  1.0f;
+    camera.m_Factor.m_Z   =  1.0f;
+    camera.m_MatCombType  =  IE_CT_Scale_Rotate_Translate;
+
+    // build the camera
+    csrSceneCameraToMatrix(&camera, &cameraMatrix);
+    csrMat4Multiply(&cameraMatrixXY, &cameraMatrix, pR);
+}
+//---------------------------------------------------------------------------
+void csrSceneCameraToMatrix(const CSR_Camera* pCamera, CSR_Matrix4* pR)
+{
+    CSR_Vector3 axis;
+    CSR_Matrix4 scaleMatrix;
+    CSR_Matrix4 rotateXMatrix;
+    CSR_Matrix4 rotateYMatrix;
+    CSR_Matrix4 rotateZMatrix;
+    CSR_Matrix4 translateMatrix;
+    CSR_Matrix4 buildMatrix1;
+    CSR_Matrix4 buildMatrix2;
+    CSR_Matrix4 buildMatrix3;
+
+    // validate the inputs
+    if (!pCamera || !pR)
+        return;
+
+    // build a scale matrix
+    csrMat4Scale(&pCamera->m_Factor, &scaleMatrix);
+
+    // build a rotation matrix on the x axis
+    axis.m_X = 1.0f;
+    axis.m_Y = 0.0f;
+    axis.m_Z = 0.0f;
+    csrMat4Rotate(pCamera->m_xAngle, &axis, &rotateXMatrix);
+
+    // build a rotation matrix on the y axis
+    axis.m_X = 0.0f;
+    axis.m_Y = 1.0f;
+    axis.m_Z = 0.0f;
+    csrMat4Rotate(pCamera->m_yAngle, &axis, &rotateYMatrix);
+
+    // build a rotation matrix on the z axis
+    axis.m_X = 0.0f;
+    axis.m_Y = 0.0f;
+    axis.m_Z = 1.0f;
+    csrMat4Rotate(pCamera->m_zAngle, &axis, &rotateZMatrix);
+
+    // build a translation matrix
+    csrMat4Translate(&pCamera->m_Position, &translateMatrix);
+
+    // build model matrix
+    switch (pCamera->m_MatCombType)
+    {
+        case IE_CT_Scale_Rotate_Translate:
+            csrMat4Multiply(&scaleMatrix,  &rotateXMatrix,   &buildMatrix1);
+            csrMat4Multiply(&buildMatrix1, &rotateYMatrix,   &buildMatrix2);
+            csrMat4Multiply(&buildMatrix2, &rotateZMatrix,   &buildMatrix3);
+            csrMat4Multiply(&buildMatrix3, &translateMatrix, pR);
+            return;
+
+        case IE_CT_Scale_Translate_Rotate:
+            csrMat4Multiply(&scaleMatrix,  &translateMatrix, &buildMatrix1);
+            csrMat4Multiply(&buildMatrix1, &rotateXMatrix,   &buildMatrix2);
+            csrMat4Multiply(&buildMatrix2, &rotateYMatrix,   &buildMatrix3);
+            csrMat4Multiply(&buildMatrix3, &rotateZMatrix,   pR);
+            return;
+
+        case IE_CT_Rotate_Translate_Scale:
+            csrMat4Multiply(&rotateXMatrix, &rotateYMatrix,   &buildMatrix1);
+            csrMat4Multiply(&buildMatrix1,  &rotateZMatrix,   &buildMatrix2);
+            csrMat4Multiply(&buildMatrix2,  &translateMatrix, &buildMatrix3);
+            csrMat4Multiply(&buildMatrix3,  &scaleMatrix,     pR);
+            return;
+
+        case IE_CT_Rotate_Scale_Translate:
+            csrMat4Multiply(&rotateXMatrix, &rotateYMatrix,   &buildMatrix1);
+            csrMat4Multiply(&buildMatrix1,  &rotateZMatrix,   &buildMatrix2);
+            csrMat4Multiply(&buildMatrix2,  &scaleMatrix,     &buildMatrix3);
+            csrMat4Multiply(&buildMatrix3,  &translateMatrix, pR);
+            return;
+
+        case IE_CT_Translate_Rotate_Scale:
+            csrMat4Multiply(&translateMatrix, &rotateXMatrix, &buildMatrix1);
+            csrMat4Multiply(&buildMatrix1,    &rotateYMatrix, &buildMatrix2);
+            csrMat4Multiply(&buildMatrix2,    &rotateZMatrix, &buildMatrix3);
+            csrMat4Multiply(&buildMatrix3,    &scaleMatrix,   pR);
+            return;
+
+        case IE_CT_Translate_Scale_Rotate:
+            csrMat4Multiply(&translateMatrix, &scaleMatrix,   &buildMatrix1);
+            csrMat4Multiply(&buildMatrix1,    &rotateXMatrix, &buildMatrix2);
+            csrMat4Multiply(&buildMatrix2,    &rotateYMatrix, &buildMatrix3);
+            csrMat4Multiply(&buildMatrix3,    &rotateZMatrix, pR);
+            return;
+    }
+}
+//---------------------------------------------------------------------------
 int csrSceneDetectCollision(const CSR_Scene*         pScene,
                             const CSR_Ray3*          pRay,
                                   CSR_CollisionInfo* pCollisionInfo)
@@ -972,11 +1110,7 @@ int csrSceneDetectCollision(const CSR_Scene*         pScene,
         return 0;
 
     // initialize the collision info
-    pCollisionInfo->m_Collision        = 0;
-    pCollisionInfo->m_SlidingPlane.m_A = 0;
-    pCollisionInfo->m_SlidingPlane.m_B = 0;
-    pCollisionInfo->m_SlidingPlane.m_C = 0;
-    pCollisionInfo->m_SlidingPlane.m_D = 0;
+    pCollisionInfo->m_Collision = 0;
 
     // release any previously found polygon
     if (pCollisionInfo->m_Polygons.m_pPolygon)
@@ -991,8 +1125,6 @@ int csrSceneDetectCollision(const CSR_Scene*         pScene,
     // iterate through the scene transparent items
     for (i = 0; i < pScene->m_TransparentItemCount; ++i)
         collision |= csrSceneItemDetectCollision(&pScene->m_pTransparentItem[i], pRay, pCollisionInfo);
-
-    csrCollisionInfoCalculateSlidingPlane(pCollisionInfo);
 
     return collision;
 }

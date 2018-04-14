@@ -414,6 +414,30 @@ typedef struct
                                 CSR_Matrix4* pR);
 
         /**
+        * Creates combined look at matrix (left hand system)
+        *@param pPos - eye (or camera) target position
+        *@param pDir - eye (or camera) direction vector
+        *@param pUp - up vector direction
+        *@param[out] pR - look at matrix
+        */
+        void csrMat4LookAtLH(const CSR_Vector3* pPos,
+                             const CSR_Vector3* pDir,
+                             const CSR_Vector3* pUp,
+                                   CSR_Matrix4* pR);
+
+        /**
+        * Creates combined look at matrix (right hand system)
+        *@param pPos - eye (or camera) target position
+        *@param pDir - eye (or camera) direction vector
+        *@param pUp - up vector direction
+        *@param[out] pR - look at matrix
+        */
+        void csrMat4LookAtRH(const CSR_Vector3* pPos,
+                             const CSR_Vector3* pDir,
+                             const CSR_Vector3* pUp,
+                                   CSR_Matrix4* pR);
+
+        /**
         * Gets translation matrix
         *@param pT - translation vector
         *@param[out] pR - resulting translation matrix
@@ -478,7 +502,7 @@ typedef struct
         /**
         * Unprojects a ray (i.e. transforms it in viewport coordinates)
         *@param pP - projection matrix
-        *@param pV - view matrix
+        *@param pV - view matrix, ignored if 0
         *@param[in, out] pR - ray to unproject, unprojected ray on function ends
         *@note The inverted direction is also calculated in the resulting ray
         */

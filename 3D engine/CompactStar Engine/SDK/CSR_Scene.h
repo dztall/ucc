@@ -38,11 +38,24 @@ typedef enum
     CSR_MT_MDL
 } CSR_EModelType;
 
+/**
+* Matrix combination type
+*/
+typedef enum
+{
+    IE_CT_Scale_Rotate_Translate,
+    IE_CT_Scale_Translate_Rotate,
+    IE_CT_Rotate_Translate_Scale,
+    IE_CT_Rotate_Scale_Translate,
+    IE_CT_Translate_Rotate_Scale,
+    IE_CT_Translate_Scale_Rotate
+} CSR_EMatCombType;
+
 //---------------------------------------------------------------------------
 // Prototypes
 //---------------------------------------------------------------------------
 
-// Scene context prototype
+// scene context prototype
 typedef struct CSR_SceneContext CSR_SceneContext;
 
 //---------------------------------------------------------------------------
@@ -73,6 +86,19 @@ typedef struct
     CSR_SceneItem*   m_pTransparentItem;
     size_t           m_TransparentItemCount;
 } CSR_Scene;
+
+/**
+* Camera
+*/
+typedef struct
+{
+    CSR_Vector3      m_Position;
+    float            m_xAngle;
+    float            m_yAngle;
+    float            m_zAngle;
+    CSR_Vector3      m_Factor;
+    CSR_EMatCombType m_MatCombType;
+} CSR_Camera;
 
 //---------------------------------------------------------------------------
 // Callbacks
@@ -159,7 +185,7 @@ struct CSR_SceneContext
         /**
         * Creates a scene item
         *@return newly created scene item, 0 on error
-        *@note The scene item must be released when no longer used, see csrSceneItemRelease()
+        *@note The scene item must be released when no longer used, see csrSceneItemContentRelease()
         */
         CSR_SceneItem* csrSceneItemCreate(void);
 
@@ -288,6 +314,22 @@ struct CSR_SceneContext
         *@param pContext - scene context
         */
         void csrSceneDraw(const CSR_Scene* pScene, const CSR_SceneContext* pContext);
+
+        /**
+        * Gets a camera (or view) matrix from arcball values
+        *@param radius - arcball radius
+        *@param angleX - angle on the x axis, in radians
+        *@param angleY - angle on the y axis, in radians
+        *@param[in, out] pR - camera (or view) matrix
+        */
+        void csrSceneArcBallToMatrix(float radius, float angleX, float angleY, CSR_Matrix4* pR);
+
+        /**
+        * Gets a camera (or view) matrix
+        *@param pCamera - camera position and rotation in the 3d world
+        *@param[in, out] pR - camera (or view) matrix
+        */
+        void csrSceneCameraToMatrix(const CSR_Camera* pCamera, CSR_Matrix4* pR);
 
         /**
         * Detects the collisions happening in a scene

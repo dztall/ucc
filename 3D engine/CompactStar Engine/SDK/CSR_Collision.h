@@ -16,7 +16,7 @@
 #ifndef CSR_CollisionH
 #define CSR_CollisionH
 
-// compactStart engine
+// compactStar engine
 #include "CSR_Common.h"
 #include "CSR_Geometry.h"
 #include "CSR_Vertex.h"
@@ -49,9 +49,9 @@ struct CSR_AABBNode
 */
 typedef struct
 {
-    void*  m_pItem;
-    size_t m_MatrixIndex;
-    size_t m_AABBTreeItem;
+    void*  m_pItem;        // scene item against which a collision happened
+    size_t m_MatrixIndex;  // index of the model matrix in the scene item
+    size_t m_AABBTreeItem; // index of the AABB tree in the scene item
 } CSR_CollisionModelInfo;
 
 /**
@@ -59,10 +59,9 @@ typedef struct
 */
 typedef struct
 {
-    int                m_Collision;
-    CSR_Plane          m_SlidingPlane;
-    CSR_Polygon3Buffer m_Polygons;
-    CSR_Array*         m_pModels;
+    int                m_Collision; // if 1 a collision happened, if 0 no collision happened
+    CSR_Polygon3Buffer m_Polygons;  // all the found polygons in collision
+    CSR_Array*         m_pModels;   // models owning one or several polygons in collision
 } CSR_CollisionInfo;
 
 #ifdef __cplusplus
@@ -86,7 +85,7 @@ typedef struct
         * Gets an AABB tree from a mesh
         *@param pMesh - mesh
         *@return aligned-axis bounding box tree root node, 0 on error
-        *@note The AABB tree must be released when no longer used, see csrAABBTreeRelease()
+        *@note The AABB tree must be released when no longer used, see csrAABBTreeNodeRelease()
         */
         CSR_AABBNode* csrAABBTreeFromMesh(const CSR_Mesh* pMesh);
 
@@ -138,12 +137,6 @@ typedef struct
         *@param[in, out] pCI - collision info to initialize
         */
         void csrCollisionInfoInit(CSR_CollisionInfo* pCI);
-
-        /**
-        * Calculates the sliding plane from a collision info structure
-        *@param[in, out] pCI - collision info for which the sliding plane should be calculated
-        */
-        void csrCollisionInfoCalculateSlidingPlane(CSR_CollisionInfo* pCollisionInfo);
 
 #ifdef __cplusplus
     }

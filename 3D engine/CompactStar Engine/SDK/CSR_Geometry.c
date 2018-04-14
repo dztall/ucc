@@ -228,6 +228,66 @@ void csrMat4Perspective(float fovyDeg, float aspect, float zNear, float zFar, CS
     csrMat4Frustum(negMaxX, maxX, negMaxY, maxY, zNear, zFar, pR);
 }
 //---------------------------------------------------------------------------
+void csrMat4LookAtLH(const CSR_Vector3* pPos,
+                     const CSR_Vector3* pDir,
+                     const CSR_Vector3* pUp,
+                           CSR_Matrix4* pR)
+{
+    float       xAxisDotPos;
+    float       yAxisDotPos;
+    float       zAxisDotPos;
+    CSR_Vector3 xAxis;
+    CSR_Vector3 yAxis;
+    CSR_Vector3 zAxis;
+    CSR_Vector3 vec;
+
+    // compute per axis transformations
+    csrVec3Sub(pDir, pPos, &vec);
+    csrVec3Normalize(&vec, &zAxis);
+    csrVec3Cross(pUp, &zAxis, &vec);
+    csrVec3Normalize(&vec, &xAxis);
+    csrVec3Cross(&zAxis, &xAxis, &yAxis);
+    csrVec3Dot(&xAxis, pPos, &xAxisDotPos);
+    csrVec3Dot(&yAxis, pPos, &yAxisDotPos);
+    csrVec3Dot(&zAxis, pPos, &zAxisDotPos);
+
+    // create look at matrix, translate eye position
+    pR->m_Table[0][0] =  xAxis.m_X;   pR->m_Table[1][0] =  yAxis.m_X;   pR->m_Table[2][0] =  zAxis.m_X;   pR->m_Table[3][0] = 0.0f;
+    pR->m_Table[0][1] =  xAxis.m_Y;   pR->m_Table[1][1] =  yAxis.m_Y;   pR->m_Table[2][1] =  zAxis.m_Y;   pR->m_Table[3][1] = 0.0f;
+    pR->m_Table[0][2] =  xAxis.m_Z;   pR->m_Table[1][2] =  yAxis.m_Z;   pR->m_Table[2][2] =  zAxis.m_Z;   pR->m_Table[3][2] = 0.0f;
+    pR->m_Table[0][3] = -xAxisDotPos; pR->m_Table[1][3] = -yAxisDotPos; pR->m_Table[2][3] = -zAxisDotPos; pR->m_Table[3][3] = 1.0f;
+}
+//---------------------------------------------------------------------------
+void csrMat4LookAtRH(const CSR_Vector3* pPos,
+                     const CSR_Vector3* pDir,
+                     const CSR_Vector3* pUp,
+                           CSR_Matrix4* pR)
+{
+    float       xAxisDotPos;
+    float       yAxisDotPos;
+    float       zAxisDotPos;
+    CSR_Vector3 xAxis;
+    CSR_Vector3 yAxis;
+    CSR_Vector3 zAxis;
+    CSR_Vector3 vec;
+
+    // compute per axis transformations
+    csrVec3Sub(pDir, pPos, &vec);
+    csrVec3Normalize(&vec, &zAxis);
+    csrVec3Cross(pUp, &zAxis, &vec);
+    csrVec3Normalize(&vec, &xAxis);
+    csrVec3Cross(&zAxis, &xAxis, &yAxis);
+    csrVec3Dot(&xAxis, pPos, &xAxisDotPos);
+    csrVec3Dot(&yAxis, pPos, &yAxisDotPos);
+    csrVec3Dot(&zAxis, pPos, &zAxisDotPos);
+
+    // create look at matrix, translate eye position
+    pR->m_Table[0][0] = xAxis.m_X;   pR->m_Table[1][0] = yAxis.m_X;   pR->m_Table[2][0] = zAxis.m_X;   pR->m_Table[3][0] = 0.0f;
+    pR->m_Table[0][1] = xAxis.m_Y;   pR->m_Table[1][1] = yAxis.m_Y;   pR->m_Table[2][1] = zAxis.m_Y;   pR->m_Table[3][1] = 0.0f;
+    pR->m_Table[0][2] = xAxis.m_Z;   pR->m_Table[1][2] = yAxis.m_Z;   pR->m_Table[2][2] = zAxis.m_Z;   pR->m_Table[3][2] = 0.0f;
+    pR->m_Table[0][3] = xAxisDotPos; pR->m_Table[1][3] = yAxisDotPos; pR->m_Table[2][3] = zAxisDotPos; pR->m_Table[3][3] = 1.0f;
+}
+//---------------------------------------------------------------------------
 void csrMat4Translate(const CSR_Vector3* pT, CSR_Matrix4* pR)
 {
     csrMat4Identity(pR);
@@ -398,43 +458,27 @@ void csrMat4Unproject(const CSR_Matrix4* pP, const CSR_Matrix4* pV, CSR_Ray3* pR
     float       determinant;
     CSR_Matrix4 invertProj;
     CSR_Matrix4 invertView;
-    CSR_Matrix4 unprojectMat;
     CSR_Vector3 unprojRayPos;
     CSR_Vector3 unprojRayDir;
-
-    // get infinite value (NOTE this is the only case where a division by 0 is allowed)
-    const float inf = 1.0f / 0.0f;
+    CSR_Vector3 unprojRayDirN;
 
     // unproject the ray to make it in the viewport coordinates
     csrMat4Inverse(pP, &invertProj, &determinant);
+    csrMat4ApplyToVector(&invertProj, &pR->m_Pos, &unprojRayPos);
+    csrMat4ApplyToVector(&invertProj, &pR->m_Dir, &unprojRayDir);
+    csrVec3Normalize(&unprojRayDir, &unprojRayDirN);
+    csrRay3FromPointDir(&unprojRayPos, &unprojRayDirN, pR);
+
+    // do unproject the viewport only?
+    if (!pV)
+        return;
+
+    // unproject the ray to make it in the view coordinates
     csrMat4Inverse(pV, &invertView, &determinant);
-    csrMat4Multiply(&invertProj, &invertView, &unprojectMat);
-    csrMat4ApplyToVector(&unprojectMat, &pR->m_Pos, &unprojRayPos);
-    csrMat4ApplyToVector(&unprojectMat, &pR->m_Dir, &unprojRayDir);
-
-    // copy resulting ray position
-    pR->m_Pos.m_X = unprojRayPos.m_X;
-    pR->m_Pos.m_Y = unprojRayPos.m_Y;
-    pR->m_Pos.m_Z = unprojRayPos.m_Z;
-
-    // normalize and copy resulting ray direction
-    csrVec3Normalize(&unprojRayDir, &pR->m_Dir);
-
-    // recompute the ray inverted direction
-    if (!pR->m_Dir.m_X)
-        pR->m_InvDir.m_X = inf;
-    else
-        pR->m_InvDir.m_X = 1.0f / pR->m_Dir.m_X;
-
-    if (!pR->m_Dir.m_Y)
-        pR->m_InvDir.m_Y = inf;
-    else
-        pR->m_InvDir.m_Y = 1.0f / pR->m_Dir.m_Y;
-
-    if (!pR->m_Dir.m_Z)
-        pR->m_InvDir.m_Z = inf;
-    else
-        pR->m_InvDir.m_Z = 1.0f / pR->m_Dir.m_Z;
+    csrMat4ApplyToVector(&invertView, &pR->m_Pos, &unprojRayPos);
+    csrMat4ApplyToNormal(&invertView, &pR->m_Dir, &unprojRayDir);
+    csrVec3Normalize(&unprojRayDir, &unprojRayDirN);
+    csrRay3FromPointDir(&unprojRayPos, &unprojRayDirN, pR);
 }
 //---------------------------------------------------------------------------
 void csrMat4TranslationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ)

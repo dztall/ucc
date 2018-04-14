@@ -125,7 +125,7 @@ typedef struct
         /**
         * Creates a texture item
         *@return newly created texture item, 0 on error
-        *@note The texture item must be released when no longer used, see csrTextureItemRelease()
+        *@note The texture item must be released when no longer used, see csrTextureItemContentRelease()
         */
         CSR_TextureItem* csrTextureItemCreate(void);
 

@@ -473,19 +473,8 @@ void csrCollisionInfoInit(CSR_CollisionInfo* pCI)
 
     // initialize the collision info
     pCI->m_Collision           = 0;
-    pCI->m_SlidingPlane.m_A    = 0.0f;
-    pCI->m_SlidingPlane.m_B    = 0.0f;
-    pCI->m_SlidingPlane.m_C    = 0.0f;
-    pCI->m_SlidingPlane.m_D    = 0.0f;
     pCI->m_Polygons.m_pPolygon = 0;
     pCI->m_Polygons.m_Count    = 0;
     pCI->m_pModels             = 0;
-}
-//---------------------------------------------------------------------------
-void csrCollisionInfoCalculateSlidingPlane(CSR_CollisionInfo* pCollisionInfo)
-{
-    // validate the input
-    if (!pCollisionInfo)
-        return;
 }
 //---------------------------------------------------------------------------
