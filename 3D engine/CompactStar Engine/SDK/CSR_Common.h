@@ -46,9 +46,10 @@
 //---------------------------------------------------------------------------
 // Global defines
 //---------------------------------------------------------------------------
-#define M_CSR_Version    0.1
-#define M_CSR_Error_Code 0xFFFFFFFF // yes this is a 32 bit error code, but enough for this engine
-#define M_CSR_Epsilon    1.0E-3     // epsilon value used for tolerance
+#define M_CSR_Version        0.1
+#define M_CSR_Error_Code     0xFFFFFFFF // yes this is a 32 bit error code, but enough for this engine
+#define M_CSR_Unknown_Index -1
+#define M_CSR_Epsilon        1.0E-3     // epsilon value used for tolerance
 
 //---------------------------------------------------------------------------
 // Enumerators
@@ -66,6 +67,36 @@ typedef enum
 //---------------------------------------------------------------------------
 // Structures
 //---------------------------------------------------------------------------
+
+/**
+* RGBA color
+*@note Values are in percent, between 0.0f (0%) and 1.0f (100%)
+*/
+typedef struct
+{
+    float m_R;
+    float m_G;
+    float m_B;
+    float m_A;
+} CSR_Color;
+
+/**
+* Array item
+*/
+typedef struct
+{
+    void* m_pData;
+    int   m_AutoFree;
+} CSR_ArrayItem;
+
+/**
+* Array
+*/
+typedef struct
+{
+    CSR_ArrayItem* m_pItem;
+    size_t         m_Count;
+} CSR_Array;
 
 /**
 * Memory buffer
@@ -169,6 +200,27 @@ typedef struct
         //-------------------------------------------------------------------
 
         /**
+        * Converts a color to a RGBA color
+        *@param pColor - color to convert
+        *@return converted color
+        */
+        unsigned csrColorToRGBA(const CSR_Color* pColor);
+
+        /**
+        * Converts a RGBA color to a color
+        *@param color - RGBA color to convert
+        *@param[out] pColor - converted color
+        */
+        void csrRGBAToColor(unsigned color, CSR_Color* pColor);
+
+        /**
+        * Converts a 32 bit BGR color (Windows style) to a RGBA color
+        *@param color - BGR color to convert
+        *@return RGBA color
+        */
+        unsigned csrColorBGRToRGBA(unsigned color);
+
+        /**
         * Converts a 32 bit BGR color (Windows style) to a RGBA color
         *@param color - BGR color to convert
         *@return RGBA color
@@ -181,6 +233,93 @@ typedef struct
         *@return RGBA color
         */
         unsigned csrColorABGRToRGBA(unsigned color);
+
+        //-------------------------------------------------------------------
+        // Array functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Creates a new array
+        *@return newly created array, 0 on error
+        *@note The array must be released when no longer used, see csrArrayRelease()
+        */
+        CSR_Array* csrArrayCreate(void);
+
+        /**
+        * Releases an array and frees his memory
+        *@param[in, out] pArray - array to release
+        */
+        void csrArrayRelease(CSR_Array* pArray);
+
+        /**
+        * Initializes an array structure
+        *@param[in, out] pArray - array to initialize
+        */
+        void csrArrayInit(CSR_Array* pArray);
+
+        /**
+        * Adds a data to an array
+        *@param pData - data to add
+        *@param[in, out] pArray - array to add to
+        *@param autoFree - if 1, the data will be freed while the array will be released
+        */
+        void csrArrayAdd(void* pData, CSR_Array* pArray, int autoFree);
+
+        /**
+        * Adds a data to an array, but only if not exists in the array
+        *@param pData - data to add
+        *@param[in, out] pArray - array to add to
+        *@param autoFree - if 1, the data will be freed while the array will be released
+        */
+        void csrArrayAddUnique(void* pData, CSR_Array* pArray, int autoFree);
+
+        /**
+        * Gets the index of a data
+        *@param pData - data for which the index should be found
+        *@param pArray - array to search in
+        *@return index, M_CSR_Unknown_Index if not found or on error
+        */
+        size_t csrArrayGetIndex(void* pData, const CSR_Array* pArray);
+
+        /**
+        * Gets the array item containing a data
+        *@param pData - data for which the array item should be found
+        *@param pArray - array to search in
+        *@return array item, 0 if not found or on error
+        */
+        CSR_ArrayItem* csrArrayGetItem(void* pData, const CSR_Array* pArray);
+
+        /**
+        * Gets the index of a data from a staring inndex
+        *@param pData - data for which the index should be found
+        *@param startIndex - start index to search from
+        *@param pArray - array to search in
+        *@return index, M_CSR_Unknown_Index if not found or on error
+        */
+        size_t csrArrayGetIndexFrom(void* pData, size_t startIndex, const CSR_Array* pArray);
+
+        /**
+        * Gets the array item containing a data from a staring inndex
+        *@param pData - data for which the array item should be found
+        *@param startIndex - start index to search from
+        *@param pArray - array to search in
+        *@return array item, 0 if not found or on error
+        */
+        CSR_ArrayItem* csrArrayGetItemFrom(void* pData, size_t startIndex, const CSR_Array* pArray);
+
+        /**
+        * Deletes an item from an array
+        *@param pData - item data to search and delete
+        *@param[in, out] pArray - array to delete from
+        */
+        void csrArrayDelete(void* pData, CSR_Array* pArray);
+
+        /**
+        * Deletes an item from an array
+        *@param index - item index to delete
+        *@param[in, out] pArray - array to delete from
+        */
+        void csrArrayDeleteAt(size_t index, CSR_Array* pArray);
 
         //-------------------------------------------------------------------
         // Buffer functions
@@ -220,6 +359,20 @@ typedef struct
                                 size_t      count,
                                 void*       pData);
 
+        /**
+        * Writes a data in a buffer
+        *@param pBuffer - buffer to write to
+        *@param pData - data to write
+        *@param length - length of one data to read, in bytes
+        *@param count - number of data to read in the buffer, in bytes
+        *@return 1 on success, otherwise 0
+        *@note The data will always be written on the buffer end
+        */
+        int csrBufferWrite(      CSR_Buffer* pBuffer,
+                           const void*       pData,
+                                 size_t      length,
+                                 size_t      count);
+
         //-------------------------------------------------------------------
         // File functions
         //-------------------------------------------------------------------
@@ -238,6 +391,14 @@ typedef struct
         *@note The buffer must be released when no longer used, see csrReleaseBuffer()
         */
         CSR_Buffer* csrFileOpen(const char* pFileName);
+
+        /**
+        * Saves a buffer content inside a file
+        *@param pFileName - file name
+        *@param pBuffer - buffer to save to file
+        *@return 1 on success, otherwise 0
+        */
+        int csrFileSave(const char* pFileName, const CSR_Buffer* pBuffer);
 
 #ifdef __cplusplus
     }

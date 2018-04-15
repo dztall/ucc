@@ -39,9 +39,8 @@
 // NOTE the mdl model was extracted from the Quake game package
 #define MDL_FILE "Resources/wizard.mdl"
 
-#if __CCR__ > 2 || (__CCR__ == 2 && (__CCR_MINOR__ > 2 || ( __CCR_MINOR__ == 2 && __CCR_PATCHLEVEL__ >= 1)))
-    #include <ccr.h>
-#endif
+// libraries
+#include <ccr.h>
 
 //----------------------------------------------------------------------------
 const char g_VSTextured[] =
@@ -70,12 +69,6 @@ const char g_FSTextured[] =
     "    gl_FragColor = mini_fColor * texture2D(mini_sColorMap, mini_fTexCoord);"
     "}";
 //------------------------------------------------------------------------------
-// renderer buffers should no more be generated since CCR version 1.1
-#if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-    #ifndef _OS_ANDROID_
-        GLuint g_Framebuffer, g_Renderbuffer;
-    #endif
-#endif
 CSR_Shader*    g_pShader         = 0;
 CSR_MDL*       g_pModel          = 0;
 float          g_ScreenWidth     = 0.0f;
@@ -89,6 +82,7 @@ size_t         g_AnimIndex       = 0;
 size_t         g_TextureIndex    = 0;
 size_t         g_ModelIndex      = 0;
 size_t         g_MeshIndex       = 0;
+CSR_Color      g_Background;
 //------------------------------------------------------------------------------
 void ApplyMatrix(float w, float h)
 {
@@ -108,24 +102,14 @@ void ApplyMatrix(float w, float h)
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
 {
-    // renderer buffers should no more be generated since CCR version 1.1
-    #if ((__CCR__ < 1) || ((__CCR__ == 1) && (__CCR_MINOR__ < 1)))
-        #ifndef _OS_ANDROID_
-            // generate and bind in memory frame buffers to render to
-            glGenFramebuffers(1, &g_Framebuffer);
-            glBindFramebuffer(GL_FRAMEBUFFER, g_Framebuffer);
-
-            glGenRenderbuffers(1, &g_Renderbuffer);
-            glBindRenderbuffer(GL_RENDERBUFFER, g_Renderbuffer);
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER,
-                                      GL_COLOR_ATTACHMENT0,
-                                      GL_RENDERBUFFER,
-                                      g_Renderbuffer);
-        #endif
-    #endif
-
     CSR_VertexFormat vertexFormat;
     CSR_Material     material;
+
+    // initialize the scene background color
+    g_Background.m_R = 0.0f;
+    g_Background.m_G = 0.0f;
+    g_Background.m_B = 0.0f;
+    g_Background.m_A = 1.0f;
 
     // get the screen width
     g_ScreenWidth = view_w;
@@ -213,7 +197,7 @@ void on_GLES2_Render()
     float       angle;
     GLint       modelviewUniform;
 
-    csrSceneBegin(0.0f, 0.0f, 0.0f, 1.0f);
+    csrDrawBegin(&g_Background);
 
     // set translation
     t.m_X =  0.0f;
@@ -259,9 +243,9 @@ void on_GLES2_Render()
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // draw the model
-    csrSceneDrawMDL(g_pModel, g_pShader, g_TextureIndex, g_ModelIndex, g_MeshIndex);
+    csrDrawMDL(g_pModel, g_pShader, 0, g_TextureIndex, g_ModelIndex, g_MeshIndex);
 
-    csrSceneEnd();
+    csrDrawEnd();
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchBegin(float x, float y)

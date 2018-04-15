@@ -43,6 +43,9 @@
 // libraries
 #include <ccr.h>
 
+// NOTE the mdl model was extracted from the Quake game package
+#define WAVEFRONT_FILE "Resources/balloon.obj"
+
 //------------------------------------------------------------------------------
 unsigned char g_VSProgram[] = "precision mediump float;"
                               "attribute vec4 mini_vPosition;"
@@ -64,7 +67,7 @@ unsigned char g_FSProgram[] = "precision mediump float;"
                               "}";
 //------------------------------------------------------------------------------
 CSR_Shader*        g_pShader              = 0;
-CSR_Mesh*          g_pMesh                = 0;
+CSR_Model*         g_pModel               = 0;
 CSR_AABBNode*      g_pAABBRoot            = 0;
 float              g_Radius               = 1.0f;
 float              g_RayX                 = 2.0f;
@@ -84,7 +87,7 @@ void ApplyMatrix(float w, float h)
 {
     // calculate matrix items
     const float zNear  =  1.0f;
-    const float zFar   =  20.0f;
+    const float zFar   =  1000.0f;
     const float aspect =  w / h;
     const float left   = -aspect;
     const float right  =  aspect;
@@ -128,7 +131,6 @@ void on_GLES2_Init(int view_w, int view_h)
                                       sizeof(g_FSProgram),
                                       0,
                                       0);
-
     // enable the shader
     csrShaderEnable(g_pShader);
 
@@ -145,17 +147,17 @@ void on_GLES2_Init(int view_w, int view_h)
     // configure the vertex format
     vertexFormat.m_HasNormal         = 0;
     vertexFormat.m_HasTexCoords      = 0;
-    vertexFormat.m_HasPerVertexColor = 1;
+    vertexFormat.m_HasPerVertexColor = 0;
 
     // configure the material
     material.m_Color       = 0xFFFF;
     material.m_Transparent = 0;
 
     // create a sphere
-    g_pMesh = csrShapeCreateSphere(g_Radius, 20, 24, &vertexFormat, 0, &material, 0);
+    g_pModel = csrWaveFrontOpen(WAVEFRONT_FILE, &vertexFormat, 0, &material, 0, 0);
 
     // extract the AABB tree from the sphere mesh
-    g_pAABBRoot = csrAABBTreeFromMesh(g_pMesh);
+    g_pAABBRoot = csrAABBTreeFromMesh(&g_pModel->m_pMesh[0]);
 
     // fill polygon array colors
     g_PolygonArray[3]  = 1.0f;
@@ -182,8 +184,8 @@ void on_GLES2_Final()
     g_pAABBRoot = 0;
 
     // delete mesh
-    csrMeshRelease(g_pMesh);
-    g_pMesh = 0;
+    csrModelRelease(g_pModel);
+    g_pModel = 0;
 
     // delete shader
     csrShaderRelease(g_pShader);
@@ -231,57 +233,72 @@ void on_GLES2_Render()
     unsigned           i;
     unsigned           j;
     float              determinant;
-    float              xAngle;
+    float              angle;
     CSR_Vector3        t;
     CSR_Vector3        r;
+    CSR_Vector3        factor;
     CSR_Vector3        rayPos;
     CSR_Vector3        rayDir;
     CSR_Vector3        rayDirN;
     CSR_Matrix4        translateMatrix;
-    CSR_Matrix4        xRotateMatrix;
-    CSR_Matrix4        yRotateMatrix;
+    CSR_Matrix4        rotateMatrixX;
+    CSR_Matrix4        rotateMatrixY;
     CSR_Matrix4        rotateMatrix;
-    CSR_Matrix4        modelMatrix;
+    CSR_Matrix4        scaleMatrix;
+    CSR_Matrix4        combinedMatrix;
+    CSR_Matrix4        modelViewMatrix;
     CSR_Matrix4        invModelMatrix;
     CSR_Ray3           ray;
     CSR_Figure3        rayFigure;
     CSR_Figure3        polygonFigure;
     CSR_Mesh           polygonMesh;
     CSR_VertexBuffer   polygonVB;
+    GLint              modelviewUniform;
 
     csrDrawBegin(&g_Background);
 
     // set translation
     t.m_X =  0.0f;
     t.m_Y =  0.0f;
-    t.m_Z = -2.0f;
+    t.m_Z = -10.0f;
 
     csrMat4Translate(&t, &translateMatrix);
 
-    // set rotation on X axis
+    // set rotation axis
     r.m_X = 1.0f;
     r.m_Y = 0.0f;
     r.m_Z = 0.0f;
 
-    // rotate 90 degrees
-    xAngle = M_PI / 2.0f;
+    // set rotation angle
+    angle = g_Angle;//-M_PI * 0.5;
 
-    csrMat4Rotate(xAngle, &r, &xRotateMatrix);
+    csrMat4Rotate(angle, &r, &rotateMatrixX);
 
-    // set rotation on Y axis
+    // set rotation axis
     r.m_X = 0.0f;
     r.m_Y = 1.0f;
     r.m_Z = 0.0f;
 
-    csrMat4Rotate(g_Angle, &r, &yRotateMatrix);
+    // set rotation angle
+    angle = -M_PI * 0.25;
 
-    // build model view matrix
-    csrMat4Multiply(&xRotateMatrix, &yRotateMatrix,   &rotateMatrix);
-    csrMat4Multiply(&rotateMatrix,  &translateMatrix, &modelMatrix);
+    csrMat4Rotate(angle, &r, &rotateMatrixY);
+
+    // set scale factor
+    factor.m_X = 2.02f;
+    factor.m_Y = 2.02f;
+    factor.m_Z = 2.02f;
+
+    csrMat4Scale(&factor, &scaleMatrix);
+
+    // calculate model view matrix
+    csrMat4Multiply(&rotateMatrixX,  &rotateMatrixY,   &rotateMatrix);
+    csrMat4Multiply(&rotateMatrix,   &translateMatrix, &combinedMatrix);
+    csrMat4Multiply(&combinedMatrix, &scaleMatrix,     &modelViewMatrix);
 
     // connect model view matrix to shader
-    GLint modelUniform = glGetUniformLocation(g_pShader->m_ProgramID, "mini_uModelview");
-    glUniformMatrix4fv(modelUniform, 1, 0, &modelMatrix.m_Table[0][0]);
+    modelviewUniform = glGetUniformLocation(g_pShader->m_ProgramID, "mini_uModelview");
+    glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // get the ray from screen coordinates
     ray.m_Pos.m_X =  g_RayX;
@@ -295,7 +312,7 @@ void on_GLES2_Render()
     csrMat4Unproject(&g_ProjectionMatrix, &g_ViewMatrix, &ray);
 
     // put the ray in the model coordinates
-    csrMat4Inverse(&modelMatrix, &invModelMatrix, &determinant);
+    csrMat4Inverse(&modelViewMatrix, &invModelMatrix, &determinant);
     csrMat4ApplyToVector(&invModelMatrix, &ray.m_Pos, &rayPos);
     csrMat4ApplyToNormal(&invModelMatrix, &ray.m_Dir, &rayDir);
     csrVec3Normalize(&rayDir, &rayDirN);
@@ -351,8 +368,8 @@ void on_GLES2_Render()
     if (polygons.m_Count)
         free(polygons.m_pPolygon);
 
-    // draw the sphere
-    csrDrawMesh(g_pMesh, g_pShader, 0);
+    // draw the model
+    csrDrawModel(g_pModel, 0, g_pShader, 0);
 
     // enable position and color slots
     glEnableVertexAttribArray(g_pShader->m_VertexSlot);

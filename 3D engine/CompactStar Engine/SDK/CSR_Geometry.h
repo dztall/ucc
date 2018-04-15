@@ -414,6 +414,30 @@ typedef struct
                                 CSR_Matrix4* pR);
 
         /**
+        * Creates combined look at matrix (left hand system)
+        *@param pPos - eye (or camera) target position
+        *@param pDir - eye (or camera) direction vector
+        *@param pUp - up vector direction
+        *@param[out] pR - look at matrix
+        */
+        void csrMat4LookAtLH(const CSR_Vector3* pPos,
+                             const CSR_Vector3* pDir,
+                             const CSR_Vector3* pUp,
+                                   CSR_Matrix4* pR);
+
+        /**
+        * Creates combined look at matrix (right hand system)
+        *@param pPos - eye (or camera) target position
+        *@param pDir - eye (or camera) direction vector
+        *@param pUp - up vector direction
+        *@param[out] pR - look at matrix
+        */
+        void csrMat4LookAtRH(const CSR_Vector3* pPos,
+                             const CSR_Vector3* pDir,
+                             const CSR_Vector3* pUp,
+                                   CSR_Matrix4* pR);
+
+        /**
         * Gets translation matrix
         *@param pT - translation vector
         *@param[out] pR - resulting translation matrix
@@ -478,11 +502,29 @@ typedef struct
         /**
         * Unprojects a ray (i.e. transforms it in viewport coordinates)
         *@param pP - projection matrix
-        *@param pV - view matrix
+        *@param pV - view matrix, ignored if 0
         *@param[in, out] pR - ray to unproject, unprojected ray on function ends
         *@note The inverted direction is also calculated in the resulting ray
         */
         void csrMat4Unproject(const CSR_Matrix4* pP, const CSR_Matrix4* pV, CSR_Ray3* pR);
+
+        /**
+        * Gets the x, y and z translation from a matrix
+        *@param pM - matrix
+        *@param[out] pX - translation on x axis
+        *@param[out] pY - translation on y axis
+        *@param[out] pZ - translation on z axis
+        */
+        void csrMat4TranslationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ);
+
+        /**
+        * Gets the x, y and z rotation angles from a matrix
+        *@param pM - matrix
+        *@param[out] pX - angle on x axis in radian
+        *@param[out] pY - angle on y axis in radian
+        *@param[out] pZ - angle on z axis in radian
+        */
+        void csrMat4RotationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ);
 
         //-------------------------------------------------------------------
         // Quaternion functions

@@ -21,6 +21,7 @@
 #include <stddef.h>
 
 // compactStart engine
+#include "CSR_Common.h"
 #include "CSR_Geometry.h"
 #include "CSR_Vertex.h"
 
@@ -51,17 +52,6 @@ typedef struct
     unsigned char m_B;
     unsigned char m_A;
 } CSR_Pixel;
-
-/**
-* RGBA color
-*/
-typedef struct
-{
-    float m_R;
-    float m_G;
-    float m_B;
-    float m_A;
-} CSR_Color;
 
 /**
 * Frame buffer, that will contain the rendered scene
