@@ -1,9 +1,9 @@
 ﻿/*****************************************************************************
- * ==> Aligned-axis bounding box ray picking demo ---------------------------*
+ * ==> Balloon demo ---------------------------------------------------------*
  *****************************************************************************
- * Description : A ray picking demo with aligned-axis bounding box. Tap      *
- *               anywhere on the sphere to select a polygon, swipe to the    *
- *               left or right to rotate the sphere                          *
+ * Description : A demo showing how to load a model (a balloon) from a       *
+ *               WaveFront file. Tap anywhere on the model to select a       *
+ *               polygon, swipe to the left or right to rotate the model     *
  * Developer   : Jean-Milost Reymond                                         *
  * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
@@ -43,7 +43,6 @@
 // libraries
 #include <ccr.h>
 
-// NOTE the mdl model was extracted from the Quake game package
 #define WAVEFRONT_FILE "Resources/balloon.obj"
 
 //------------------------------------------------------------------------------
@@ -243,9 +242,11 @@ void on_GLES2_Render()
     CSR_Matrix4        translateMatrix;
     CSR_Matrix4        rotateMatrixX;
     CSR_Matrix4        rotateMatrixY;
-    CSR_Matrix4        rotateMatrix;
+    CSR_Matrix4        rotateMatrixZ;
     CSR_Matrix4        scaleMatrix;
-    CSR_Matrix4        combinedMatrix;
+    CSR_Matrix4        combinedMatrix1;
+    CSR_Matrix4        combinedMatrix2;
+    CSR_Matrix4        combinedMatrix3;
     CSR_Matrix4        modelViewMatrix;
     CSR_Matrix4        invModelMatrix;
     CSR_Ray3           ray;
@@ -260,7 +261,7 @@ void on_GLES2_Render()
     // set translation
     t.m_X =  0.0f;
     t.m_Y =  0.0f;
-    t.m_Z = -10.0f;
+    t.m_Z = -2.0f;
 
     csrMat4Translate(&t, &translateMatrix);
 
@@ -270,7 +271,7 @@ void on_GLES2_Render()
     r.m_Z = 0.0f;
 
     // set rotation angle
-    angle = g_Angle;//-M_PI * 0.5;
+    angle = 0.0f;
 
     csrMat4Rotate(angle, &r, &rotateMatrixX);
 
@@ -280,21 +281,32 @@ void on_GLES2_Render()
     r.m_Z = 0.0f;
 
     // set rotation angle
-    angle = -M_PI * 0.25;
+    angle = g_Angle;
 
     csrMat4Rotate(angle, &r, &rotateMatrixY);
 
+    // set rotation axis
+    r.m_X = 0.0f;
+    r.m_Y = 0.0f;
+    r.m_Z = 1.0f;
+
+    // set rotation angle
+    angle = 0.0f;
+
+    csrMat4Rotate(angle, &r, &rotateMatrixZ);
+
     // set scale factor
-    factor.m_X = 2.02f;
-    factor.m_Y = 2.02f;
-    factor.m_Z = 2.02f;
+    factor.m_X = 30.0f;
+    factor.m_Y = 30.0f;
+    factor.m_Z = 30.0f;
 
     csrMat4Scale(&factor, &scaleMatrix);
 
     // calculate model view matrix
-    csrMat4Multiply(&rotateMatrixX,  &rotateMatrixY,   &rotateMatrix);
-    csrMat4Multiply(&rotateMatrix,   &translateMatrix, &combinedMatrix);
-    csrMat4Multiply(&combinedMatrix, &scaleMatrix,     &modelViewMatrix);
+    csrMat4Multiply(&scaleMatrix,     &rotateMatrixX,   &combinedMatrix1);
+    csrMat4Multiply(&combinedMatrix1, &rotateMatrixY,   &combinedMatrix2);
+    csrMat4Multiply(&combinedMatrix2, &rotateMatrixZ,   &combinedMatrix3);
+    csrMat4Multiply(&combinedMatrix3, &translateMatrix, &modelViewMatrix);
 
     // connect model view matrix to shader
     modelviewUniform = glGetUniformLocation(g_pShader->m_ProgramID, "mini_uModelview");

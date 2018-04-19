@@ -806,6 +806,9 @@ int csrSceneAddModelMatrix(CSR_Scene* pScene, const void* pModel, CSR_Matrix4* p
         // succeeded?
         if (!pSceneItem->m_pMatrixArray)
             return 0;
+
+        // initialize the array content
+        csrArrayInit(pSceneItem->m_pMatrixArray);
     }
 
     // add the matrix to the array
