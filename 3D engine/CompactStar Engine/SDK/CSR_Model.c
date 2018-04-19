@@ -3225,6 +3225,9 @@ int csrWaveFrontBuildFace(const CSR_WavefrontVertex*   pVertex,
             // update the model meshes
             pModel->m_pMesh = pNewMesh;
             ++pModel->m_MeshCount;
+
+            // initialize the newly created mesh
+            csrMeshInit(pMesh);
         }
         else
             pMesh = &pModel->m_pMesh[pModel->m_MeshCount - 1];

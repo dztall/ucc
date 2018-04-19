@@ -616,22 +616,28 @@ void csrDrawVertexBuffer(const CSR_VertexBuffer* pVB,
 
     // do draw the vertex buffer several times?
     if (pMatrixArray && pMatrixArray->m_Count)
-        // yes, iterate through each matrix to use to draw the vertex buffer
-        for (i = 0; i < pMatrixArray->m_Count; ++i)
-        {
-            // get the model matrix slot from shader
-            const GLint slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uModel");
+    {
+        // get the model matrix slot from shader
+        const GLint slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uModel");
 
-            // found it?
-            if (slot < 0)
-                continue;
+        // found it?
+        if (slot >= 0)
+            // yes, iterate through each matrix to use to draw the vertex buffer
+            for (i = 0; i < pMatrixArray->m_Count; ++i)
+            {
+                // connect the model matrix to the shader
+                glUniformMatrix4fv(slot,
 
-            // connect the model matrix to the shader
-            glUniformMatrix4fv(slot, 1, 0, &((CSR_Matrix4*)pMatrixArray->m_pItem[i].m_pData)->m_Table[0][0]);
+                                   1,
 
-            // draw the next buffer
-            csrDrawArray(pVB, vertexCount);
-        }
+                                   0,
+
+                                   &((CSR_Matrix4*)pMatrixArray->m_pItem[i].m_pData)->m_Table[0][0]);
+
+                // draw the next buffer
+                csrDrawArray(pVB, vertexCount);
+            }
+    }
     else
         // no, draw the buffer
         csrDrawArray(pVB, vertexCount);
