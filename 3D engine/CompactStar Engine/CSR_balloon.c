@@ -1,9 +1,9 @@
 ﻿/*****************************************************************************
- * ==> Aligned-axis bounding box ray picking demo ---------------------------*
+ * ==> Balloon demo ---------------------------------------------------------*
  *****************************************************************************
- * Description : A ray picking demo with aligned-axis bounding box. Tap      *
- *               anywhere on the sphere to select a polygon, swipe to the    *
- *               left or right to rotate the sphere                          *
+ * Description : A demo showing how to load a model (a balloon) from a       *
+ *               WaveFront file. Tap anywhere on the model to select a       *
+ *               polygon, swipe to the left or right to rotate the model     *
  * Developer   : Jean-Milost Reymond                                         *
  * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
