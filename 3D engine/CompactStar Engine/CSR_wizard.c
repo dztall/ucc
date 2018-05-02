@@ -45,28 +45,28 @@
 //----------------------------------------------------------------------------
 const char g_VSTextured[] =
     "precision mediump float;"
-    "attribute vec4 mini_vPosition;"
-    "attribute vec4 mini_vColor;"
-    "attribute vec2 mini_vTexCoord;"
-    "uniform   mat4 mini_uProjection;"
-    "uniform   mat4 mini_uModelview;"
-    "varying   vec4 mini_fColor;"
-    "varying   vec2 mini_fTexCoord;"
+    "attribute vec4 csr_aVertices;"
+    "attribute vec4 csr_aColor;"
+    "attribute vec2 csr_aTexCoord;"
+    "uniform   mat4 csr_uProjection;"
+    "uniform   mat4 csr_uModelview;"
+    "varying   vec4 csr_vColor;"
+    "varying   vec2 csr_vTexCoord;"
     "void main(void)"
     "{"
-    "    mini_fColor    = mini_vColor;"
-    "    mini_fTexCoord = mini_vTexCoord;"
-    "    gl_Position    = mini_uProjection * mini_uModelview * mini_vPosition;"
+    "    csr_vColor    = csr_aColor;"
+    "    csr_vTexCoord = csr_aTexCoord;"
+    "    gl_Position   = csr_uProjection * csr_uModelview * csr_aVertices;"
     "}";
 //----------------------------------------------------------------------------
 const char g_FSTextured[] =
     "precision mediump float;"
-    "uniform sampler2D mini_sColorMap;"
-    "varying lowp vec4 mini_fColor;"
-    "varying      vec2 mini_fTexCoord;"
+    "uniform sampler2D csr_sColorMap;"
+    "varying lowp vec4 csr_vColor;"
+    "varying      vec2 csr_vTexCoord;"
     "void main(void)"
     "{"
-    "    gl_FragColor = mini_fColor * texture2D(mini_sColorMap, mini_fTexCoord);"
+    "    gl_FragColor = csr_vColor * texture2D(csr_sColorMap, csr_vTexCoord);"
     "}";
 //------------------------------------------------------------------------------
 CSR_Shader*    g_pShader         = 0;
@@ -96,7 +96,7 @@ void ApplyMatrix(float w, float h)
     csrMat4Perspective(fov, aspect, zNear, zFar, &matrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_pShader->m_ProgramID, "mini_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_pShader->m_ProgramID, "csr_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -124,10 +124,10 @@ void on_GLES2_Init(int view_w, int view_h)
     glUseProgram(g_pShader->m_ProgramID);
 
     // configure the shader slots
-    g_pShader->m_VertexSlot   = glGetAttribLocation(g_pShader->m_ProgramID, "mini_vPosition");
-    g_pShader->m_ColorSlot    = glGetAttribLocation(g_pShader->m_ProgramID, "mini_vColor");
-    g_pShader->m_TexCoordSlot = glGetAttribLocation(g_pShader->m_ProgramID, "mini_vTexCoord");
-    g_pShader->m_TextureSlot  = glGetAttribLocation(g_pShader->m_ProgramID, "mini_sColorMap");
+    g_pShader->m_VertexSlot   = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aVertices");
+    g_pShader->m_ColorSlot    = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aColor");
+    g_pShader->m_TexCoordSlot = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aTexCoord");
+    g_pShader->m_TextureSlot  = glGetAttribLocation(g_pShader->m_ProgramID, "csr_sColorMap");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -239,7 +239,7 @@ void on_GLES2_Render()
     csrMat4Multiply(&combinedRotTransMatrix, &scaleMatrix,     &modelViewMatrix);
 
     // connect model view matrix to shader
-    modelviewUniform = glGetUniformLocation(g_pShader->m_ProgramID, "mini_uModelview");
+    modelviewUniform = glGetUniformLocation(g_pShader->m_ProgramID, "csr_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // draw the model

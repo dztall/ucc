@@ -99,8 +99,10 @@ typedef struct
 *@param[in, out] pColor - vertex color
 */
 typedef void (*CSR_fOnApplyVertexShader)(const CSR_Matrix4* pMatrix,
-                                               CSR_Vector3* pVertex,
-                                               CSR_Vector3* pNormal,
+
+                                               CSR_Vector3* pVertex,
+
+                                               CSR_Vector3* pNormal,
                                                CSR_Vector2* pST,
                                                CSR_Color*   pColor);
 
@@ -119,7 +121,7 @@ typedef void (*CSR_fOnApplyFragmentShader)(const CSR_Matrix4*  pMatrix,
                                            const CSR_Vector3*  pSampler,
                                                  float         z,
                                                  CSR_Color*    pColor);
-
+
 #ifdef __cplusplus
     extern "C"
     {

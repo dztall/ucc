@@ -145,10 +145,10 @@ void csrRGBAToColor(unsigned color, CSR_Color* pColor)
     if (!pColor)
         return;
 
-    pColor->m_R = (float)((color & 0xFF) >> 24) / 255.0f;
-    pColor->m_G = (float)((color & 0xFF) >> 16) / 255.0f;
-    pColor->m_B = (float)((color & 0xFF) >> 8)  / 255.0f;
-    pColor->m_A = (float) (color & 0xFF)        / 255.0f;
+    pColor->m_R = (float)((color >> 24) & 0xFF) / 255.0f;
+    pColor->m_G = (float)((color >> 16) & 0xFF) / 255.0f;
+    pColor->m_B = (float)((color >> 8)  & 0xFF) / 255.0f;
+    pColor->m_A = (float) (color        & 0xFF) / 255.0f;
 }
 //---------------------------------------------------------------------------
 unsigned csrColorBGRToRGBA(unsigned color)

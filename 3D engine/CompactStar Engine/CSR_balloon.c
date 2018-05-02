@@ -134,7 +134,7 @@ void on_GLES2_Init(int view_w, int view_h)
     csrShaderEnable(g_pShader);
 
     // get shader attributes
-    g_pShader->m_VertexSlot = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aPosition");
+    g_pShader->m_VertexSlot = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aVertices");
     g_pShader->m_ColorSlot  = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aColor");
 
     // configure OpenGL depth testing

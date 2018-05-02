@@ -34,6 +34,16 @@ typedef struct
     int      m_Wireframe;   // whether or not the vertex buffer should be drawn in wireframe
 } CSR_Material;
 
+/**
+* Directional light
+*/
+typedef struct
+{
+    unsigned    m_Ambient;
+    unsigned    m_Color;
+    CSR_Vector3 m_Direction;
+} CSR_DirectionalLight;
+
 #ifdef __cplusplus
     extern "C"
     {
@@ -47,6 +57,16 @@ typedef struct
         *@param[in, out] pMaterial - material to initialize
         */
         void csrMaterialInit(CSR_Material* pMaterial);
+
+        //-------------------------------------------------------------------
+        // Directional light functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Initializes a directional light structure
+        *@param[in, out] pLight - directional light to initialize
+        */
+        void csrDirectionalLightInit(CSR_DirectionalLight* pLight);
 
 #ifdef __cplusplus
     }

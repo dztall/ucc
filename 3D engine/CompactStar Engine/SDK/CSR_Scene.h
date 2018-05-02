@@ -100,6 +100,16 @@ typedef struct
     CSR_EMatCombType m_MatCombType;
 } CSR_Camera;
 
+/**
+* Arcball
+*/
+typedef struct
+{
+    float m_AngleX;
+    float m_AngleY;
+    float m_Radius;
+} CSR_ArcBall;
+
 //---------------------------------------------------------------------------
 // Callbacks
 //---------------------------------------------------------------------------
@@ -317,12 +327,10 @@ struct CSR_SceneContext
 
         /**
         * Gets a camera (or view) matrix from arcball values
-        *@param radius - arcball radius
-        *@param angleX - angle on the x axis, in radians
-        *@param angleY - angle on the y axis, in radians
+        *@param pArcball - arcball values
         *@param[in, out] pR - camera (or view) matrix
         */
-        void csrSceneArcBallToMatrix(float radius, float angleX, float angleY, CSR_Matrix4* pR);
+        void csrSceneArcBallToMatrix(const CSR_ArcBall* pArcball, CSR_Matrix4* pR);
 
         /**
         * Gets a camera (or view) matrix

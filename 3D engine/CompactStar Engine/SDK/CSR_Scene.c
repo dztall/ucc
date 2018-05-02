@@ -965,8 +965,10 @@ void csrSceneDraw(const CSR_Scene* pScene, const CSR_SceneContext* pContext)
         csrDrawEnd();
 }
 //---------------------------------------------------------------------------
-void csrSceneArcBallToMatrix(float radius, float angleX, float angleY, CSR_Matrix4* pR)
+void csrSceneArcBallToMatrix(const CSR_ArcBall* pArcball, CSR_Matrix4* pR)
 {
+    float       angleX;
+    float       angleY;
     CSR_Vector3 axis;
     CSR_Matrix4 cameraMatrixX;
     CSR_Matrix4 cameraMatrixY;
@@ -974,13 +976,13 @@ void csrSceneArcBallToMatrix(float radius, float angleX, float angleY, CSR_Matri
     CSR_Matrix4 cameraMatrix;
     CSR_Camera  camera;
 
-    // validate the input
-    if (!pR)
+    // validate the inputs
+    if (!pArcball || !pR)
         return;
 
     // are angles out of bounds?
-    angleX = fmod(angleX, M_PI * 2.0f);
-    angleY = fmod(angleY, M_PI * 2.0f);
+    angleX = fmod(pArcball->m_AngleX, M_PI * 2.0f);
+    angleY = fmod(pArcball->m_AngleY, M_PI * 2.0f);
 
     // create a matrix for the rotation on the X axis
     axis.m_X = 1.0f;
@@ -1000,7 +1002,7 @@ void csrSceneArcBallToMatrix(float radius, float angleX, float angleY, CSR_Matri
     // configure the camera
     camera.m_Position.m_X =  0.0f;
     camera.m_Position.m_Y =  0.0f;
-    camera.m_Position.m_Z = -radius;
+    camera.m_Position.m_Z = -pArcball->m_Radius;
     camera.m_xAngle       =  0.0f;
     camera.m_yAngle       =  0.0f;
     camera.m_zAngle       =  0.0f;
