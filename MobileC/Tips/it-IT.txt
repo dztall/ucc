@@ -1,0 +1,5 @@
+﻿• Le scorciatoie da tastiera per le tastiere hardware sono le stesse dei sistemi operativi desktop.
+
+• Puoi scorrere verso l'alto toccando la barra del titolo in alto.
+
+• Utilizzare la funzione html() per l'output HTML su WebView. Vedi i file nella cartella degli esempi HTML.

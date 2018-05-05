@@ -1,0 +1,5 @@
+﻿• Tastaturkurzbefehle für Hardware-Tastaturen sind die gleichen wie für Desktop-Betriebssysteme.
+
+• Sie können nach oben blättern, indem Sie auf die obere Titelleiste tippen.
+
+• Benutzen html() Funktion zur Ausgabe von HTML zu WebView. Siehe Dateien in HTML-Beispiele-Ordner.

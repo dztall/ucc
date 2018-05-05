@@ -1,0 +1,272 @@
+﻿--------------Mobile C 2.4.2--------------
+
+• Previous UI theme restored as <Classic> in the option menu.
+• Dark theme added.
+• Some missing terminal commands added.
+• Bug fixed : Script files not recognized in terminal command.
+• Bug fixed : Some runtime errors of user source code crashes the app.
+• Bug fixed : Python 'select' module not imported in some platform.
+
+--------------Mobile C 2.4.1--------------
+
+• New feature : UI theme system. See option menu and Themes folder located in ~/CCR/Themes.
+• New feature : External storage access for some platforms.
+• New feature : Exposes system/library headers. See ~/CCR/System headers folder.
+• New feature : Some ANSI escape sequences for terminal supported.
+• New feature : TCC ( https://bellard.org/tcc/ ) c compiler added for some platforms.
+
+• Save button added for text editors.
+• File name auto completion in terminal using tab key.
+• sqlite3 shell command added.
+• LLVM bitcode(*.bc)/assembly(*.ll) file generation option added.
+• LLVM assemly source code highlight added.
+• Uses precompiled header to speed up compilation when using Clang compiler.
+
+• Examples updated : See "Examples 10/What's new.txt".
+• Libraries updated : clang/llvm/libc++ 5.0.0 , python 3.6.3 , lua 5.3.4 , duktape 2.2.0 , libgit2 0.26.0 , sqlite 3.21.0
+
+• Bug fixed : Apache subversion is instable.
+• Bug fixed : Successive scanf call malfunctions.
+• Bug fixed : iostream doesn't work.
+
+--------------Mobile C 2.2.6--------------
+
+• C library added : libiconv 1.14 added to some platforms.
+• Insignificant changes in user interface.
+
+--------------Mobile C 2.2.1--------------
+
+• New feature : Jump to C/C++ declaration/header file/macro symbol. See tips->shortcuts for keyboard shortcuts.
+
+• New shell command 'chat' added. Enjoy chatting with the other Mobile C users online.
+• Go to line supported. Use in-app keyboard context page or See Tips->Shortcuts for keyboard shortcuts.
+• C library added : SDL 2 ( Not working on some platforms yet ).
+• In-app soft-keyboard context menu page added.
+• Shortcuts added for some platforms. See tips->shortcuts for keyboard shortcuts.
+• Supports 'go to line' in text based editors.
+• Pixel display examples added. See Examples/Graphics/PixelDisplay folder.
+• OpenGL / GL ES2 , Callback registration needed.
+• Examples changed : See Examples 1.0.8/What's new.txt.
+• Some French/German translation fixed.
+
+• Bug fixed : Several issues about C/C++ auto complete.
+• Bug fixed : Memory leak when abnormal script exit.
+• Bug fixed : Bluetooth keyboard key doesn't work properly on some platforms.
+• Bug fixed : Graphics examples with clang enabled crashes when back button pressed.
+• Bug fixed : std::cin doesn’t work properly.
+• Bug fixed : Some crash/hang/memory leak.
+
+--------------Mobile C 2.2.0--------------
+
+• New feature : C/C++ auto complete.
+• New feature : C/C++ syntax diagnostic.
+• New feature : Built-in Terminal/Shell. 
+
+• System header search path "~/CCR/Headers" added.
+• User script search path "~/CCR/Scripts" added.
+• In-app soft keyboard layout revised.
+• Copy/cut whole line when no selection is made.
+• Library updated : libpng 1.6.23
+• Examples added : See Examples 1.0.7/What's new.txt.
+
+• Bug fixed : assert() function doesn't work.
+• Bug fixed : App crashes when typing.
+• Bug fixed : App crashes when continue statement is used in while block.
+• Bug fixed : iOS split view compatibility issue.
+
+--------------Mobile C 2.1.3--------------
+
+• Bug fixed : Unable to type ascii with bluetooth keyboard on some OSes.
+• Bug fixed : __cplusplus is defined in c compilation.
+
+--------------Mobile C 2.1.2--------------
+
+• Diagnostic message added : Integer division by zero.
+• Case sensitive search added on text editor view.
+• Bug fixed : Unable to type some key on bluetooth keyboard.
+• Bug fixed : App crashes at startup on some OSes.
+
+--------------Mobile C 2.1.0--------------
+
+• C library added : Duktape 1.4.0
+• C/C++ library added : LLVM/Clang 3.8.0
+• C/C++ library added : libjson
+• C++ library added : libc++ 3.8.0
+
+• Supports javascript execution via duktape engine.
+
+• Supports syntax highlighting for Python, Javascript, Lua.
+
+• Supports llvm (.bc , .ll) execution via LLVM compiler ( Incomplete ).
+
+• Supports C++11 language via embedded Clang compiler ( Incomplete ). Taking pointer to function and calling it does not work on some OSes.
+
+• Supports Standard C++ Library via libc++ ( Incomplete ). Standard c++ library stream interface ( such as std::cin std::cout fstream ) does not work on some OSes.
+
+• Added option menu to select compiler for each programming languages.
+
+• Added option menu to set compiler options.
+
+• Example files updated : See Examples 1.0.6/What's new.txt.
+
+• Bug fixed : Crashes when using vscanf, vprintf.
+
+• Macro name changed : IOS, OSX, ANDROID, WINDOWS, WINDOWSPHONE to _OS_IOS_, _OS_OSX_, _OS_ANDROID_, _OS_WINDOWS_, _OS_WINDOWSPHONE_
+
+• __CCR__, __CCR_MINOR__, __CCR_PATCHLEVEL__ is replaced by __CPP__, __CPP_MINOR__, __CPP_PATCHLEVEL__ and __CCR__, __CCR_MINOR__, __CCR_PATCHLEVEL__ now represents app version.
+
+• on_GLES2_DeviceRotate function is no longer called when device rotates.
+
+--------------Mobile C 2.0.8--------------
+
+• Multiple source compilation supported. See "Examples 1.0.5/Network/cURL/curl-7.48.0/curl.proj.c".
+• Example files updated : See Examples 1.0.5/What's new.txt.
+• In-app soft keyboard behaviour revised. Shift+key combination supported.
+• More app folder structure exposed.
+• Python stability improved.
+• OpenSSL library updated to 1.0.2g
+• assert.h supported.
+• conio.h partially supported. ( cputs, getch, getche, putch, clrscr )
+• Bug fixed : Parsing regex.h.
+• Bug fixed : Native function call crashes when more than four arguments are passed.
+
+--------------Mobile C 2.0.7--------------
+
+• C library added : Python 3.5.1
+• Supports python execution (.py , .pyc , .pyo ).
+• Example files updated : See Examples 1.0.4/What's new.txt.
+• In-app soft keyboard layout revised. Keyboard top bar includes cursor dragging pad.
+• Source code editor uses mono-space font by default.
+• Focus unchanged at every "Find" command in text editor.
+• Lua local module loading bug fixed.
+• Supports gzip file extraction.
+• Old style c function parameter declaration form supported. ( Experimental )
+• Text editor word selection by double-touching word.
+• Bug fixed : puts(...) c function appends new-line at the end.
+• Bug fixed : Incorrect text editor word selection.
+• Bug fixed : Some example source code crashed on Android.
+
+--------------Mobile C 2.0.6--------------
+
+• Relative file path supported.
+• Android device back button supported.
+
+--------------Mobile C 2.0.5--------------
+
+• Bug fixed : Abnormal display when 'Zoomed Display' on iPhone setting is on.
+• Example code added : Language/C/simple_stdarg.c
+
+--------------Mobile C 2.0.4--------------
+
+• Library added : APR, APRUtil, Lua, Expat, PCRE2, Apache Serf, iconv, OpenSSL, POSIX, libGit2, Apache Subversion( Incomplete )
+• Keyboard layout changed.
+• Editor search text.
+• Lua language supported.
+
+--------------Mobile C 2.0.3--------------
+
+• iOS 7 compatibility issues fixed.
+• French translation fixed.
+• OpenGL ES2 rotation event not sent when device rotates.
+• Button UI became bigger.
+• Option to use mono space font.
+• Option to use OS keyboard.
+
+--------------Mobile C 2.0.0--------------
+
+• UI renewed.
+• File/Folder manipulation.
+• File compression supported.
+• Coding friendly keyboard.
+• Line number display.
+• Image viewer.
+• Binary file viewer.
+• Wave file play.
+• Compressed file viewer.
+• HTML file viewer.
+• Editor settings.
+• Jpeg example added.
+• OpenGL-ES 2 example file revised. (No more framebuffer setting codes needed.)
+
+--------------Mobile C 1.81.1--------------
+
+• Bug fixed : Incorrect behavior when initializing array of array of char with array of string literal.
+
+--------------Mobile C 1.80--------------
+
+• Sample added : Samples/Language/C/simple_goto.c.
+• Goto statement supported.
+• Some language incompatibility fixed.
+
+--------------Mobile C 1.79--------------
+
+• Sample added : Samples/MiniZip/minizip.c.
+• Sample added : Samples/MiniZip/miniunz.c.
+• New API added : MiniZip.
+
+--------------Mobile C 1.78--------------
+
+• Sample file added : samples/Language/C++/simple_reference.cpp
+
+--------------Mobile C 1.76--------------
+
+• Program input box is replaced by input bar.
+• App icon changed.
+• Sample added : samples/App API/editer_font_size.c.
+
+--------------Mobile C 1.75--------------
+
+• New API : freetype , libpng , zlib added.
+• Sample added : samples/FreeType/freetype_demo.c added.
+• Sample added : samples/libPNG/png_demo.c added.
+• Sample added : samples/zLib/zlib_demo.c added.
+• Sample removed : samples/Android/wave_file_save.c removed.
+
+--------------Mobile C 1.72--------------
+
+• Added support for OpenAL programming in iOS.
+
+--------------Mobile C 1.60--------------
+
+• Bug fixed : && and || operator short-circuit evaluation does not work.
+• Bug fixed : Static local variables are not static.
+• tower_of_hanoi.c sample code added.
+
+--------------Mobile C 1.59--------------
+
+• Simple sound play functions added. 
+• Sample code added : calendar_html.c , sound_file_play.c.
+
+--------------Mobile C 1.58--------------
+
+• Bug fixed : Compatibility issue for iOS 7 beta 2 ( New file name dialog with no text input box. ) , User requested feature [ viewtopic.php?f=7&t=12015 ]
+
+--------------Mobile C 1.57--------------
+
+• Bug fixed : Integral type division results floating type value. , User requested feature [ viewtopic.php?f=5&t=12013#p13339 ]
+
+--------------Mobile C 1.56--------------
+
+• Bug fixed : Calling function by pointer to user defined function malfunction. , User requested feature [ viewtopic.php?f=5&t=12009 ]
+• Sample code added : pointer_to_function.c.
+
+--------------Mobile C 1.55--------------
+
+• Bug fixed : Pointer arithmetic malfunction.
+
+--------------Mobile C 1.54--------------
+
+• Bug fixed : Crashes on launch.
+
+--------------Mobile C 1.53--------------
+
+• Bug fixed : Crashes when using "int main(int argc,char **argv)" than "void main()".
+
+--------------Mobile C 1.52--------------
+
+• on_GLES2_Final() callback function added. , User requested feature [ viewtopic.php?f=5&t=11995#p13289 ]
+
+--------------Mobile C 1.51--------------
+
+• Support for socket programming added. , User requested feature [ viewtopic.php?f=5&t=11980#p13264 ]
+• socket_test.c sample source file added.

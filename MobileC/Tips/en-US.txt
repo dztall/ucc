@@ -1,0 +1,5 @@
+﻿• When using hardware keyboard, shortcuts are identical to those of desktop OS.
+
+• Tap title bar to scroll to top.
+
+• Use html() function to output HTML to WebView. See files in HTML examples folder.
