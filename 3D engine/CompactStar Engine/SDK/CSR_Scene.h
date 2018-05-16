@@ -43,7 +43,7 @@ typedef enum
 */
 typedef enum
 {
-    CSR_CT_Neither,
+    CSR_CT_Ignore,
     CSR_CT_Ground,
     CSR_CT_Edge
 } CSR_ECollisionType;

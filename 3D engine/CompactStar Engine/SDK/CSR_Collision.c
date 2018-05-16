@@ -483,6 +483,7 @@ int csrCollisionGround(const CSR_Sphere*   pSphere,
 void csrGroundPosY(const CSR_Sphere*   pBoundingSphere,
                    const CSR_AABBNode* pTree,
                    const CSR_Vector3*  pGroundDir,
+                         CSR_Polygon3* pGroundPolygon,
                          float*        pR)
 {
     size_t             i;
@@ -506,7 +507,13 @@ void csrGroundPosY(const CSR_Sphere*   pBoundingSphere,
     for (i = 0; i < polygonBuffer.m_Count; ++i)
         // check if the ground polygon was found, calculate the ground position if yes
         if (csrCollisionGround(pBoundingSphere, &polygonBuffer.m_pPolygon[i], 0, &groundPos))
+        {
+            // copy the ground polygon, if required
+            if (pGroundPolygon)
+                *pGroundPolygon = polygonBuffer.m_pPolygon[i];
+
             break;
+        }
 
     // delete found polygons (no longer needed from now)
     if (polygonBuffer.m_Count)
