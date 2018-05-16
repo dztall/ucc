@@ -20,6 +20,56 @@
 #include <math.h>
 
 //---------------------------------------------------------------------------
+// Collision info functions
+//---------------------------------------------------------------------------
+CSR_CollisionInfo* csrCollisionInfoCreate(void)
+{
+    // create a new collision info
+    CSR_CollisionInfo* pCI = (CSR_CollisionInfo*)malloc(sizeof(CSR_CollisionInfo));
+
+    // succeeded?
+    if (!pCI)
+        return 0;
+
+    // initialize the collision info content
+    csrCollisionInfoInit(pCI);
+
+    return pCI;
+}
+//---------------------------------------------------------------------------
+void csrCollisionInfoRelease(CSR_CollisionInfo* pCI)
+{
+    size_t i;
+
+    // no collision info to release?
+    if (!pCI)
+        return;
+
+    // free the polygon buffer
+    if (pCI->m_Polygons.m_pPolygon)
+        free(pCI->m_Polygons.m_pPolygon);
+
+    // free the model array
+    if (pCI->m_pModels)
+        csrArrayRelease(pCI->m_pModels);
+
+    // free the scene
+    free(pCI);
+}
+//---------------------------------------------------------------------------
+void csrCollisionInfoInit(CSR_CollisionInfo* pCI)
+{
+    // no collision info to initialize?
+    if (!pCI)
+        return;
+
+    // initialize the collision info
+    pCI->m_Collision           = 0;
+    pCI->m_Polygons.m_pPolygon = 0;
+    pCI->m_Polygons.m_Count    = 0;
+    pCI->m_pModels             = 0;
+}
+//---------------------------------------------------------------------------
 // Scene context functions
 //---------------------------------------------------------------------------
 void csrSceneContextInit(CSR_SceneContext* pContext)

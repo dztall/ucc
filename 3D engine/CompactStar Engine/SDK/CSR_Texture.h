@@ -28,7 +28,8 @@
 */
 typedef enum
 {
-    CSR_IT_Raw
+    CSR_IT_Raw,
+    CSR_IT_Bitmap
 } CSR_EImageType;
 
 /**
@@ -117,6 +118,26 @@ typedef struct
         *@param[in, out] pPB - pixel buffer to initialize
         */
         void csrPixelBufferInit(CSR_PixelBuffer* pPB);
+
+        /**
+        * Loads a pixel buffer from a bitmap file
+        *@param pFileName - bitmap file name to load from
+        *@return pixel buffer, 0 on error
+        *@note For now only most common bitmaps are loaded, some bitmap types may be unsupported
+        *@note The pixel buffer must be released when no longer used, see csrPixelBufferRelease()
+        */
+        CSR_PixelBuffer* csrPixelBufferFromBitmap(const char* pFileName);
+
+        //-------------------------------------------------------------------
+        // Texture functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Loads a texture contained in a pixel buffer on the GPU
+        *@param pPixelBuffer - pixel buffer containing the texture to load
+        *@return loaded texture index, M_CSR_Error_Code on error
+        */
+        GLuint csrTextureFromPixelBuffer(const CSR_PixelBuffer* pPixelBuffer);
 
         //-------------------------------------------------------------------
         // Texture item functions

@@ -44,26 +44,6 @@ struct CSR_AABBNode
     CSR_IndexedPolygonBuffer* m_pPolygonBuffer;
 };
 
-/**
-* Collision model info
-*/
-typedef struct
-{
-    void*  m_pItem;        // scene item against which a collision happened
-    size_t m_MatrixIndex;  // index of the model matrix in the scene item
-    size_t m_AABBTreeItem; // index of the AABB tree in the scene item
-} CSR_CollisionModelInfo;
-
-/**
-* Collision info
-*/
-typedef struct
-{
-    int                m_Collision; // if 1 a collision happened, if 0 no collision happened
-    CSR_Polygon3Buffer m_Polygons;  // all the found polygons in collision
-    CSR_Array*         m_pModels;   // models owning one or several polygons in collision
-} CSR_CollisionInfo;
-
 #ifdef __cplusplus
     extern "C"
     {
@@ -116,27 +96,36 @@ typedef struct
         void csrAABBTreeNodeRelease(CSR_AABBNode* pNode);
 
         //-------------------------------------------------------------------
-        // Collision info functions
+        // Ground collision functions
         //-------------------------------------------------------------------
 
         /**
-        * Creates a collision info
-        *@return newly created collision info, 0 on error
-        *@note The collision info must be released when no longer used, see csrCollisionInfoRelease()
+        * Calculates the position where a model or a point of view is placed on the ground
+        *@param pPolygon - polygon belonging to the model showing the ground of a scene
+        *@param pSphere - bounding sphere surrounding the point of view or model
+        *@param pGroundDir - ground direction. If 0, a default direction of [0, -1, 0] will be used
+        *@param[in, out] pR - resulting position where the bounding sphere surrounding the point of
+        *                     view or model will be placed on the ground. Ignored if 0
+        *@return 1 if the bounding sphere is above the ground polygon, otherwise 0
         */
-        CSR_CollisionInfo* csrCollisionInfoCreate(void);
+        int csrCollisionGround(const CSR_Sphere*   pSphere,
+                               const CSR_Polygon3* pPolygon,
+                               const CSR_Vector3*  pGroundDir,
+                                     CSR_Vector3*  pR);
 
         /**
-        * Releases a collision info
-        *@param[in, out] pCI - collision info to release
+        * Calculates the y axis position where to place the point of view to stay above the ground
+        *@param pBoundingSphere - sphere surrounding the point of view
+        *@param pTree - ground model aligned-axis bounding box tree
+        *@param[out] pR - resulting position on the y axis where to place the point of view
+        *@note This function will works only for a model whose the matrix is set to identity (i.e.
+        *      an unstransformed model). Also the ground vector is assumed to always point to the
+        *      [0, -1, 0] direction
         */
-        void csrCollisionInfoRelease(CSR_CollisionInfo* pCI);
-
-        /**
-        * Initializes a collision info structure
-        *@param[in, out] pCI - collision info to initialize
-        */
-        void csrCollisionInfoInit(CSR_CollisionInfo* pCI);
+        void csrGroundPosY(const CSR_Sphere*   pBoundingSphere,
+                           const CSR_AABBNode* pTree,
+                           const CSR_Vector3*  pGroundDir,
+                                 float*        pR);
 
 #ifdef __cplusplus
     }

@@ -59,6 +59,7 @@ typedef struct
 typedef struct
 {
     GLuint m_TextureID;
+    GLuint m_BumpMapID;
     double m_Time;
 } CSR_ModelTexture;
 
@@ -647,7 +648,7 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
                                   CSR_MDLPolygon*      pPolygon);
 
         //-------------------------------------------------------------------
-        // MDL model functions
+        // WaveFront model functions
         //-------------------------------------------------------------------
 
         /**
@@ -659,7 +660,7 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@param fOnGetVertexColor - get vertex color callback function to use, 0 if not used
         *@param fOnTextureRead - called when a texture is read
         *@return model containing the WaveFront file on success, otherwise 0
-        *@note The model content should be released using the csrModelRelease when useless
+        *@note The model content should be released using the csrModelRelease function when useless
         */
         CSR_Model* csrWaveFrontCreate(const CSR_Buffer*           pBuffer,
                                       const CSR_VertexFormat*     pVertFormat,
@@ -812,6 +813,43 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
                                                  CSR_VertexBuffer*      pVB,
                                            const CSR_fOnGetVertexColor  fOnGetVertexColor,
                                            const CSR_fOnTextureRead     fOnTextureRead);
+
+        //-------------------------------------------------------------------
+        // Landscape creation functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Generates landscape vertices from a grayscale image
+        *@param pPixelBuffer - pixel buffer containing the image
+        *@param height - map height
+        *@param scale - scale factor
+        *@param[out] pVertices - buffer containing the landscape vertices
+        *@return 1 on success, otherwise 0
+        */
+        int csrLandscapeGenerateVertices(const CSR_PixelBuffer* pPixelBuffer,
+                                               float            height,
+                                               float            scale,
+                                               CSR_Buffer*      pVertices);
+
+        /**
+        * Creates a landscape mesh from a grayscale image
+        *@param pPixelBuffer - pixel buffer containing the landscape map image
+        *@param height - landscape height
+        *@param scale - scale factor
+        *@param pVertFormat - model vertex format, if 0 the default format will be used
+        *@param pVertCulling - model vertex culling, if 0 the default culling will be used
+        *@param pMaterial - mesh material, if 0 the default material will be used
+        *@param fOnGetVertexColor - get vertex color callback function to use, 0 if not used
+        *@return mesh containing the landscape, 0 on error
+        *@note The mesh content should be released using the csrMeshRelease function when useless
+        */
+        CSR_Mesh* csrLandscapeCreate(const CSR_PixelBuffer*      pPixelBuffer,
+                                           float                 height,
+                                           float                 scale,
+                                     const CSR_VertexFormat*     pVertFormat,
+                                     const CSR_VertexCulling*    pVertCulling,
+                                     const CSR_Material*         pMaterial,
+                                     const CSR_fOnGetVertexColor fOnGetVertexColor);
 
 #ifdef __cplusplus
     }
