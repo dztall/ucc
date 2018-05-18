@@ -262,14 +262,32 @@ GLuint csrTextureFromPixelBuffer(const CSR_PixelBuffer* pPixelBuffer)
     unsigned       x;
     unsigned       y;
     unsigned char  c;
+    GLint          pixelType;
     GLuint         index;
 
     // validate the input
-    if (!pPixelBuffer           ||
-        !pPixelBuffer->m_Width  ||
-        !pPixelBuffer->m_Height ||
-         pPixelBuffer->m_BytePerPixel != 3)
+    if (!pPixelBuffer || !pPixelBuffer->m_Width || !pPixelBuffer->m_Height)
         return M_CSR_Error_Code;
+
+    // select the correct pixel type to use
+    switch (pPixelBuffer->m_BytePerPixel)
+    {
+        case 3:
+            pixelType = GL_RGB;
+            break;
+
+        case 4:
+            // actually the bitmaps are limited to 24 bit RGB (due to below calculation). For that
+            // reason trying to create a texture from a RGBA bitmap is prohibited
+            if (pPixelBuffer->m_ImageType == CSR_IT_Bitmap)
+                return M_CSR_Error_Code;
+
+            pixelType = GL_RGBA;
+            break;
+
+        default:
+            return M_CSR_Error_Code;
+    }
 
     // reorder the pixels if image is a bitmap
     if (pPixelBuffer->m_ImageType == CSR_IT_Bitmap)
@@ -305,11 +323,11 @@ GLuint csrTextureFromPixelBuffer(const CSR_PixelBuffer* pPixelBuffer)
     // generate texture from bitmap data
     glTexImage2D(GL_TEXTURE_2D,
                  0,
-                 GL_RGB,
+                 pixelType,
                  pPixelBuffer->m_Width,
                  pPixelBuffer->m_Height,
                  0,
-                 GL_RGB,
+                 pixelType,
                  GL_UNSIGNED_BYTE,
                  pPixels);
 
