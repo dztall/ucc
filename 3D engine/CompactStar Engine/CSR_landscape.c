@@ -147,7 +147,7 @@ void ApplyGroundCollision(const CSR_Sphere*   pBoundingSphere,
     float posY = -transformedSphere.m_Center.m_Y;
 
     // calculate the y position where to place the point of view
-    csrGroundPosY(&transformedSphere, pTree, &groundDir, &posY);
+    csrGroundPosY(&transformedSphere, pTree, &groundDir, 0, &posY);
 
     // update the ground position inside the view matrix
     pMatrix->m_Table[3][1] = -posY;
