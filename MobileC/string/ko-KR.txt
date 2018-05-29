@@ -1,4 +1,10 @@
-﻿Use precompiled header
+﻿Save
+저장
+
+Select all
+모두 선택
+
+Use precompiled header
 미리 컴파일된 헤더 사용
 
 Level of optimization

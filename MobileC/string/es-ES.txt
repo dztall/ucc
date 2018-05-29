@@ -1,3 +1,9 @@
+Save
+Almacenado
+
+Select all
+Seleccionar todo
+
 Use precompiled header
 Usar encabezado precompilado
 

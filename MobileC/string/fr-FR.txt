@@ -1,4 +1,10 @@
-﻿Use precompiled header
+﻿Save
+Sauvegarder
+
+Select all
+Tout sélectionner
+
+Use precompiled header
 Utiliser l'en-tête précompilé
 
 Level of optimization

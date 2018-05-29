@@ -1,3 +1,9 @@
+Save
+存储
+
+Select all
+全选
+
 Use precompiled header
 使用预编译头
 

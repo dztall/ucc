@@ -1,4 +1,10 @@
-﻿Use precompiled header
+﻿Save
+Сохранить
+
+Select all
+Выбрать все
+
+Use precompiled header
 Использовать предварительно скомпилированный заголовок
 
 Search files(folders)

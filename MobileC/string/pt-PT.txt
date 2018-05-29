@@ -1,3 +1,9 @@
+Save
+Salvar
+
+Select all
+Selecionar tudo
+
 Use precompiled header
 Use o cabeçalho précompilado
 

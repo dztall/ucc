@@ -1,4 +1,10 @@
-﻿Use precompiled header
+﻿Save
+Speichern
+
+Select all
+Wählen Sie Alle
+
+Use precompiled header
 Verwenden Sie den vorkompilierten Header
 
 Back

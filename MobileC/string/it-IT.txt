@@ -1,3 +1,9 @@
+Save
+Salvare
+
+Select all
+Seleziona tutto
+
 Use precompiled header
 Usa l'intestazione precompilata
 

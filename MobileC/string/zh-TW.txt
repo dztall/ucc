@@ -1,4 +1,10 @@
-﻿Use precompiled header
+﻿Save
+保存
+
+Select all
+全選
+
+Use precompiled header
 使用預編譯頭
 
 Level of optimization
