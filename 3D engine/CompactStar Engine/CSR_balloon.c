@@ -47,22 +47,22 @@
 
 //------------------------------------------------------------------------------
 unsigned char g_VSProgram[] = "precision mediump float;"
-                              "attribute vec4 mini_vPosition;"
-                              "attribute vec4 mini_vColor;"
-                              "uniform   mat4 mini_uProjection;"
-                              "uniform   mat4 mini_uModelview;"
-                              "varying   vec4 mini_fColor;"
+                              "attribute vec4 csr_aVertices;"
+                              "attribute vec4 csr_aColor;"
+                              "uniform   mat4 csr_uProjection;"
+                              "uniform   mat4 csr_uModelview;"
+                              "varying   vec4 csr_vColor;"
                               "void main(void)"
                               "{"
-                              "    mini_fColor = mini_vColor;"
-                              "    gl_Position = mini_uProjection * mini_uModelview * mini_vPosition;"
+                              "    csr_vColor  = csr_aColor;"
+                              "    gl_Position = csr_uProjection * csr_uModelview * csr_aVertices;"
                               "}";
 //----------------------------------------------------------------------------
 unsigned char g_FSProgram[] = "precision mediump float;"
-                              "varying lowp vec4 mini_fColor;"
+                              "varying lowp vec4 csr_vColor;"
                               "void main(void)"
                               "{"
-                              "    gl_FragColor = mini_fColor;"
+                              "    gl_FragColor = csr_vColor;"
                               "}";
 //------------------------------------------------------------------------------
 CSR_Shader*        g_pShader              = 0;
@@ -96,7 +96,7 @@ void ApplyMatrix(float w, float h)
     csrMat4Frustum(left, right, bottom, top, zNear, zFar, &g_ProjectionMatrix);
 
     // connect projection matrix to shader
-    GLint projectionUniform = glGetUniformLocation(g_pShader->m_ProgramID, "mini_uProjection");
+    GLint projectionUniform = glGetUniformLocation(g_pShader->m_ProgramID, "csr_uProjection");
     glUniformMatrix4fv(projectionUniform, 1, 0, &g_ProjectionMatrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
@@ -134,8 +134,8 @@ void on_GLES2_Init(int view_w, int view_h)
     csrShaderEnable(g_pShader);
 
     // get shader attributes
-    g_pShader->m_VertexSlot = glGetAttribLocation(g_pShader->m_ProgramID, "mini_vPosition");
-    g_pShader->m_ColorSlot  = glGetAttribLocation(g_pShader->m_ProgramID, "mini_vColor");
+    g_pShader->m_VertexSlot = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aVertices");
+    g_pShader->m_ColorSlot  = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aColor");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -309,7 +309,7 @@ void on_GLES2_Render()
     csrMat4Multiply(&combinedMatrix3, &translateMatrix, &modelViewMatrix);
 
     // connect model view matrix to shader
-    modelviewUniform = glGetUniformLocation(g_pShader->m_ProgramID, "mini_uModelview");
+    modelviewUniform = glGetUniformLocation(g_pShader->m_ProgramID, "csr_uModelview");
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // get the ray from screen coordinates

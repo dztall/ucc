@@ -30,3 +30,19 @@ void csrMaterialInit(CSR_Material* pMaterial)
     pMaterial->m_Wireframe   = 0;
 }
 //---------------------------------------------------------------------------
+// Directional light functions
+//---------------------------------------------------------------------------
+void csrDirectionalLightInit(CSR_DirectionalLight* pLight)
+{
+    // no light to initialize?
+    if (!pLight)
+        return;
+
+    // initialize the light content
+    pLight->m_Ambient       = 0xFFFFFFFF;
+    pLight->m_Color         = 0xFFFFFFFF;
+    pLight->m_Direction.m_X = 0.0f;
+    pLight->m_Direction.m_Y = 0.0f;
+    pLight->m_Direction.m_Z = 0.0f;
+}
+//---------------------------------------------------------------------------

@@ -67,6 +67,277 @@ void csrPixelBufferInit(CSR_PixelBuffer* pPB)
     pPB->m_pData        = 0;
 }
 //---------------------------------------------------------------------------
+CSR_PixelBuffer* csrPixelBufferFromBitmap(const char* pFileName)
+{
+    CSR_Buffer*      pBuffer;
+    CSR_PixelBuffer* pPixelBuffer;
+    size_t           offset;
+    unsigned         dataOffset;
+    unsigned         headerSize;
+    unsigned short   bpp;
+    unsigned short   compressed;
+    unsigned char    signature[2];
+
+    // open bitmap file
+    pBuffer = csrFileOpen(pFileName);
+
+    // succeeded?
+    if (!pBuffer)
+        return 0;
+
+    offset = 0;
+
+    // read bitmap signature
+    csrBufferRead(pBuffer, &offset, sizeof(unsigned char), 2, &signature[0]);
+
+    // is bitmap signature correct?
+    if (signature[0] != 'B' || signature[1] != 'M')
+    {
+        csrBufferRelease(pBuffer);
+        return 0;
+    }
+
+    // create a pixel buffer
+    pPixelBuffer = csrPixelBufferCreate();
+
+    // succeeded?
+    if (!pPixelBuffer)
+    {
+        csrBufferRelease(pBuffer);
+        return 0;
+    }
+
+    // initialize the pixel buffer
+    csrPixelBufferInit(pPixelBuffer);
+
+    // skip 8 next bytes
+    offset += 8;
+
+    // read data offset
+    csrBufferRead(pBuffer, &offset, sizeof(unsigned), 1, &dataOffset);
+
+    // read header size
+    csrBufferRead(pBuffer, &offset, sizeof(unsigned), 1, &headerSize);
+
+    // search for bitmap type
+    switch (headerSize)
+    {
+        // V3
+        case 40:
+        {
+            // read bitmap width
+            csrBufferRead(pBuffer, &offset, sizeof(unsigned), 1, &pPixelBuffer->m_Width);
+
+            // read bitmap height
+            csrBufferRead(pBuffer, &offset, sizeof(unsigned), 1, &pPixelBuffer->m_Height);
+
+            // skip next 2 bytes
+            offset += 2;
+
+            // read bitmap bit per pixels
+            csrBufferRead(pBuffer, &offset, sizeof(unsigned short), 1, &bpp);
+
+            // is bpp supported?
+            if (bpp != 24)
+            {
+                csrPixelBufferRelease(pPixelBuffer);
+                csrBufferRelease(pBuffer);
+                return 0;
+            }
+
+            // read bitmap compressed flag
+            csrBufferRead(pBuffer, &offset, sizeof(unsigned short), 1, &compressed);
+
+            // is compressed?
+            if (compressed)
+            {
+                csrPixelBufferRelease(pPixelBuffer);
+                csrBufferRelease(pBuffer);
+                return 0;
+            }
+
+            break;
+        }
+
+        // OS/2 V1
+        case 12:
+        {
+            unsigned short width;
+            unsigned short height;
+
+            // read bitmap width
+            csrBufferRead(pBuffer, &offset, sizeof(unsigned short), 1, &width);
+
+            // read bitmap height
+            csrBufferRead(pBuffer, &offset, sizeof(unsigned short), 1, &height);
+
+            pPixelBuffer->m_Width  = width;
+            pPixelBuffer->m_Height = height;
+
+            // skip next 2 bytes
+            offset += 2;
+
+            // read bitmap bit per pixels
+            csrBufferRead(pBuffer, &offset, sizeof(unsigned short), 1, &bpp);
+
+            // is bpp supported?
+            if (bpp != 24)
+            {
+                csrPixelBufferRelease(pPixelBuffer);
+                csrBufferRelease(pBuffer);
+                return 0;
+            }
+
+            break;
+        }
+
+        // Windows V4
+        case 108:
+        {
+            unsigned short width;
+            unsigned short height;
+
+            // read bitmap width
+            csrBufferRead(pBuffer, &offset, sizeof(unsigned short), 1, &width);
+
+            // skip next 2 bytes
+            offset += 2;
+
+            // read bitmap height
+            csrBufferRead(pBuffer, &offset, sizeof(unsigned short), 1, &height);
+
+            pPixelBuffer->m_Width  = width;
+            pPixelBuffer->m_Height = height;
+
+            // skip next 4 bytes
+            offset += 4;
+
+            // read bitmap bit per pixels
+            csrBufferRead(pBuffer, &offset, sizeof(unsigned short), 1, &bpp);
+
+            // is bpp supported?
+            if (bpp != 24)
+            {
+                csrPixelBufferRelease(pPixelBuffer);
+                csrBufferRelease(pBuffer);
+                return 0;
+            }
+
+            break;
+        }
+
+        default:
+            // unsupported bitmap format
+            csrPixelBufferRelease(pPixelBuffer);
+            csrBufferRelease(pBuffer);
+            return 0;
+    }
+
+    pPixelBuffer->m_PixelType    = CSR_PT_BGR;
+    pPixelBuffer->m_ImageType    = CSR_IT_Bitmap;
+    pPixelBuffer->m_BytePerPixel = bpp / 8;
+    pPixelBuffer->m_Stride       = (((pPixelBuffer->m_Width) * 3 + 3) / 4) * 4 - ((pPixelBuffer->m_Width) * 3 % 4);
+    pPixelBuffer->m_DataLength   = pPixelBuffer->m_Stride * pPixelBuffer->m_Height;
+    pPixelBuffer->m_pData        = malloc(sizeof(unsigned char) * pPixelBuffer->m_DataLength);
+
+    offset = dataOffset;
+
+    // read bitmap data
+    csrBufferRead(pBuffer,
+                 &offset,
+                  sizeof(unsigned char),
+                  pPixelBuffer->m_DataLength,
+                  pPixelBuffer->m_pData);
+
+    csrBufferRelease(pBuffer);
+
+    return pPixelBuffer;
+}
+//---------------------------------------------------------------------------
+// Texture functions
+//---------------------------------------------------------------------------
+GLuint csrTextureFromPixelBuffer(const CSR_PixelBuffer* pPixelBuffer)
+{
+    unsigned char* pPixels;
+    unsigned       x;
+    unsigned       y;
+    unsigned char  c;
+    GLint          pixelType;
+    GLuint         index;
+
+    // validate the input
+    if (!pPixelBuffer || !pPixelBuffer->m_Width || !pPixelBuffer->m_Height)
+        return M_CSR_Error_Code;
+
+    // select the correct pixel type to use
+    switch (pPixelBuffer->m_BytePerPixel)
+    {
+        case 3:
+            pixelType = GL_RGB;
+            break;
+
+        case 4:
+            // actually the bitmaps are limited to 24 bit RGB (due to below calculation). For that
+            // reason trying to create a texture from a RGBA bitmap is prohibited
+            if (pPixelBuffer->m_ImageType == CSR_IT_Bitmap)
+                return M_CSR_Error_Code;
+
+            pixelType = GL_RGBA;
+            break;
+
+        default:
+            return M_CSR_Error_Code;
+    }
+
+    // reorder the pixels if image is a bitmap
+    if (pPixelBuffer->m_ImageType == CSR_IT_Bitmap)
+    {
+        pPixels = (unsigned char*)malloc(sizeof(unsigned char)  *
+                                         pPixelBuffer->m_Width  *
+                                         pPixelBuffer->m_Height *
+                                         3);
+
+        // get bitmap data into right format
+        for (y = 0; y < pPixelBuffer->m_Height; ++y)
+            for (x = 0; x < pPixelBuffer->m_Width; ++x)
+                for (c = 0; c < 3; ++c)
+                    pPixels[3 * (pPixelBuffer->m_Width * y + x) + c] =
+                            ((unsigned char*)pPixelBuffer->m_pData)
+                                    [pPixelBuffer->m_Stride * y + 3 * (pPixelBuffer->m_Width - x - 1) + (2 - c)];
+    }
+    else
+        pPixels = (unsigned char*)pPixelBuffer->m_pData;
+
+    // create new OpenGL texture
+    glGenTextures(1, &index);
+    glBindTexture(GL_TEXTURE_2D, index);
+
+    // set texture filtering
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // set texture wrapping mode
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // generate texture from bitmap data
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,
+                 pixelType,
+                 pPixelBuffer->m_Width,
+                 pPixelBuffer->m_Height,
+                 0,
+                 pixelType,
+                 GL_UNSIGNED_BYTE,
+                 pPixels);
+
+    // delete local pixel buffer
+    if (pPixelBuffer->m_ImageType == CSR_IT_Bitmap)
+        free(pPixels);
+
+    return index;
+}
+//---------------------------------------------------------------------------
 // Texture item functions
 //---------------------------------------------------------------------------
 CSR_TextureItem* csrTextureItemCreate(void)

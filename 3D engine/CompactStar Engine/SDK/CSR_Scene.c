@@ -20,6 +20,56 @@
 #include <math.h>
 
 //---------------------------------------------------------------------------
+// Collision info functions
+//---------------------------------------------------------------------------
+CSR_CollisionInfo* csrCollisionInfoCreate(void)
+{
+    // create a new collision info
+    CSR_CollisionInfo* pCI = (CSR_CollisionInfo*)malloc(sizeof(CSR_CollisionInfo));
+
+    // succeeded?
+    if (!pCI)
+        return 0;
+
+    // initialize the collision info content
+    csrCollisionInfoInit(pCI);
+
+    return pCI;
+}
+//---------------------------------------------------------------------------
+void csrCollisionInfoRelease(CSR_CollisionInfo* pCI)
+{
+    size_t i;
+
+    // no collision info to release?
+    if (!pCI)
+        return;
+
+    // free the polygon buffer
+    if (pCI->m_Polygons.m_pPolygon)
+        free(pCI->m_Polygons.m_pPolygon);
+
+    // free the model array
+    if (pCI->m_pModels)
+        csrArrayRelease(pCI->m_pModels);
+
+    // free the scene
+    free(pCI);
+}
+//---------------------------------------------------------------------------
+void csrCollisionInfoInit(CSR_CollisionInfo* pCI)
+{
+    // no collision info to initialize?
+    if (!pCI)
+        return;
+
+    // initialize the collision info
+    pCI->m_Collision           = 0;
+    pCI->m_Polygons.m_pPolygon = 0;
+    pCI->m_Polygons.m_Count    = 0;
+    pCI->m_pModels             = 0;
+}
+//---------------------------------------------------------------------------
 // Scene context functions
 //---------------------------------------------------------------------------
 void csrSceneContextInit(CSR_SceneContext* pContext)
@@ -965,8 +1015,10 @@ void csrSceneDraw(const CSR_Scene* pScene, const CSR_SceneContext* pContext)
         csrDrawEnd();
 }
 //---------------------------------------------------------------------------
-void csrSceneArcBallToMatrix(float radius, float angleX, float angleY, CSR_Matrix4* pR)
+void csrSceneArcBallToMatrix(const CSR_ArcBall* pArcball, CSR_Matrix4* pR)
 {
+    float       angleX;
+    float       angleY;
     CSR_Vector3 axis;
     CSR_Matrix4 cameraMatrixX;
     CSR_Matrix4 cameraMatrixY;
@@ -974,13 +1026,13 @@ void csrSceneArcBallToMatrix(float radius, float angleX, float angleY, CSR_Matri
     CSR_Matrix4 cameraMatrix;
     CSR_Camera  camera;
 
-    // validate the input
-    if (!pR)
+    // validate the inputs
+    if (!pArcball || !pR)
         return;
 
     // are angles out of bounds?
-    angleX = fmod(angleX, M_PI * 2.0f);
-    angleY = fmod(angleY, M_PI * 2.0f);
+    angleX = fmod(pArcball->m_AngleX, M_PI * 2.0f);
+    angleY = fmod(pArcball->m_AngleY, M_PI * 2.0f);
 
     // create a matrix for the rotation on the X axis
     axis.m_X = 1.0f;
@@ -1000,7 +1052,7 @@ void csrSceneArcBallToMatrix(float radius, float angleX, float angleY, CSR_Matri
     // configure the camera
     camera.m_Position.m_X =  0.0f;
     camera.m_Position.m_Y =  0.0f;
-    camera.m_Position.m_Z = -radius;
+    camera.m_Position.m_Z = -pArcball->m_Radius;
     camera.m_xAngle       =  0.0f;
     camera.m_yAngle       =  0.0f;
     camera.m_zAngle       =  0.0f;

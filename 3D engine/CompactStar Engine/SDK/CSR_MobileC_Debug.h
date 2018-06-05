@@ -1,7 +1,8 @@
-/****************************************************************************
- * ==> CSR_Lighting --------------------------------------------------------*
+﻿/****************************************************************************
+ * ==> CSR_MobileC_Debug ---------------------------------------------------*
  ****************************************************************************
- * Description : This module provides the lighting functions and types      *
+ * Description : This module provides several debug functions for the       *
+ *               Mobile C Compiler                                          *
  * Developer   : Jean-Milost Reymond                                        *
  * Copyright   : 2017 - 2018, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
@@ -13,60 +14,49 @@
  *               DIRECTLY OR NOT.                                           *
  ****************************************************************************/
 
-#ifndef CSR_LightingH
-#define CSR_LightingH
+#ifndef CSR_MobileC_DebugH
+#define CSR_MobileC_DebugH
+
+// std
+#include <stddef.h>
 
 // compactStar engine
 #include "CSR_Common.h"
 #include "CSR_Geometry.h"
-
-//---------------------------------------------------------------------------
-// Structures
-//---------------------------------------------------------------------------
-
-/**
-* Material, describes the way a mesh reacts to the light
-*/
-typedef struct
-{
-    unsigned m_Color;       // vertex color, applied to all vertices if per-vertex color is disabled
-    int      m_Transparent; // whether or not the alpha blending should be activated
-    int      m_Wireframe;   // whether or not the vertex buffer should be drawn in wireframe
-} CSR_Material;
-
-/**
-* Directional light
-*/
-typedef struct
-{
-    unsigned    m_Ambient;
-    unsigned    m_Color;
-    CSR_Vector3 m_Direction;
-} CSR_DirectionalLight;
 
 #ifdef __cplusplus
     extern "C"
     {
 #endif
         //-------------------------------------------------------------------
-        // Material functions
+        // Vector2 debug functions
         //-------------------------------------------------------------------
 
         /**
-        * Initializes a material structure
-        *@param[in, out] pMaterial - material to initialize
+        * Log a vector 2 content to the compiler output
+        *@param pM - matrix to log
         */
-        void csrMaterialInit(CSR_Material* pMaterial);
+        void csrVec2Log(const CSR_Vector2* pV);
 
         //-------------------------------------------------------------------
-        // Directional light functions
+        // Vector3 debug functions
         //-------------------------------------------------------------------
 
         /**
-        * Initializes a directional light structure
-        *@param[in, out] pLight - directional light to initialize
+        * Log a vector 3 content to the compiler output
+        *@param pM - matrix to log
         */
-        void csrDirectionalLightInit(CSR_DirectionalLight* pLight);
+        void csrVec3Log(const CSR_Vector3* pV);
+
+        //-------------------------------------------------------------------
+        // Matrix debug functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Log a matrix content to the compiler output
+        *@param pM - matrix to log
+        */
+        void csrMat4Log(const CSR_Matrix4* pM);
 
 #ifdef __cplusplus
     }
@@ -78,7 +68,7 @@ typedef struct
 
 // needed in mobile c compiler to link the .h file with the .c
 #if defined(_OS_IOS_) || defined(_OS_ANDROID_) || defined(_OS_WINDOWS_)
-    #include "CSR_Lighting.c"
+    #include "CSR_MobileC_Debug.c"
 #endif
 
 #endif

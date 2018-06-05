@@ -39,6 +39,16 @@ typedef enum
 } CSR_EModelType;
 
 /**
+* Collision type
+*/
+typedef enum
+{
+    CSR_CT_Ignore,
+    CSR_CT_Ground,
+    CSR_CT_Edge
+} CSR_ECollisionType;
+
+/**
 * Matrix combination type
 */
 typedef enum
@@ -67,11 +77,12 @@ typedef struct CSR_SceneContext CSR_SceneContext;
 */
 typedef struct
 {
-    void*          m_pModel;        // the model to draw
-    CSR_EModelType m_Type;          // model type (a simple mesh, a model or a complex MDL model)
-    CSR_Array*     m_pMatrixArray;  // matrices sharing the same model, e.g. all the walls of a room
-    CSR_AABBNode*  m_pAABBTree;     // aligned-axis bounding box trees owned by the model
-    size_t         m_AABBTreeCount; // aligned-axis bounding box tree count
+    void*              m_pModel;        // the model to draw
+    CSR_EModelType     m_Type;          // model type (a simple mesh, a model or a complex MDL model)
+    CSR_ECollisionType m_CollisionType; // collision type to apply to model
+    CSR_Array*         m_pMatrixArray;  // matrices sharing the same model, e.g. all the walls of a room
+    CSR_AABBNode*      m_pAABBTree;     // aligned-axis bounding box trees owned by the model
+    size_t             m_AABBTreeCount; // aligned-axis bounding box tree count
 } CSR_SceneItem;
 
 /**
@@ -99,6 +110,36 @@ typedef struct
     CSR_Vector3      m_Factor;
     CSR_EMatCombType m_MatCombType;
 } CSR_Camera;
+
+/**
+* Arcball
+*/
+typedef struct
+{
+    float m_AngleX;
+    float m_AngleY;
+    float m_Radius;
+} CSR_ArcBall;
+
+/**
+* Collision info
+*/
+typedef struct
+{
+    int                m_Collision; // if 1 a collision happened, if 0 no collision happened
+    CSR_Polygon3Buffer m_Polygons;  // all the found polygons in collision
+    CSR_Array*         m_pModels;   // models owning one or several polygons in collision
+} CSR_CollisionInfo;
+
+/**
+* Collision model info
+*/
+typedef struct
+{
+    void*  m_pItem;        // scene item against which a collision happened
+    size_t m_MatrixIndex;  // index of the model matrix in the scene item
+    size_t m_AABBTreeItem; // index of the AABB tree in the scene item
+} CSR_CollisionModelInfo;
 
 //---------------------------------------------------------------------------
 // Callbacks
@@ -167,6 +208,29 @@ struct CSR_SceneContext
     extern "C"
     {
 #endif
+
+        //-------------------------------------------------------------------
+        // Collision info functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Creates a collision info
+        *@return newly created collision info, 0 on error
+        *@note The collision info must be released when no longer used, see csrCollisionInfoRelease()
+        */
+        CSR_CollisionInfo* csrCollisionInfoCreate(void);
+
+        /**
+        * Releases a collision info
+        *@param[in, out] pCI - collision info to release
+        */
+        void csrCollisionInfoRelease(CSR_CollisionInfo* pCI);
+
+        /**
+        * Initializes a collision info structure
+        *@param[in, out] pCI - collision info to initialize
+        */
+        void csrCollisionInfoInit(CSR_CollisionInfo* pCI);
 
         //-------------------------------------------------------------------
         // Scene context functions
@@ -317,12 +381,10 @@ struct CSR_SceneContext
 
         /**
         * Gets a camera (or view) matrix from arcball values
-        *@param radius - arcball radius
-        *@param angleX - angle on the x axis, in radians
-        *@param angleY - angle on the y axis, in radians
+        *@param pArcball - arcball values
         *@param[in, out] pR - camera (or view) matrix
         */
-        void csrSceneArcBallToMatrix(float radius, float angleX, float angleY, CSR_Matrix4* pR);
+        void csrSceneArcBallToMatrix(const CSR_ArcBall* pArcball, CSR_Matrix4* pR);
 
         /**
         * Gets a camera (or view) matrix
