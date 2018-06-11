@@ -47,7 +47,8 @@ typedef enum
     CSR_DT_TimeStamp,
     CSR_DT_ShaderIndex,
     CSR_DT_TextureIndex,
-    CSR_DT_BumpMapIndex
+    CSR_DT_BumpMapIndex,
+    CSR_DT_CollisionType
 } CSR_ESceneDataType;
 
 /**
@@ -55,9 +56,8 @@ typedef enum
 */
 typedef enum
 {
-    CSR_SO_None           = 0x0,
-    CSR_SO_DoGenerateAABB = 0x1,
-    CSR_SO_Transparent    = 0x2
+    CSR_SO_None        = 0x0,
+    CSR_SO_Transparent = 0x1
 } CSR_ESceneItemOptions;
 
 //---------------------------------------------------------------------------
@@ -393,6 +393,17 @@ struct CSR_WriteContext
         int csrSerializerWriteColor(const CSR_WriteContext* pContext,
                                     const CSR_Color*        pColor,
                                           CSR_Buffer*       pBuffer);
+
+        /**
+        * Writes a vector inside a buffer
+        *@param pContext - write context, containing the write options
+        *@param pVector - vector to write
+        *@param[in, out] pBuffer - buffer to write in
+        *@return 1 on success, otherwise 0
+        */
+        int csrSerializerWriteVector(const CSR_WriteContext* pContext,
+                                     const CSR_Vector3*      pVector,
+                                           CSR_Buffer*       pBuffer);
 
         /**
         * Writes a matrix inside a buffer

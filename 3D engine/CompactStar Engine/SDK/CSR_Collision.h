@@ -107,6 +107,9 @@ struct CSR_AABBNode
         *@param[in, out] pR - resulting position where the bounding sphere surrounding the point of
         *                     view or model will be placed on the ground. Ignored if 0
         *@return 1 if the bounding sphere is above the ground polygon, otherwise 0
+        *@note The bounding sphere should be in the same coordinate system as the polygon. This
+        *      means that any transformation should be applied to the sphere before calling this
+        *      function
         */
         int csrCollisionGround(const CSR_Sphere*   pSphere,
                                const CSR_Polygon3* pPolygon,
@@ -115,19 +118,20 @@ struct CSR_AABBNode
 
         /**
         * Calculates the y axis position where to place the point of view to stay above the ground
-        *@param pBoundingSphere - sphere surrounding the point of view
+        *@param pBoundingSphere - sphere surrounding the point of view or model
         *@param pTree - ground model aligned-axis bounding box tree
+        *@param pGroundDir - ground direction
         *@param[out] pGroundPolygon - polygon on which the ground was hit, ignored if 0
-        *@param[out] pR - resulting position on the y axis where to place the point of view
-        *@note This function will works only for a model whose the matrix is set to identity (i.e.
-        *      an unstransformed model). Also the ground vector is assumed to always point to the
-        *      [0, -1, 0] direction
+        *@param[out] pR - resulting position on the y axis where to place the point of view or model
+        *@return 1 if a ground polygon was found, otherwise 0
+        *@note The bounding sphere should be in the same coordinate system as the model. This means
+        *      that any transformation should be applied to the sphere before calling this function
         */
-        void csrGroundPosY(const CSR_Sphere*   pBoundingSphere,
-                           const CSR_AABBNode* pTree,
-                           const CSR_Vector3*  pGroundDir,
-                                 CSR_Polygon3* pGroundPolygon,
-                                 float*        pR);
+        int csrGroundPosY(const CSR_Sphere*   pBoundingSphere,
+                          const CSR_AABBNode* pTree,
+                          const CSR_Vector3*  pGroundDir,
+                                CSR_Polygon3* pGroundPolygon,
+                                float*        pR);
 
 #ifdef __cplusplus
     }

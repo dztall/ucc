@@ -180,6 +180,81 @@ CSR_Sound* csrSoundOpen(const ALCdevice*  pOpenALDevice,
     return pSound;
 }
 //---------------------------------------------------------------------------
+CSR_Sound* csrSoundOpenWav(const ALCdevice*  pOpenALDevice,
+                           const ALCcontext* pOpenALContext,
+                                 const char* pFileName)
+{
+    CSR_Buffer*   pBuffer;
+    CSR_Buffer    dataBuffer;
+    CSR_Sound*    pSound;
+    size_t        offset;
+    unsigned char signature[4];
+    unsigned      sampleRate;
+
+    // open the sound file
+    pBuffer = csrFileOpen(pFileName);
+
+    // succeeded?
+    if (!pBuffer || !pBuffer->m_Length)
+    {
+        csrBufferRelease(pBuffer);
+        return 0;
+    }
+
+    offset = 0;
+
+    // read RIFF signature
+    csrBufferRead(pBuffer, &offset, sizeof(unsigned char), 4, &signature[0]);
+
+    // check the RIFF signature
+    if (signature[0] != 'R' || signature[1] != 'I' || signature[2] != 'F' || signature[3] != 'F')
+    {
+        csrBufferRelease(pBuffer);
+        return 0;
+    }
+
+    // skip 4 next bytes (this is the entire WAV data length)
+    offset += 4;
+
+    // read WAVE signature
+    csrBufferRead(pBuffer, &offset, sizeof(unsigned char), 4, &signature[0]);
+
+    // check the WAVE signature
+    if (signature[0] != 'W' || signature[1] != 'A' || signature[2] != 'V' || signature[3] != 'E')
+    {
+        csrBufferRelease(pBuffer);
+        return 0;
+    }
+
+    // skip next bytes until the sample rate
+    offset += 12;
+
+    // read the sample rate
+    csrBufferRead(pBuffer, &offset, sizeof(unsigned), 1, &sampleRate);
+
+    // skip all the following header data
+    offset += 16;
+
+    // check for data corruption
+    if (offset >= pBuffer->m_Length)
+    {
+        csrBufferRelease(pBuffer);
+        return 0;
+    }
+
+    // populate a pseudo-buffer to read the sound data
+    dataBuffer.m_pData  = ((unsigned char*)pBuffer->m_pData) + offset;
+    dataBuffer.m_Length = pBuffer->m_Length - offset;
+
+    // create the sound from file content
+    pSound = csrSoundCreate(pOpenALDevice, pOpenALContext, &dataBuffer, sampleRate);
+
+    // release the file buffer (no longer required)
+    csrBufferRelease(pBuffer);
+
+    return pSound;
+}
+//---------------------------------------------------------------------------
 void csrSoundInit(CSR_Sound* pSound)
 {
     // no sound to initialize?
