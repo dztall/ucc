@@ -480,20 +480,23 @@ int csrCollisionGround(const CSR_Sphere*   pSphere,
     return 1;
 }
 //---------------------------------------------------------------------------
-void csrGroundPosY(const CSR_Sphere*   pBoundingSphere,
-                   const CSR_AABBNode* pTree,
-                   const CSR_Vector3*  pGroundDir,
-                         CSR_Polygon3* pGroundPolygon,
-                         float*        pR)
+int csrGroundPosY(const CSR_Sphere*   pBoundingSphere,
+                  const CSR_AABBNode* pTree,
+                  const CSR_Vector3*  pGroundDir,
+                        CSR_Polygon3* pGroundPolygon,
+                        float*        pR)
 {
     size_t             i;
     CSR_Ray3           groundRay;
     CSR_Vector3        groundPos;
     CSR_Polygon3Buffer polygonBuffer;
+    int                result;
 
     // validate the inputs
-    if (!pBoundingSphere || !pTree || !pGroundDir || !pR)
-        return;
+    if (!pBoundingSphere || !pTree || !pGroundDir)
+        return 0;
+
+    result = 0;
 
     // create the ground ray
     csrRay3FromPointDir(&pBoundingSphere->m_Center, pGroundDir, &groundRay);
@@ -501,17 +504,19 @@ void csrGroundPosY(const CSR_Sphere*   pBoundingSphere,
     // using the ground ray, resolve aligned-axis bounding box tree
     csrAABBTreeResolve(&groundRay, pTree, 0, &polygonBuffer);
 
+    // initialize the ground position from the bounding sphere center
     groundPos = pBoundingSphere->m_Center;
 
     // iterate through polygons to check
     for (i = 0; i < polygonBuffer.m_Count; ++i)
-        // check if the ground polygon was found, calculate the ground position if yes
-        if (csrCollisionGround(pBoundingSphere, &polygonBuffer.m_pPolygon[i], 0, &groundPos))
+        // check if a ground polygon was found, calculate the ground position if yes
+        if (csrCollisionGround(pBoundingSphere, &polygonBuffer.m_pPolygon[i], pGroundDir, &groundPos))
         {
             // copy the ground polygon, if required
             if (pGroundPolygon)
                 *pGroundPolygon = polygonBuffer.m_pPolygon[i];
 
+            result = 1;
             break;
         }
 
@@ -519,6 +524,10 @@ void csrGroundPosY(const CSR_Sphere*   pBoundingSphere,
     if (polygonBuffer.m_Count)
         free(polygonBuffer.m_pPolygon);
 
-    *pR = groundPos.m_Y;
+    // copy the resulting y value
+    if (pR)
+        *pR = groundPos.m_Y;
+
+    return result;
 }
 //---------------------------------------------------------------------------

@@ -3494,7 +3494,7 @@ int csrLandscapeGenerateVertices(const CSR_PixelBuffer* pPixelBuffer,
         for (x = 0; x < pPixelBuffer->m_Width; ++x)
         {
             // calculate vertex index
-            size_t index = (z * pPixelBuffer->m_Height) + x;
+            size_t index = (z * pPixelBuffer->m_Width) + x;
             float  value = (float)(((unsigned char*)pPixelBuffer->m_pData)[index * 3]) / 255.0f;
 
             // calculate landscape vertex
@@ -3604,7 +3604,7 @@ CSR_Mesh* csrLandscapeCreate(const CSR_PixelBuffer*      pPixelBuffer,
             unsigned i4;
 
             // calculate vertex index
-            index = (z * pPixelBuffer->m_Height) + x;
+            index = (z * pPixelBuffer->m_Width) + x;
 
             // calculate first vertex
             v1.m_X = ((CSR_Vector3*)vertices.m_pData)[index].m_X;
@@ -3620,7 +3620,7 @@ CSR_Mesh* csrLandscapeCreate(const CSR_PixelBuffer*      pPixelBuffer,
             i2 = index + 1;
 
             // calculate next vertex index
-            index = ((z + 1) * pPixelBuffer->m_Height) + x;
+            index = ((z + 1) * pPixelBuffer->m_Width) + x;
 
             // calculate third vertex
             v3.m_X = ((CSR_Vector3*)vertices.m_pData)[index].m_X;

@@ -108,6 +108,18 @@ typedef struct
                                       unsigned    sampling);
 
         /**
+        * Opens a sound from a Wav file
+        *@param pOpenALDevice - OpenAL device to use
+        *@param pOpenALContext - OpenAL context to use
+        *@param pFileName - file name
+        *@return opened sound on success, 0 on error
+        *@note The sound must be released when no longer used, see csrReleaseSound()
+        */
+        CSR_Sound* csrSoundOpenWav(const ALCdevice*  pOpenALDevice,
+                                   const ALCcontext* pOpenALContext,
+                                         const char* pFileName);
+
+        /**
         * Initializes a sound structure
         *@param[in, out] pSound - sound to initialize
         */
