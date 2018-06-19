@@ -1,5 +1,0 @@
-﻿• Os atalhos de teclado para teclados de hardware são os mesmos que para sistemas operacionais de desktop.
-
-• Você pode rolar para o topo tocando na barra de título superior.
-
-• Use a função html () para exibir HTML para o WebView. Veja arquivos na pasta de exemplos HTML.

@@ -1,4 +1,10 @@
-﻿Save
+﻿Home
+ホーム
+
+End
+エンド
+
+Save
 保存
 
 Select all
@@ -260,13 +266,13 @@ CPP ( Built-in )
 CPP 1.2.10 ( 内蔵 )
 
 Clang
-Clang 5.0.0
+Clang 6.0.0
 
 Lua Interpreter
 Lua 5.3.4
 
 Python 3
-Python 3.6.3
+Python 3.6.5
 
 Duktape
 Duktape 2.2.0

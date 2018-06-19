@@ -1,5 +1,0 @@
-﻿• Les raccourcis clavier pour les claviers matériels sont les mêmes que pour les systèmes d'exploitation de bureau.
-
-• Vous pouvez faire défiler vers le haut en appuyant sur la barre de titre supérieure.
-
-• Utilisez la fonction html() pour afficher HTML vers WebView. Voir les fichiers dans le dossier des exemples HTML.

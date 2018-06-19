@@ -7,11 +7,8 @@ TitleBar.Color
 Button.Color
 0xFF5AC5C7
 
-FileList.ItemButton.File.Color
-0xFF5AC5C7
-
-FileList.ItemButton.Folder.Color
-0xFF77B2B3
+FileList.ItemButton.Separator.Color
+0xFF7F7F7F
 
 FileList.ItemButton.EditButton.Color
 0xFF6EEDEF
@@ -28,23 +25,11 @@ FileList.ItemButton.PlayButton.Color
 FileList.ItemButton.RunButton.Color
 0xFF6EEDEF
 
-FileListEditor.ItemButton.File.Color
-0xFF5AC5C7
-
-FileListEditor.ItemButton.Folder.Color
-0xFF77B2B3
-
 FileListEditor.ItemButton.FileSizeText.Color
 0xFF787878
 
 FileListSearch.InputTitle.Color
 0xFFD66D54
-
-FileListSearch.ItemButton.File.Color
-0xFF5AC5C7
-
-FileListSearch.ItemButton.Folder.Color
-0xFF77B2B3
 
 FileListSearch.ItemButton.FullPathLabelText.Color
 0xFF666666
@@ -54,12 +39,6 @@ FileListSearch.ItemButton.GoButton.Color
 
 FileListSearch.ItemButton.RunButton.Color
 0xFF6EEDEF
-
-FileListTarget.ItemButton.File.Color
-0xFF5AC5C7
-
-FileListTarget.ItemButton.Folder.Color
-0xFF77B2B3
 
 Options.Button.Color
 0xFF77B2B3
@@ -124,23 +103,8 @@ TextFileView.LineNumberBar.Text.Color
 TextFileView.Separator.Color
 0xFF009696
 
-ZIPFileListEditor.ItemButton.File.Color
-0xFF5AC5C7
-
-ZIPFileListEditor.ItemButton.Folder.Color
-0xFF77B2B3
-
 ZIPFileListEditor.ItemButton.FileSizeText.Color
 0xFF787878
-
-ZIPFileList.ItemButton.File.Color
-0xFF5AC5C7
-
-ZIPFileList.ItemButton.Folder.Color
-0xFF77B2B3
-
-ZIPFileList.ItemButton.ParentFolder.Color
-0xFF77B2B3
 
 ZIPFileList.ItemButton.RunButton.Color
 0xFF6EEDEF
@@ -275,4 +239,19 @@ SourceEditor.Ray.SyntaxHighlight.Comment.Color
 0xFF00A300
 
 SourceEditor.Ray.SyntaxHighlight.Keyword.Color
+0xFF0000A3
+
+SourceEditor.HTML.Background.Color
+0xFFE7E7E7
+
+SourceEditor.HTML.SyntaxHighlight.Normal.Color
+0xFF000000
+
+SourceEditor.HTML.SyntaxHighlight.StringLiteral.Color
+0xFFA31515
+
+SourceEditor.HTML.SyntaxHighlight.Comment.Color
+0xFF00A300
+
+SourceEditor.HTML.SyntaxHighlight.Keyword.Color
 0xFF0000A3

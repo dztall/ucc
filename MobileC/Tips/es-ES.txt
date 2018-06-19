@@ -1,5 +1,0 @@
-﻿• Los atajos de teclado para teclados de hardware son los mismos que para los sistemas operativos de escritorio.
-
-• Puede desplazarse hacia la parte superior tocando la barra de título superior.
-
-• Use la función html() para enviar HTML a WebView. Ver archivos en la carpeta de ejemplos HTML.
