@@ -221,13 +221,6 @@ typedef struct
         unsigned csrColorBGRToRGBA(unsigned color);
 
         /**
-        * Converts a 32 bit BGR color (Windows style) to a RGBA color
-        *@param color - BGR color to convert
-        *@return RGBA color
-        */
-        unsigned csrColorBGRToRGBA(unsigned color);
-
-        /**
         * Converts a 32 bit ABGR color (Windows style) to a RGBA color
         *@param color - ABGR color to convert
         *@return RGBA color

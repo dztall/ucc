@@ -853,9 +853,19 @@ CSR_Mesh* csrShapeCreateCylinder(      float                 radius,
         // vertex has UV texture coordinates?
         if (pMesh->m_pVB->m_Format.m_HasTexCoords)
         {
-            // add texture coordinates data to buffer
-            uv.m_X = 1.0f / i;
-            uv.m_Y = 0.0f;
+            // is the first point to calculate?
+            if (!i)
+            {
+                // add texture coordinates data to buffer
+                uv.m_X = 0.0f;
+                uv.m_Y = 0.0f;
+            }
+            else
+            {
+                // add texture coordinates data to buffer
+                uv.m_X = 1.0f / (float)i;
+                uv.m_Y = 0.0f;
+            }
         }
 
         // add the vertex to the buffer
@@ -878,9 +888,19 @@ CSR_Mesh* csrShapeCreateCylinder(      float                 radius,
         // vertex has UV texture coordinates?
         if (pMesh->m_pVB->m_Format.m_HasTexCoords)
         {
-            // add texture coordinates data to buffer
-            uv.m_X = 1.0f / i;
-            uv.m_Y = 1.0f;
+            // is the first point to calculate?
+            if (!i)
+            {
+                // add texture coordinates data to buffer
+                uv.m_X = 0.0f;
+                uv.m_Y = 1.0f;
+            }
+            else
+            {
+                // add texture coordinates data to buffer
+                uv.m_X = 1.0f / (float)i;
+                uv.m_Y = 1.0f;
+            }
         }
 
         // add the vertex to the buffer
@@ -1668,29 +1688,15 @@ CSR_MDL* csrMDLCreate(const CSR_Buffer*           pBuffer,
                     }
                 }
 
-                // create new OpenGL texture
-                glGenTextures(1, &pMDL->m_pTexture[i].m_TextureID);
-                glBindTexture(GL_TEXTURE_2D, pMDL->m_pTexture[i].m_TextureID);
-
-                // set texture filtering
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-                // set texture wrapping mode
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-                // generate texture from bitmap data. NOTE MDL textures are always provided in 24 bit RGB
-                glTexImage2D(GL_TEXTURE_2D,
-                             0,
-                             GL_RGB,
-                             pPixelBuffer->m_Width,
-                             pPixelBuffer->m_Height,
-                             0,
-                             GL_RGB,
-                             GL_UNSIGNED_BYTE,
-                             pPixelBuffer->m_pData);
+                // create a GPU texture for the model
+                pMDL->m_pTexture[i].m_TextureID = csrTextureFromPixelBuffer(pPixelBuffer);
             }
+            else
+                // texture isn't used
+                pMDL->m_pTexture[i].m_TextureID = M_CSR_Error_Code;
+
+            // the mdl file contains no bump map. This may be used later, but for now it's unused
+            pMDL->m_pTexture[i].m_BumpMapID = M_CSR_Error_Code;
 
             // release the pixel buffer
             csrPixelBufferRelease(pPixelBuffer);
@@ -1867,8 +1873,13 @@ void csrMDLRelease(CSR_MDL* pMDL)
     {
         // delete each texture
         for (i = 0; i < pMDL->m_TextureCount; ++i)
+        {
             if (pMDL->m_pTexture[i].m_TextureID != M_CSR_Error_Code)
                 glDeleteTextures(1, &pMDL->m_pTexture[i].m_TextureID);
+
+            if (pMDL->m_pTexture[i].m_BumpMapID != M_CSR_Error_Code)
+                glDeleteTextures(1, &pMDL->m_pTexture[i].m_BumpMapID);
+        }
 
         // free the textures
         free(pMDL->m_pTexture);
@@ -3266,7 +3277,7 @@ int csrWaveFrontBuildFace(const CSR_WavefrontVertex*   pVertex,
             else
             {
                 // otherwise configure the default culling
-                pVB->m_Culling.m_Type = CSR_CT_None;
+                pVB->m_Culling.m_Type = CSR_CT_Back;
                 pVB->m_Culling.m_Face = CSR_CF_CW;
             }
 
@@ -3308,28 +3319,35 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
 {
     size_t i;
     size_t faceStride;
+    size_t normalOffset;
+    size_t uvOffset;
     size_t dataIndex;
     int    baseVertexIndex;
     int    baseNormalIndex;
     int    baseUVIndex;
 
-    faceStride = 1;
+    // calculate the normal and uv offsets. Be careful, the face values follows one each other in
+    // the file, without distinction, so the correct format (v, v/n, v/f or v/n/f) should be
+    // determined and used
+    normalOffset = (pNormal && pNormal->m_Count) ? 1                : 0;
+    uvOffset     = (pUV     && pUV->m_Count)     ? normalOffset + 1 : 0;
 
     // wavefront faces are organized as triangle fan, so get the first vertex
     // and build all others from it
     baseVertexIndex = (pFace->m_pData[0] - 1) * 3;
+    faceStride      = 1;
 
     // get the first normal
     if (pNormal->m_Count)
     {
-        baseNormalIndex = (pFace->m_pData[1] - 1) * 3;
+        baseNormalIndex = (pFace->m_pData[normalOffset] - 1) * 3;
         ++faceStride;
     }
 
     // get the first texture coordinate
     if (pUV->m_Count)
     {
-        baseUVIndex = (pFace->m_pData[2] - 1) * 2;
+        baseUVIndex = (pFace->m_pData[uvOffset] - 1) * 2;
         ++faceStride;
     }
 
@@ -3376,9 +3394,9 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
                              pVB);
 
         // build polygon vertex 2
-        vertexIndex =                                (pFace->m_pData[ i * faceStride]      - 1) * 3;
-        normalIndex = pVB->m_Format.m_HasNormal    ? (pFace->m_pData[(i * faceStride) + 1] - 1) * 3 : 0;
-        uvIndex     = pVB->m_Format.m_HasTexCoords ? (pFace->m_pData[(i * faceStride) + 2] - 1) * 2 : 0;
+        vertexIndex =                                (pFace->m_pData[ i * faceStride]                 - 1) * 3;
+        normalIndex = pVB->m_Format.m_HasNormal    ? (pFace->m_pData[(i * faceStride) + normalOffset] - 1) * 3 : 0;
+        uvIndex     = pVB->m_Format.m_HasTexCoords ? (pFace->m_pData[(i * faceStride) + uvOffset]     - 1) * 2 : 0;
 
         // set vertex data
         vertex.m_X = pVertex->m_pData[vertexIndex];
@@ -3411,9 +3429,9 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
                             pVB);
 
         // build polygon vertex 3
-        vertexIndex =                                (pFace->m_pData[ (i + 1) * faceStride]      - 1) * 3;
-        normalIndex = pVB->m_Format.m_HasNormal    ? (pFace->m_pData[((i + 1) * faceStride) + 1] - 1) * 3 : 0;
-        uvIndex     = pVB->m_Format.m_HasTexCoords ? (pFace->m_pData[((i + 1) * faceStride) + 2] - 1) * 2 : 0;
+        vertexIndex =                                (pFace->m_pData[ (i + 1) * faceStride]                 - 1) * 3;
+        normalIndex = pVB->m_Format.m_HasNormal    ? (pFace->m_pData[((i + 1) * faceStride) + normalOffset] - 1) * 3 : 0;
+        uvIndex     = pVB->m_Format.m_HasTexCoords ? (pFace->m_pData[((i + 1) * faceStride) + uvOffset]     - 1) * 2 : 0;
 
         // set vertex data
         vertex.m_X = pVertex->m_pData[vertexIndex];
@@ -3445,5 +3463,263 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
                             fOnGetVertexColor,
                             pVB);
     }
+}
+//---------------------------------------------------------------------------
+// Landscape creation functions
+//---------------------------------------------------------------------------
+int csrLandscapeGenerateVertices(const CSR_PixelBuffer* pPixelBuffer,
+                                       float            height,
+                                       float            scale,
+                                       CSR_Buffer*      pVertices)
+{
+    size_t x;
+    size_t z;
+    float  scaleX;
+    float  scaleZ;
+
+    // validate the inputs
+    if (!pPixelBuffer || height <= 0.0f || scale == 0.0f || !pVertices)
+        return 0;
+
+    // calculate lansdcape data size and reserve memory for landscape mesh
+    pVertices->m_Length = pPixelBuffer->m_Width * pPixelBuffer->m_Height;
+    pVertices->m_pData  = malloc(pVertices->m_Length * sizeof(CSR_Vector3));
+
+    // calculate scaling factor on x and z axis
+    scaleX = -(((pPixelBuffer->m_Width  - 1) * scale) / 2.0f);
+    scaleZ =  (((pPixelBuffer->m_Height - 1) * scale) / 2.0f);
+
+    // loop through heightfield points and calculate coordinates for each point
+    for (z = 0; z < pPixelBuffer->m_Height; ++z)
+        for (x = 0; x < pPixelBuffer->m_Width; ++x)
+        {
+            // calculate vertex index
+            size_t index = (z * pPixelBuffer->m_Height) + x;
+            float  value = (float)(((unsigned char*)pPixelBuffer->m_pData)[index * 3]) / 255.0f;
+
+            // calculate landscape vertex
+            ((CSR_Vector3*)pVertices->m_pData)[index].m_X = scaleX + ((float)x * scale);
+            ((CSR_Vector3*)pVertices->m_pData)[index].m_Y = value  * height;
+            ((CSR_Vector3*)pVertices->m_pData)[index].m_Z = scaleZ - ((float)z * scale);
+        }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
+CSR_Mesh* csrLandscapeCreate(const CSR_PixelBuffer*      pPixelBuffer,
+                                   float                 height,
+                                   float                 scale,
+                             const CSR_VertexFormat*     pVertFormat,
+                             const CSR_VertexCulling*    pVertCulling,
+                             const CSR_Material*         pMaterial,
+                             const CSR_fOnGetVertexColor fOnGetVertexColor)
+{
+    CSR_Mesh*   pMesh;
+    CSR_Buffer  vertices;
+    unsigned    x;
+    unsigned    z;
+    CSR_Vector3 v1;
+    CSR_Vector3 v2;
+    CSR_Vector3 v3;
+    CSR_Vector3 v4;
+    CSR_Vector3 n1;
+    CSR_Vector3 n2;
+    CSR_Vector2 uv1;
+    CSR_Vector2 uv2;
+    CSR_Vector2 uv3;
+    CSR_Vector2 uv4;
+    CSR_Plane   p1;
+    CSR_Plane   p2;
+
+    // validate the inputs
+    if (!pPixelBuffer || height <= 0.0f || scale == 0.0f)
+        return 0;
+
+    // create a mesh to contain the landscape
+    pMesh = csrMeshCreate();
+
+    // succeeded?
+    if (!pMesh)
+        return 0;
+
+    // create a new vertex buffer to contain the landscape
+    pMesh->m_Count = 1;
+    pMesh->m_pVB   = (CSR_VertexBuffer*)malloc(sizeof(CSR_VertexBuffer));
+
+    // succeeded?
+    if (!pMesh->m_pVB)
+    {
+        csrMeshRelease(pMesh);
+        return 0;
+    }
+
+    // initialize the newly created vertex buffer
+    csrVertexBufferInit(pMesh->m_pVB);
+
+    // apply the user wished vertex format
+    if (pVertFormat)
+        pMesh->m_pVB->m_Format = *pVertFormat;
+
+    // apply the user wished vertex culling
+    if (pVertCulling)
+        pMesh->m_pVB->m_Culling = *pVertCulling;
+    else
+    {
+        // otherwise configure the default culling
+        pMesh->m_pVB->m_Culling.m_Type = CSR_CT_None;
+        pMesh->m_pVB->m_Culling.m_Face = CSR_CF_CW;
+    }
+
+    // apply the user wished material
+    if (pMaterial)
+        pMesh->m_pVB->m_Material = *pMaterial;
+
+    // set the vertex format type
+    pMesh->m_pVB->m_Format.m_Type = CSR_VT_Triangles;
+
+    // calculate the stride
+    csrVertexFormatCalculateStride(&pMesh->m_pVB->m_Format);
+
+    // generate landscape XYZ vertex from grayscale image
+    if (!csrLandscapeGenerateVertices(pPixelBuffer, height, scale, &vertices))
+    {
+        csrMeshRelease(pMesh);
+        return 0;
+    }
+
+    // loop through landscape XYZ vertices and generate mesh polygons
+    for (z = 0; z < pPixelBuffer->m_Height - 1; ++z)
+        for (x = 0; x < pPixelBuffer->m_Width - 1; ++x)
+        {
+            // polygons are generated in the following order:
+            // v1 -- v2
+            //     /
+            //    /
+            // v3 -- v4
+
+            unsigned index;
+            unsigned i1;
+            unsigned i2;
+            unsigned i3;
+            unsigned i4;
+
+            // calculate vertex index
+            index = (z * pPixelBuffer->m_Height) + x;
+
+            // calculate first vertex
+            v1.m_X = ((CSR_Vector3*)vertices.m_pData)[index].m_X;
+            v1.m_Y = ((CSR_Vector3*)vertices.m_pData)[index].m_Y;
+            v1.m_Z = ((CSR_Vector3*)vertices.m_pData)[index].m_Z;
+
+            // calculate second vertex
+            v2.m_X = ((CSR_Vector3*)vertices.m_pData)[index + 1].m_X;
+            v2.m_Y = ((CSR_Vector3*)vertices.m_pData)[index + 1].m_Y;
+            v2.m_Z = ((CSR_Vector3*)vertices.m_pData)[index + 1].m_Z;
+
+            i1 = index;
+            i2 = index + 1;
+
+            // calculate next vertex index
+            index = ((z + 1) * pPixelBuffer->m_Height) + x;
+
+            // calculate third vertex
+            v3.m_X = ((CSR_Vector3*)vertices.m_pData)[index].m_X;
+            v3.m_Y = ((CSR_Vector3*)vertices.m_pData)[index].m_Y;
+            v3.m_Z = ((CSR_Vector3*)vertices.m_pData)[index].m_Z;
+
+            // calculate fourth vertex
+            v4.m_X = ((CSR_Vector3*)vertices.m_pData)[index + 1].m_X;
+            v4.m_Y = ((CSR_Vector3*)vertices.m_pData)[index + 1].m_Y;
+            v4.m_Z = ((CSR_Vector3*)vertices.m_pData)[index + 1].m_Z;
+
+            i3 = index;
+            i4 = index + 1;
+
+            // do include normals?
+            if (pMesh->m_pVB->m_Format.m_HasNormal)
+            {
+                // calculate polygons planes
+                csrPlaneFromPoints(&v1, &v2, &v3, &p1);
+                csrPlaneFromPoints(&v2, &v3, &v4, &p2);
+
+                // get first normal
+                n1.m_X = p1.m_A;
+                n1.m_Y = p1.m_B;
+                n1.m_Z = p1.m_C;
+
+                // get second normal
+                n2.m_X = p2.m_A;
+                n2.m_Y = p2.m_B;
+                n2.m_Z = p2.m_C;
+            }
+
+            // do include colors?
+            if (pMesh->m_pVB->m_Format.m_HasPerVertexColor)
+            {
+                // generate texture coordinates
+                uv1.m_X = (float)(x)     / (float)(pPixelBuffer->m_Width);
+                uv1.m_Y = (float)(z)     / (float)(pPixelBuffer->m_Height);
+                uv2.m_X = (float)(x + 1) / (float)(pPixelBuffer->m_Width);
+                uv2.m_Y = (float)(z)     / (float)(pPixelBuffer->m_Height);
+                uv3.m_X = (float)(x)     / (float)(pPixelBuffer->m_Width);
+                uv3.m_Y = (float)(z + 1) / (float)(pPixelBuffer->m_Height);
+                uv4.m_X = (float)(x + 1) / (float)(pPixelBuffer->m_Width);
+                uv4.m_Y = (float)(z + 1) / (float)(pPixelBuffer->m_Height);
+            }
+
+            // add first polygon first vertex to buffer
+            csrVertexBufferAdd(&v1,
+                               &n1,
+                               &uv1,
+                                i1,
+                                fOnGetVertexColor,
+                                pMesh->m_pVB);
+
+            // add first polygon second vertex to buffer
+            csrVertexBufferAdd(&v2,
+                               &n1,
+                               &uv2,
+                                i2,
+                                fOnGetVertexColor,
+                                pMesh->m_pVB);
+
+            // add first polygon third vertex to buffer
+            csrVertexBufferAdd(&v3,
+                               &n1,
+                               &uv3,
+                                i3,
+                                fOnGetVertexColor,
+                                pMesh->m_pVB);
+
+            // add second polygon first vertex to buffer
+            csrVertexBufferAdd(&v2,
+                               &n2,
+                               &uv2,
+                                i2,
+                                fOnGetVertexColor,
+                                pMesh->m_pVB);
+
+            // add second polygon second vertex to buffer
+            csrVertexBufferAdd(&v3,
+                               &n2,
+                               &uv3,
+                                i3,
+                                fOnGetVertexColor,
+                                pMesh->m_pVB);
+
+            // add second polygon third vertex to buffer
+            csrVertexBufferAdd(&v4,
+                               &n2,
+                               &uv4,
+                                i4,
+                                fOnGetVertexColor,
+                                pMesh->m_pVB);
+        }
+
+    // delete landscape XYZ vertices (no longer used as copied in mesh)
+    if (vertices.m_Length)
+        free(vertices.m_pData);
+
+    return pMesh;
 }
 //---------------------------------------------------------------------------
