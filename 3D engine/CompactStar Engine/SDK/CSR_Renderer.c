@@ -701,6 +701,17 @@ void csrDrawMesh(const CSR_Mesh*   pMesh,
             }
         }
 
+        // a cube map is defined for this mesh?
+        if (pMesh->m_Shader.m_CubeMapID != M_CSR_Error_Code)
+        {
+            // select the texture sampler to use (GL_TEXTURE0 for cubemap textures)
+            //glActiveTexture(GL_TEXTURE0);
+            //glUniform1i(pShader->m_CubemapSlot, GL_TEXTURE0);
+
+            // bind the cubemap texure to use
+            glBindTexture(GL_TEXTURE_CUBE_MAP, pMesh->m_Shader.m_CubeMapID);
+        }
+
         // draw the next mesh vertex buffer
         csrDrawVertexBuffer(&pMesh->m_pVB[i], pShader, pMatrixArray);
     }

@@ -261,9 +261,13 @@ void csrMeshRelease(CSR_Mesh* pMesh)
     if (pMesh->m_Shader.m_TextureID != M_CSR_Error_Code)
         glDeleteTextures(1, &pMesh->m_Shader.m_TextureID);
 
-    // delete the bump map
+    // delete the bumpmap
     if (pMesh->m_Shader.m_BumpMapID != M_CSR_Error_Code)
         glDeleteTextures(1, &pMesh->m_Shader.m_BumpMapID);
+
+    // delete the cubemap
+    if (pMesh->m_Shader.m_CubeMapID != M_CSR_Error_Code)
+        glDeleteTextures(1, &pMesh->m_Shader.m_CubeMapID);
 
     // free the static mesh content
     if (pMesh->m_pVB)

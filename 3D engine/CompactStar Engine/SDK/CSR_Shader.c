@@ -73,6 +73,7 @@ void csrShaderInit(CSR_Shader* pShader)
     pShader->m_TexCoordSlot = -1;
     pShader->m_TextureSlot  = -1;
     pShader->m_BumpMapSlot  = -1;
+    pShader->m_CubemapSlot  = -1;
     pShader->m_ColorSlot    = -1;
     pShader->m_ModelSlot    = -1;
 }

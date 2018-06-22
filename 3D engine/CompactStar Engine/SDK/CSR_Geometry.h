@@ -533,6 +533,15 @@ typedef struct
         */
         void csrMat4RotationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ);
 
+        /**
+        * Gets the x, y and z scaling factor from a matrix
+        *@param pM - matrix
+        *@param[out] pX - factor on x axis
+        *@param[out] pY - factor on y axis
+        *@param[out] pZ - factor on z axis
+        */
+        void csrMat4ScalingFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ);
+
         //-------------------------------------------------------------------
         // Quaternion functions
         //-------------------------------------------------------------------

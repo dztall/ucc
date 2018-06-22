@@ -361,10 +361,10 @@ typedef struct
         *@return 1 on success, otherwise 0
         *@note The data will always be written on the buffer end
         */
-        int csrBufferWrite(      CSR_Buffer* pBuffer,
-                           const void*       pData,
-                                 size_t      length,
-                                 size_t      count);
+        int csrBufferWrite(CSR_Buffer* pBuffer,
+                     const void*       pData,
+                           size_t      length,
+                           size_t      count);
 
         //-------------------------------------------------------------------
         // File functions

@@ -347,7 +347,7 @@ void csrSceneItemDraw(const CSR_Scene*        pScene,
 
     // connect view matrix to shader
     if (slot >= 0)
-        glUniformMatrix4fv(slot, 1, 0, &pScene->m_Matrix.m_Table[0][0]);
+        glUniformMatrix4fv(slot, 1, 0, &pScene->m_ViewMatrix.m_Table[0][0]);
 
     // draw the model
     switch (pItem->m_Type)
@@ -614,6 +614,10 @@ void csrSceneRelease(CSR_Scene* pScene)
     if (!pScene)
         return;
 
+    // do free the skybox?
+    if (pScene->m_pSkybox)
+        csrMeshRelease(pScene->m_pSkybox);
+
     // do free the normal items content?
     if (pScene->m_pItem)
     {
@@ -654,13 +658,14 @@ void csrSceneInit(CSR_Scene* pScene)
     pScene->m_GroundDir.m_X        =  0.0f;
     pScene->m_GroundDir.m_Y        = -1.0f;
     pScene->m_GroundDir.m_Z        =  0.0f;
+    pScene->m_pSkybox              =  0;
     pScene->m_pItem                =  0;
     pScene->m_ItemCount            =  0;
     pScene->m_pTransparentItem     =  0;
     pScene->m_TransparentItemCount =  0;
 
     // set the default item matrix to identity
-    csrMat4Identity(&pScene->m_Matrix);
+    csrMat4Identity(&pScene->m_ViewMatrix);
 }
 //---------------------------------------------------------------------------
 CSR_SceneItem* csrSceneAddMesh(CSR_Scene* pScene, CSR_Mesh* pMesh, int transparent, int aabb)
@@ -1192,6 +1197,63 @@ void csrSceneDraw(const CSR_Scene* pScene, const CSR_SceneContext* pContext)
         pContext->m_fOnSceneBegin(pScene, pContext);
     else
         csrDrawBegin(&pScene->m_Color);
+
+    // do draw the skybox?
+    if (pScene->m_pSkybox)
+    {
+        CSR_Shader* pShader = 0;
+
+        // get the shader to use with the skybox
+        if (pContext->m_fOnGetShader)
+            pShader = pContext->m_fOnGetShader(pScene->m_pSkybox, CSR_MT_Mesh);
+
+        // found one?
+        if (pShader)
+        {
+            GLint slot;
+
+            // disable the depth buffer writing
+            glDepthMask(GL_FALSE);
+
+            // enable the skybox shader
+            csrShaderEnable(pShader);
+
+            // get the projection matrix slot from shader
+            slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uProjection");
+
+            // connect projection matrix to shader
+            if (slot >= 0)
+                glUniformMatrix4fv(slot, 1, 0, &pScene->m_ProjectionMatrix.m_Table[0][0]);
+
+            // get the view matrix slot from shader
+            slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uView");
+
+            // connect view matrix to shader
+            if (slot >= 0)
+            {
+                // copy the view matrix
+                CSR_Matrix4 skyboxViewMatrix;
+                memcpy(&skyboxViewMatrix, &pScene->m_ViewMatrix.m_Table, sizeof(CSR_Matrix4));
+
+                // remove the translation values from the view matrix
+                skyboxViewMatrix.m_Table[3][0] = 0.0f;
+                skyboxViewMatrix.m_Table[3][1] = 0.0f;
+                skyboxViewMatrix.m_Table[3][2] = 0.0f;
+
+                // apply the untranslated scene matrix
+                glUniformMatrix4fv(slot, 1, 0, &skyboxViewMatrix.m_Table[0][0]);
+            }
+
+            // draw the skybox
+            csrDrawMesh(pScene->m_pSkybox, pShader, 0);
+
+            // disable the item shader
+            csrShaderEnable(pShader);
+
+            // enable the depth buffer writing again
+            glDepthMask(GL_TRUE);
+        }
+    }
 
     // first draw the standard models
     for (i = 0; i < pScene->m_ItemCount; ++i)
