@@ -249,12 +249,12 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@return mesh containing the surface, 0 on error
         *@note The mesh must be released when no longer used, see csrMeshRelease()
         */
-        CSR_Mesh* csrShapeCreateSurface(      float                 width,
-                                              float                 height,
-                                        const CSR_VertexFormat*     pVertFormat,
-                                        const CSR_VertexCulling*    pVertCulling,
-                                        const CSR_Material*         pMaterial,
-                                        const CSR_fOnGetVertexColor fOnGetVertexColor);
+        CSR_Mesh* csrShapeCreateSurface(float                 width,
+                                        float                 height,
+                                  const CSR_VertexFormat*     pVertFormat,
+                                  const CSR_VertexCulling*    pVertCulling,
+                                  const CSR_Material*         pMaterial,
+                                  const CSR_fOnGetVertexColor fOnGetVertexColor);
 
         /**
         * Creates a box
@@ -266,17 +266,17 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@param pVertCulling - mesh vertex culling, if 0 the default culling will be used
         *@param pMaterial - mesh material, if 0 the default material will be used
         *@param fOnGetVertexColor - get vertex color callback function to use, 0 if not used
-        *@return mesh containing the surface, 0 on error
+        *@return mesh containing the box, 0 on error
         *@note The mesh must be released when no longer used, see csrMeshRelease()
         */
-        CSR_Mesh* csrShapeCreateBox(      float                 width,
-                                          float                 height,
-                                          float                 depth,
-                                          int                   repeatTexOnEachFace,
-                                    const CSR_VertexFormat*     pVertFormat,
-                                    const CSR_VertexCulling*    pVertCulling,
-                                    const CSR_Material*         pMaterial,
-                                    const CSR_fOnGetVertexColor fOnGetVertexColor);
+        CSR_Mesh* csrShapeCreateBox(float                 width,
+                                    float                 height,
+                                    float                 depth,
+                                    int                   repeatTexOnEachFace,
+                              const CSR_VertexFormat*     pVertFormat,
+                              const CSR_VertexCulling*    pVertCulling,
+                              const CSR_Material*         pMaterial,
+                              const CSR_fOnGetVertexColor fOnGetVertexColor);
 
         /**
         * Creates a sphere
@@ -290,13 +290,13 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@return mesh containing the sphere, 0 on error
         *@note The mesh must be released when no longer used, see csrMeshRelease()
         */
-        CSR_Mesh* csrShapeCreateSphere(      float                 radius,
-                                             int                   slices,
-                                             int                   stacks,
-                                       const CSR_VertexFormat*     pVertFormat,
-                                       const CSR_VertexCulling*    pVertCulling,
-                                       const CSR_Material*         pMaterial,
-                                       const CSR_fOnGetVertexColor fOnGetVertexColor);
+        CSR_Mesh* csrShapeCreateSphere(float                 radius,
+                                       int                   slices,
+                                       int                   stacks,
+                                 const CSR_VertexFormat*     pVertFormat,
+                                 const CSR_VertexCulling*    pVertCulling,
+                                 const CSR_Material*         pMaterial,
+                                 const CSR_fOnGetVertexColor fOnGetVertexColor);
 
         /**
         * Creates a cylinder
@@ -310,13 +310,13 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@return mesh containing the cylinder, 0 on error
         *@note The mesh must be released when no longer used, see csrMeshRelease()
         */
-        CSR_Mesh* csrShapeCreateCylinder(      float                 radius,
-                                               float                 height,
-                                               int                   faces,
-                                         const CSR_VertexFormat*     pVertFormat,
-                                         const CSR_VertexCulling*    pVertCulling,
-                                         const CSR_Material*         pMaterial,
-                                         const CSR_fOnGetVertexColor fOnGetVertexColor);
+        CSR_Mesh* csrShapeCreateCylinder(float                 radius,
+                                         float                 height,
+                                         int                   faces,
+                                   const CSR_VertexFormat*     pVertFormat,
+                                   const CSR_VertexCulling*    pVertCulling,
+                                   const CSR_Material*         pMaterial,
+                                   const CSR_fOnGetVertexColor fOnGetVertexColor);
 
         /**
         * Creates a disk
@@ -331,14 +331,14 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@return mesh containing the disk, 0 on error
         *@note The mesh must be released when no longer used, see csrMeshRelease()
         */
-        CSR_Mesh* csrShapeCreateDisk(      float                 centerX,
-                                           float                 centerY,
-                                           float                 radius,
-                                           unsigned              slices,
-                                     const CSR_VertexFormat*     pVertFormat,
-                                     const CSR_VertexCulling*    pVertCulling,
-                                     const CSR_Material*         pMaterial,
-                                     const CSR_fOnGetVertexColor fOnGetVertexColor);
+        CSR_Mesh* csrShapeCreateDisk(float                 centerX,
+                                     float                 centerY,
+                                     float                 radius,
+                                     unsigned              slices,
+                               const CSR_VertexFormat*     pVertFormat,
+                               const CSR_VertexCulling*    pVertCulling,
+                               const CSR_Material*         pMaterial,
+                               const CSR_fOnGetVertexColor fOnGetVertexColor);
 
         /**
         * Creates a ring
@@ -354,15 +354,15 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@return mesh containing the ring, 0 on error
         *@note The mesh must be released when no longer used, see csrMeshRelease()
         */
-        CSR_Mesh* csrShapeCreateRing(      float                 centerX,
-                                           float                 centerY,
-                                           float                 minRadius,
-                                           float                 maxRadius,
-                                           unsigned              slices,
-                                     const CSR_VertexFormat*     pVertFormat,
-                                     const CSR_VertexCulling*    pVertCulling,
-                                     const CSR_Material*         pMaterial,
-                                     const CSR_fOnGetVertexColor fOnGetVertexColor);
+        CSR_Mesh* csrShapeCreateRing(float                 centerX,
+                                     float                 centerY,
+                                     float                 minRadius,
+                                     float                 maxRadius,
+                                     unsigned              slices,
+                               const CSR_VertexFormat*     pVertFormat,
+                               const CSR_VertexCulling*    pVertCulling,
+                               const CSR_Material*         pMaterial,
+                               const CSR_fOnGetVertexColor fOnGetVertexColor);
 
         /**
         * Creates a spiral
@@ -382,19 +382,33 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@return mesh containing the spiral, 0 on error
         *@note The mesh must be released when no longer used, see csrMeshRelease()
         */
-        CSR_Mesh* csrShapeCreateSpiral(      float                 centerX,
-                                             float                 centerY,
-                                             float                 minRadius,
-                                             float                 maxRadius,
-                                             float                 deltaMin,
-                                             float                 deltaMax,
-                                             float                 deltaZ,
-                                             unsigned              slices,
-                                             unsigned              stacks,
-                                       const CSR_VertexFormat*     pVertFormat,
-                                       const CSR_VertexCulling*    pVertCulling,
-                                       const CSR_Material*         pMaterial,
-                                       const CSR_fOnGetVertexColor fOnGetVertexColor);
+        CSR_Mesh* csrShapeCreateSpiral(float                 centerX,
+                                       float                 centerY,
+                                       float                 minRadius,
+                                       float                 maxRadius,
+                                       float                 deltaMin,
+                                       float                 deltaMax,
+                                       float                 deltaZ,
+                                       unsigned              slices,
+                                       unsigned              stacks,
+                                 const CSR_VertexFormat*     pVertFormat,
+                                 const CSR_VertexCulling*    pVertCulling,
+                                 const CSR_Material*         pMaterial,
+                                 const CSR_fOnGetVertexColor fOnGetVertexColor);
+
+        //-------------------------------------------------------------------
+        // Skybox functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Creates a skybox
+        *@param width - skybox width (on the x axis)
+        *@param height - skybox height (on the y axis)
+        *@param depth - skybox depth (on the z axis)
+        *@return mesh containing the skybox, 0 on error
+        *@note The mesh must be released when no longer used, see csrMeshRelease()
+        */
+        CSR_Mesh* csrSkyboxCreate(float width, float height, float depth);
 
         //-------------------------------------------------------------------
         // Model functions

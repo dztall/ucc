@@ -502,23 +502,23 @@ void csrMat4RotationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ)
 {
     float rx;
     float ry;
-    float C;
+    float c;
 
     // calculate the y angle
     *pY = asin(pM->m_Table[2][0]);
-     C  = cos(*pY);
+     c  = cos(*pY);
 
     // gimbal lock?
-    if (fabs(C) > 0.0005f)
+    if (fabs(c) > 0.0005f)
     {
         // calculate the x angle
-         rx =  pM->m_Table[2][2] / C;
-         ry = -pM->m_Table[2][1] / C;
+         rx =  pM->m_Table[2][2] / c;
+         ry = -pM->m_Table[2][1] / c;
         *pX =  atan2(ry, rx);
 
         // calculate the z angle
-         rx =  pM->m_Table[0][0] / C;
-         ry = -pM->m_Table[1][0] / C;
+         rx =  pM->m_Table[0][0] / c;
+         ry = -pM->m_Table[1][0] / c;
         *pZ =  atan2(ry, rx);
     }
     else
@@ -536,6 +536,29 @@ void csrMat4RotationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ)
     *pX = fmod(*pX, M_PI);
     *pY = fmod(*pY, M_PI);
     *pZ = fmod(*pZ, M_PI);
+}
+//---------------------------------------------------------------------------
+void csrMat4ScalingFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ)
+{
+    CSR_Vector3 vX;
+    CSR_Vector3 vY;
+    CSR_Vector3 vZ;
+
+    vX.m_X = pM->m_Table[0][0];
+    vX.m_Y = pM->m_Table[1][0];
+    vX.m_Z = pM->m_Table[2][0];
+
+    vY.m_X = pM->m_Table[0][1];
+    vY.m_Y = pM->m_Table[1][1];
+    vY.m_Z = pM->m_Table[2][1];
+
+    vZ.m_X = pM->m_Table[0][2];
+    vZ.m_Y = pM->m_Table[1][2];
+    vZ.m_Z = pM->m_Table[2][2];
+
+    csrVec3Length(&vX, pX);
+    csrVec3Length(&vY, pY);
+    csrVec3Length(&vZ, pZ);
 }
 //---------------------------------------------------------------------------
 // Quaternion functions

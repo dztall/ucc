@@ -100,8 +100,10 @@ typedef struct
 typedef struct
 {
     CSR_Color        m_Color;                // the scene background color
-    CSR_Matrix4      m_Matrix;               // the scene view matrix
+    CSR_Matrix4      m_ProjectionMatrix;     // the scene projection matrix
+    CSR_Matrix4      m_ViewMatrix;           // the scene view matrix
     CSR_Vector3      m_GroundDir;            // the ground direction in the whole scene
+    CSR_Mesh*        m_pSkybox;              // skybox geometry (because there is only one skybox per scene)
     CSR_SceneItem*   m_pItem;                // the items in this list will be drawn in the scene
     size_t           m_ItemCount;            // number of items
     CSR_SceneItem*   m_pTransparentItem;     // the items in this list will be drawn on the scene end, allowing transparency

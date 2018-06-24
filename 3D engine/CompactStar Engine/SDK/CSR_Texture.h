@@ -90,6 +90,7 @@ typedef struct
 {
     GLuint m_TextureID;
     GLuint m_BumpMapID;
+    GLuint m_CubeMapID;
 } CSR_TextureShader;
 
 #ifdef __cplusplus
@@ -195,6 +196,17 @@ typedef struct
         *@param[in, out] pTextureShader - texture shader to initialize
         */
         void csrTextureShaderInit(CSR_TextureShader* pTextureShader);
+
+        //-------------------------------------------------------------------
+        // Cubemap functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Loads a cubemap texture from 6 images containing each faces on the GPU
+        *@param pFileNames - face textures file names
+        *@return loaded texture index, M_CSR_Error_Code on error
+        */
+        GLuint csrCubemapLoad(const char** pFileNames);
 
 #ifdef __cplusplus
     }
