@@ -627,11 +627,8 @@ void csrDrawVertexBuffer(const CSR_VertexBuffer* pVB,
             {
                 // connect the model matrix to the shader
                 glUniformMatrix4fv(slot,
-
                                    1,
-
                                    0,
-
                                    &((CSR_Matrix4*)pMatrixArray->m_pItem[i].m_pData)->m_Table[0][0]);
 
                 // draw the next buffer
@@ -639,7 +636,7 @@ void csrDrawVertexBuffer(const CSR_VertexBuffer* pVB,
             }
     }
     else
-        // no, draw the buffer
+        // no, simply draw the buffer without worrying about the model matrix
         csrDrawArray(pVB, vertexCount);
 
     // disable vertices slots from shader
@@ -702,6 +699,17 @@ void csrDrawMesh(const CSR_Mesh*   pMesh,
                 // bind the texure to use
                 glBindTexture(GL_TEXTURE_2D, pMesh->m_Shader.m_BumpMapID);
             }
+        }
+
+        // a cube map is defined for this mesh?
+        if (pMesh->m_Shader.m_CubeMapID != M_CSR_Error_Code)
+        {
+            // select the texture sampler to use (GL_TEXTURE0 for cubemap textures)
+            //glActiveTexture(GL_TEXTURE0);
+            //glUniform1i(pShader->m_CubemapSlot, GL_TEXTURE0);
+
+            // bind the cubemap texure to use
+            glBindTexture(GL_TEXTURE_CUBE_MAP, pMesh->m_Shader.m_CubeMapID);
         }
 
         // draw the next mesh vertex buffer

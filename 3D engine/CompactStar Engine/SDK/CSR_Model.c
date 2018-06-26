@@ -283,12 +283,12 @@ unsigned char g_ColorTable[] =
 //---------------------------------------------------------------------------
 // Shape functions
 //---------------------------------------------------------------------------
-CSR_Mesh* csrShapeCreateSurface(      float                 width,
-                                      float                 height,
-                                const CSR_VertexFormat*     pVertFormat,
-                                const CSR_VertexCulling*    pVertCulling,
-                                const CSR_Material*         pMaterial,
-                                const CSR_fOnGetVertexColor fOnGetVertexColor)
+CSR_Mesh* csrShapeCreateSurface(float                 width,
+                                float                 height,
+                          const CSR_VertexFormat*     pVertFormat,
+                          const CSR_VertexCulling*    pVertCulling,
+                          const CSR_Material*         pMaterial,
+                          const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
     int         i;
     int         index;
@@ -401,14 +401,14 @@ CSR_Mesh* csrShapeCreateSurface(      float                 width,
     return pMesh;
 }
 //---------------------------------------------------------------------------
-CSR_Mesh* csrShapeCreateBox(      float                 width,
-                                  float                 height,
-                                  float                 depth,
-                                  int                   repeatTexOnEachFace,
-                            const CSR_VertexFormat*     pVertFormat,
-                            const CSR_VertexCulling*    pVertCulling,
-                            const CSR_Material*         pMaterial,
-                            const CSR_fOnGetVertexColor fOnGetVertexColor)
+CSR_Mesh* csrShapeCreateBox(float                 width,
+                            float                 height,
+                            float                 depth,
+                            int                   repeatTexOnEachFace,
+                      const CSR_VertexFormat*     pVertFormat,
+                      const CSR_VertexCulling*    pVertCulling,
+                      const CSR_Material*         pMaterial,
+                      const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
     unsigned    color;
     size_t      i;
@@ -615,13 +615,13 @@ CSR_Mesh* csrShapeCreateBox(      float                 width,
     return pMesh;
 }
 //---------------------------------------------------------------------------
-CSR_Mesh* csrShapeCreateSphere(      float                 radius,
-                                     int                   slices,
-                                     int                   stacks,
-                               const CSR_VertexFormat*     pVertFormat,
-                               const CSR_VertexCulling*    pVertCulling,
-                               const CSR_Material*         pMaterial,
-                               const CSR_fOnGetVertexColor fOnGetVertexColor)
+CSR_Mesh* csrShapeCreateSphere(float                 radius,
+                               int                   slices,
+                               int                   stacks,
+                         const CSR_VertexFormat*     pVertFormat,
+                         const CSR_VertexCulling*    pVertCulling,
+                         const CSR_Material*         pMaterial,
+                         const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
     int               i;
     int               j;
@@ -772,13 +772,13 @@ CSR_Mesh* csrShapeCreateSphere(      float                 radius,
     return pMesh;
 }
 //---------------------------------------------------------------------------
-CSR_Mesh* csrShapeCreateCylinder(      float                 radius,
-                                       float                 height,
-                                       int                   faces,
-                                 const CSR_VertexFormat*     pVertFormat,
-                                 const CSR_VertexCulling*    pVertCulling,
-                                 const CSR_Material*         pMaterial,
-                                 const CSR_fOnGetVertexColor fOnGetVertexColor)
+CSR_Mesh* csrShapeCreateCylinder(float                 radius,
+                                 float                 height,
+                                 int                   faces,
+                           const CSR_VertexFormat*     pVertFormat,
+                           const CSR_VertexCulling*    pVertCulling,
+                           const CSR_Material*         pMaterial,
+                           const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
     int         i;
     float       angle;
@@ -910,14 +910,14 @@ CSR_Mesh* csrShapeCreateCylinder(      float                 radius,
     return pMesh;
 }
 //---------------------------------------------------------------------------
-CSR_Mesh* csrShapeCreateDisk(      float                 centerX,
-                                   float                 centerY,
-                                   float                 radius,
-                                   unsigned              slices,
-                             const CSR_VertexFormat*     pVertFormat,
-                             const CSR_VertexCulling*    pVertCulling,
-                             const CSR_Material*         pMaterial,
-                             const CSR_fOnGetVertexColor fOnGetVertexColor)
+CSR_Mesh* csrShapeCreateDisk(float                 centerX,
+                             float                 centerY,
+                             float                 radius,
+                             unsigned              slices,
+                       const CSR_VertexFormat*     pVertFormat,
+                       const CSR_VertexCulling*    pVertCulling,
+                       const CSR_Material*         pMaterial,
+                       const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
     unsigned    i;
     float       x;
@@ -1032,15 +1032,15 @@ CSR_Mesh* csrShapeCreateDisk(      float                 centerX,
     return pMesh;
 }
 //---------------------------------------------------------------------------
-CSR_Mesh* csrShapeCreateRing(      float                 centerX,
-                                   float                 centerY,
-                                   float                 minRadius,
-                                   float                 maxRadius,
-                                   unsigned              slices,
-                             const CSR_VertexFormat*     pVertFormat,
-                             const CSR_VertexCulling*    pVertCulling,
-                             const CSR_Material*         pMaterial,
-                             const CSR_fOnGetVertexColor fOnGetVertexColor)
+CSR_Mesh* csrShapeCreateRing(float                 centerX,
+                             float                 centerY,
+                             float                 minRadius,
+                             float                 maxRadius,
+                             unsigned              slices,
+                       const CSR_VertexFormat*     pVertFormat,
+                       const CSR_VertexCulling*    pVertCulling,
+                       const CSR_Material*         pMaterial,
+                       const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
     unsigned    i;
     float       xA;
@@ -1180,19 +1180,19 @@ CSR_Mesh* csrShapeCreateRing(      float                 centerX,
     return pMesh;
 }
 //---------------------------------------------------------------------------
-CSR_Mesh* csrShapeCreateSpiral(      float                 centerX,
-                                     float                 centerY,
-                                     float                 minRadius,
-                                     float                 maxRadius,
-                                     float                 deltaMin,
-                                     float                 deltaMax,
-                                     float                 deltaZ,
-                                     unsigned              slices,
-                                     unsigned              stacks,
-                               const CSR_VertexFormat*     pVertFormat,
-                               const CSR_VertexCulling*    pVertCulling,
-                               const CSR_Material*         pMaterial,
-                               const CSR_fOnGetVertexColor fOnGetVertexColor)
+CSR_Mesh* csrShapeCreateSpiral(float                 centerX,
+                               float                 centerY,
+                               float                 minRadius,
+                               float                 maxRadius,
+                               float                 deltaMin,
+                               float                 deltaMax,
+                               float                 deltaZ,
+                               unsigned              slices,
+                               unsigned              stacks,
+                         const CSR_VertexFormat*     pVertFormat,
+                         const CSR_VertexCulling*    pVertCulling,
+                         const CSR_Material*         pMaterial,
+                         const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
     unsigned          i;
     unsigned          j;
@@ -1369,6 +1369,20 @@ CSR_Mesh* csrShapeCreateSpiral(      float                 centerX,
     }
 
     return pMesh;
+}
+//---------------------------------------------------------------------------
+// Skybox functions
+//---------------------------------------------------------------------------
+CSR_Mesh* csrSkyboxCreate(float width, float height, float depth)
+{
+    CSR_VertexCulling vc;
+
+    // configure the vertex culling to use with the skybox
+    vc.m_Type = CSR_CT_Back;
+    vc.m_Face = CSR_CF_CW;
+
+    // create the skybox geometry
+    return csrShapeCreateBox(width, height, depth, 0, 0, &vc, 0, 0);
 }
 //---------------------------------------------------------------------------
 // Model functions
@@ -3494,7 +3508,7 @@ int csrLandscapeGenerateVertices(const CSR_PixelBuffer* pPixelBuffer,
         for (x = 0; x < pPixelBuffer->m_Width; ++x)
         {
             // calculate vertex index
-            size_t index = (z * pPixelBuffer->m_Height) + x;
+            size_t index = (z * pPixelBuffer->m_Width) + x;
             float  value = (float)(((unsigned char*)pPixelBuffer->m_pData)[index * 3]) / 255.0f;
 
             // calculate landscape vertex
@@ -3604,7 +3618,7 @@ CSR_Mesh* csrLandscapeCreate(const CSR_PixelBuffer*      pPixelBuffer,
             unsigned i4;
 
             // calculate vertex index
-            index = (z * pPixelBuffer->m_Height) + x;
+            index = (z * pPixelBuffer->m_Width) + x;
 
             // calculate first vertex
             v1.m_X = ((CSR_Vector3*)vertices.m_pData)[index].m_X;
@@ -3620,7 +3634,7 @@ CSR_Mesh* csrLandscapeCreate(const CSR_PixelBuffer*      pPixelBuffer,
             i2 = index + 1;
 
             // calculate next vertex index
-            index = ((z + 1) * pPixelBuffer->m_Height) + x;
+            index = ((z + 1) * pPixelBuffer->m_Width) + x;
 
             // calculate third vertex
             v3.m_X = ((CSR_Vector3*)vertices.m_pData)[index].m_X;

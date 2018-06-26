@@ -339,6 +339,16 @@ void csrMat4Multiply(const CSR_Matrix4* pM1, const CSR_Matrix4* pM2, CSR_Matrix4
                                 pM1->m_Table[i][3] * pM2->m_Table[3][j];
 }
 //---------------------------------------------------------------------------
+void csrMat4Transpose(const CSR_Matrix4* pM, CSR_Matrix4* pR)
+{
+    int i;
+    int j;
+
+    for (i = 0; i < 4; ++i)
+        for (j = 0; j < 4; ++j)
+            pR->m_Table[j][i] = pM->m_Table[i][j];
+}
+//---------------------------------------------------------------------------
 void csrMat4Inverse(const CSR_Matrix4* pM, CSR_Matrix4* pR, float* pDeterminant)
 {
     float invDet;
@@ -492,23 +502,23 @@ void csrMat4RotationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ)
 {
     float rx;
     float ry;
-    float C;
+    float c;
 
     // calculate the y angle
     *pY = asin(pM->m_Table[2][0]);
-     C  = cos(*pY);
+     c  = cos(*pY);
 
     // gimbal lock?
-    if (fabs(C) > 0.0005f)
+    if (fabs(c) > 0.0005f)
     {
         // calculate the x angle
-         rx =  pM->m_Table[2][2] / C;
-         ry = -pM->m_Table[2][1] / C;
+         rx =  pM->m_Table[2][2] / c;
+         ry = -pM->m_Table[2][1] / c;
         *pX =  atan2(ry, rx);
 
         // calculate the z angle
-         rx =  pM->m_Table[0][0] / C;
-         ry = -pM->m_Table[1][0] / C;
+         rx =  pM->m_Table[0][0] / c;
+         ry = -pM->m_Table[1][0] / c;
         *pZ =  atan2(ry, rx);
     }
     else
@@ -526,6 +536,29 @@ void csrMat4RotationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ)
     *pX = fmod(*pX, M_PI);
     *pY = fmod(*pY, M_PI);
     *pZ = fmod(*pZ, M_PI);
+}
+//---------------------------------------------------------------------------
+void csrMat4ScalingFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ)
+{
+    CSR_Vector3 vX;
+    CSR_Vector3 vY;
+    CSR_Vector3 vZ;
+
+    vX.m_X = pM->m_Table[0][0];
+    vX.m_Y = pM->m_Table[1][0];
+    vX.m_Z = pM->m_Table[2][0];
+
+    vY.m_X = pM->m_Table[0][1];
+    vY.m_Y = pM->m_Table[1][1];
+    vY.m_Z = pM->m_Table[2][1];
+
+    vZ.m_X = pM->m_Table[0][2];
+    vZ.m_Y = pM->m_Table[1][2];
+    vZ.m_Z = pM->m_Table[2][2];
+
+    csrVec3Length(&vX, pX);
+    csrVec3Length(&vY, pY);
+    csrVec3Length(&vZ, pZ);
 }
 //---------------------------------------------------------------------------
 // Quaternion functions
@@ -890,6 +923,14 @@ void csrPlaneFromPoints(const CSR_Vector3* pV1,
 
     // calculate and return the plane
     csrPlaneFromPointNormal(pV1, &normal, pR);
+}
+//---------------------------------------------------------------------------
+void csrPlaneTransform(const CSR_Plane* pPlane, const CSR_Matrix4* pM, CSR_Plane* pR)
+{
+    pR->m_A = pM->m_Table[0][0] * pPlane->m_A + pM->m_Table[1][0] * pPlane->m_B + pM->m_Table[2][0] * pPlane->m_C + pM->m_Table[3][0] * pPlane->m_D;
+    pR->m_B = pM->m_Table[0][1] * pPlane->m_A + pM->m_Table[1][1] * pPlane->m_B + pM->m_Table[2][1] * pPlane->m_C + pM->m_Table[3][1] * pPlane->m_D;
+    pR->m_C = pM->m_Table[0][2] * pPlane->m_A + pM->m_Table[1][2] * pPlane->m_B + pM->m_Table[2][2] * pPlane->m_C + pM->m_Table[3][2] * pPlane->m_D;
+    pR->m_D = pM->m_Table[0][3] * pPlane->m_A + pM->m_Table[1][3] * pPlane->m_B + pM->m_Table[2][3] * pPlane->m_C + pM->m_Table[3][3] * pPlane->m_D;
 }
 //---------------------------------------------------------------------------
 void csrPlaneDistanceTo(const CSR_Vector3* pP, const CSR_Plane* pPl, float* pR)

@@ -25,6 +25,12 @@
 #include "CSR_Renderer.h"
 
 //---------------------------------------------------------------------------
+// Global defines
+//---------------------------------------------------------------------------
+
+#define M_CSR_NoGround 1.0f / 0.0f // i.e. infinite, this is the only case where a division by 0 is allowed
+
+//---------------------------------------------------------------------------
 // Enumerators
 //---------------------------------------------------------------------------
 
@@ -39,13 +45,15 @@ typedef enum
 } CSR_EModelType;
 
 /**
-* Collision type
+* Collision type (can be combinated)
 */
 typedef enum
 {
-    CSR_CT_Ignore,
-    CSR_CT_Ground,
-    CSR_CT_Edge
+    CSR_CO_None   = 0x0,
+    CSR_CO_Ground = 0x1,
+    CSR_CO_Edge   = 0x2,
+    CSR_CO_Mouse  = 0x4,
+    CSR_CO_Custom = 0x8
 } CSR_ECollisionType;
 
 /**
@@ -83,6 +91,7 @@ typedef struct
     CSR_Array*         m_pMatrixArray;  // matrices sharing the same model, e.g. all the walls of a room
     CSR_AABBNode*      m_pAABBTree;     // aligned-axis bounding box trees owned by the model
     size_t             m_AABBTreeCount; // aligned-axis bounding box tree count
+    size_t             m_AABBTreeIndex; // aligned-axis bounding box tree index to use for the collision detection
 } CSR_SceneItem;
 
 /**
@@ -90,12 +99,15 @@ typedef struct
 */
 typedef struct
 {
-    CSR_Color        m_Color;
-    CSR_Matrix4      m_Matrix;
-    CSR_SceneItem*   m_pItem;
-    size_t           m_ItemCount;
-    CSR_SceneItem*   m_pTransparentItem;
-    size_t           m_TransparentItemCount;
+    CSR_Color        m_Color;                // the scene background color
+    CSR_Matrix4      m_ProjectionMatrix;     // the scene projection matrix
+    CSR_Matrix4      m_ViewMatrix;           // the scene view matrix
+    CSR_Vector3      m_GroundDir;            // the ground direction in the whole scene
+    CSR_Mesh*        m_pSkybox;              // skybox geometry (because there is only one skybox per scene)
+    CSR_SceneItem*   m_pItem;                // the items in this list will be drawn in the scene
+    size_t           m_ItemCount;            // number of items
+    CSR_SceneItem*   m_pTransparentItem;     // the items in this list will be drawn on the scene end, allowing transparency
+    size_t           m_TransparentItemCount; // number of transparent items
 } CSR_Scene;
 
 /**
@@ -122,24 +134,41 @@ typedef struct
 } CSR_ArcBall;
 
 /**
-* Collision info
+* Hit model (for collision detection)
 */
 typedef struct
 {
-    int                m_Collision; // if 1 a collision happened, if 0 no collision happened
-    CSR_Polygon3Buffer m_Polygons;  // all the found polygons in collision
-    CSR_Array*         m_pModels;   // models owning one or several polygons in collision
-} CSR_CollisionInfo;
+    void*              m_pModel;    // the hit model
+    CSR_EModelType     m_Type;      // model type (a simple mesh, a model or a complex MDL model)
+    CSR_Matrix4        m_Matrix;    // model matrix
+    CSR_AABBNode*      m_pAABBTree; // aligned-axis bounding box tree in which the collision was found
+    CSR_Polygon3Buffer m_Polygons;  // hit polygons in the model
+} CSR_HitModel;
 
 /**
-* Collision model info
+* Collision input
+*@note All the provided items should be in the same coordinates system as the scene models. This
+*      means that any projection or view transformation should be applied, if required, before
+*      adding them in this structure
 */
 typedef struct
 {
-    void*  m_pItem;        // scene item against which a collision happened
-    size_t m_MatrixIndex;  // index of the model matrix in the scene item
-    size_t m_AABBTreeItem; // index of the AABB tree in the scene item
-} CSR_CollisionModelInfo;
+    CSR_Ray3    m_MouseRay;       // ray starting from the mouse position, transformed in the viewport coordinates system
+    CSR_Sphere  m_BoundingSphere; // bounding sphere representing the model or point of view at his current position
+    CSR_Vector3 m_CheckPos;       // the model or point of view position to check
+} CSR_CollisionInput;
+
+/**
+* Collision output
+*/
+typedef struct
+{
+    CSR_ECollisionType m_Collision;      // found collision type in the scene
+    float              m_GroundPos;      // the ground position on the y axis, M_CSR_NoGround if no ground was found
+    CSR_Plane          m_CollisionPlane; // the collision plane, in case a collision was found
+    CSR_Plane          m_GroundPlane;    // the ground plane, in case a ground was found
+    CSR_Array*         m_pHitModel;      // models hit by the mouse ray
+} CSR_CollisionOutput;
 
 //---------------------------------------------------------------------------
 // Callbacks
@@ -187,6 +216,24 @@ typedef void (*CSR_fOnGetMDLIndex)(const CSR_MDL* pMDL,
                                          size_t*  pModelIndex,
                                          size_t*  pMeshIndex);
 
+/**
+* Called when a custom collision should be detected in a scene
+*@param pScene - scene in which the models to check are contained
+*@param pSceneItem - the scene item currently tested
+*@param index - model matrix currently tested in the scene item
+*@param pInvertedModelMatrix - invert of the currently tested model matrix
+*@param pCollisionInput - collision input
+*@param[in, out] pCollisionOutput - collision output
+*@return 1 if collision detection is done, 0 if default collisions (ground, edge, mouse) should be processed
+*@note This callback will be called only for the items containing the CSR_CO_Custom collision type
+*/
+typedef int (*CSR_fOnCustomDetectCollision)(const CSR_Scene*           pScene,
+                                            const CSR_SceneItem*       pSceneItem,
+                                                  size_t               index,
+                                            const CSR_Matrix4*         pInvertedModelMatrix,
+                                            const CSR_CollisionInput*  pCollisionInput,
+                                                  CSR_CollisionOutput* pCollisionOutput);
+
 //---------------------------------------------------------------------------
 // Implementation
 //---------------------------------------------------------------------------
@@ -210,27 +257,73 @@ struct CSR_SceneContext
 #endif
 
         //-------------------------------------------------------------------
-        // Collision info functions
+        // Hit model functions
         //-------------------------------------------------------------------
 
         /**
-        * Creates a collision info
-        *@return newly created collision info, 0 on error
-        *@note The collision info must be released when no longer used, see csrCollisionInfoRelease()
+        * Creates a hit model structure
+        *@return newly created hit model structure, 0 on error
+        *@note The hit model structure must be released when no longer used, see csrHitModelRelease()
         */
-        CSR_CollisionInfo* csrCollisionInfoCreate(void);
+        CSR_HitModel* csrHitModelCreate(void);
 
         /**
-        * Releases a collision info
-        *@param[in, out] pCI - collision info to release
+        * Releases a hit model structure
+        *@param[in, out] pHitModel - hit model structure to release
         */
-        void csrCollisionInfoRelease(CSR_CollisionInfo* pCI);
+        void csrHitModelRelease(CSR_HitModel* pHitModel);
 
         /**
-        * Initializes a collision info structure
-        *@param[in, out] pCI - collision info to initialize
+        * Initializes a hit model structure
+        *@param[in, out] pHitModel - hit model structure to initialize
         */
-        void csrCollisionInfoInit(CSR_CollisionInfo* pCI);
+        void csrHitModelInit(CSR_HitModel* pHitModel);
+
+        //-------------------------------------------------------------------
+        // Collision input functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Creates a collision input
+        *@return newly created collision input, 0 on error
+        *@note The collision input must be released when no longer used, see csrCollisionInputRelease()
+        */
+        CSR_CollisionInput* csrCollisionInputCreate(void);
+
+        /**
+        * Releases a collision input
+        *@param[in, out] pCI - collision input to release
+        */
+        void csrCollisionInputRelease(CSR_CollisionInput* pCI);
+
+        /**
+        * Initializes a collision input
+        *@param[in, out] pCI - collision input to initialize
+        */
+        void csrCollisionInputInit(CSR_CollisionInput* pCI);
+
+        //-------------------------------------------------------------------
+        // Collision output functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Creates a collision output
+        *@return newly created collision output, 0 on error
+        *@note The collision output must be released when no longer used, see csrCollisionOutputRelease()
+        */
+        CSR_CollisionOutput* csrCollisionOutputCreate(void);
+
+        /**
+        * Releases a collision output
+        *@param[in, out] pCO - collision output to release
+        */
+        void csrCollisionOutputRelease(CSR_CollisionOutput* pCO);
+
+        /**
+        * Initializes a collision output
+        *@param[in, out] pCO - collision output to initialize
+        */
+        void csrCollisionOutputInit(CSR_CollisionOutput* pCO);
 
         //-------------------------------------------------------------------
         // Scene context functions
@@ -278,14 +371,18 @@ struct CSR_SceneContext
 
         /**
         * Detects the collisions happening against a scene item
-        *@param pScene - scene item against which the collision should be detected
-        *@param pRay - ray describing the movement to check
-        *@param[in, out] pCollisionInfo - collision info
-        *@return 1 if a collision with the scene item was found, otherwise 0
+        *@param pSceneItem - scene item against which the collision should be detected
+        *@param pGroundDir - the scene ground direction
+        *@param pCollisionInput - collision input
+        *@param pCollisionItemInput - collision item input
+        *@param[in, out] pCollisionOutput - collision output containing the result
+        *@param fOnCustomDetectCollision - custom collision detection callback
         */
-        int csrSceneItemDetectCollision(const CSR_SceneItem*     pSceneItem,
-                                        const CSR_Ray3*          pRay,
-                                              CSR_CollisionInfo* pCollisionInfo);
+        void csrSceneItemDetectCollision(const CSR_Scene*                   pScene,
+                                         const CSR_SceneItem*               pSceneItem,
+                                         const CSR_CollisionInput*          pCollisionInput,
+                                               CSR_CollisionOutput*         pCollisionOutput,
+                                               CSR_fOnCustomDetectCollision fOnCustomDetectCollision);
 
         //-------------------------------------------------------------------
         // Scene functions
@@ -316,11 +413,11 @@ struct CSR_SceneContext
         *@param pMesh - mesh to add
         *@param transparent - if 1, the mesh is transparent, if 0 the mesh is opaque
         *@param aabb - if 1, the AABB tree will be generated for the mesh
-        *@return 1 on success, otherwise 0
+        *@return the scene item containing the mesh on success, otherwise 0
         *@note Once successfully added, the mesh will be owned by the scene and should no longer be
         *      released from outside
         */
-        int csrSceneAddMesh(CSR_Scene* pScene, CSR_Mesh* pMesh, int transparent, int aabb);
+        CSR_SceneItem* csrSceneAddMesh(CSR_Scene* pScene, CSR_Mesh* pMesh, int transparent, int aabb);
 
         /**
         * Adds a model to a scene
@@ -328,11 +425,11 @@ struct CSR_SceneContext
         *@param pModel- model to add
         *@param transparent - if 1, the model is transparent, if 0 the model is opaque
         *@param aabb - if 1, the AABB tree will be generated for the mesh
-        *@return 1 on success, otherwise 0
+        *@return the scene item containing the model on success, otherwise 0
         *@note Once successfully added, the model will be owned by the scene and should no longer be
         *      released from outside
         */
-        int csrSceneAddModel(CSR_Scene* pScene, CSR_Model* pModel, int transparent, int aabb);
+        CSR_SceneItem* csrSceneAddModel(CSR_Scene* pScene, CSR_Model* pModel, int transparent, int aabb);
 
         /**
         * Adds a MDL model to a scene
@@ -340,11 +437,11 @@ struct CSR_SceneContext
         *@param pMDL - model to add
         *@param transparent - if 1, the model is transparent, if 0 the model is opaque
         *@param aabb - if 1, the AABB tree will be generated for the mesh
-        *@return 1 on success, otherwise 0
+        *@return the scene item containing the model on success, otherwise 0
         *@note Once successfully added, the MDL model will be owned by the scene and should no
         *      longer be released from outside
         */
-        int csrSceneAddMDL(CSR_Scene* pScene, CSR_MDL* pMDL, int transparent, int aabb);
+        CSR_SceneItem* csrSceneAddMDL(CSR_Scene* pScene, CSR_MDL* pMDL, int transparent, int aabb);
 
         /**
         * Adds a model matrix to a scene item. Doing that the same model may be drawn several time
@@ -352,11 +449,11 @@ struct CSR_SceneContext
         *@param pScene - scene in which the model will be added
         *@param pModel - model for which the matrix should be added
         *@param pMatrix - matrix to add
-        *@return 1 on success, otherwise 0
+        *@return the scene item containing the matrix on success, otherwise 0
         *@note The added matrix is not owned by the scene. For that reason it cannot be deleted as
         *      long as the scene uses it. The caller is responsible to delete the matrix if required
         */
-        int csrSceneAddModelMatrix(CSR_Scene* pScene, const void* pModel, CSR_Matrix4* pMatrix);
+        CSR_SceneItem* csrSceneAddModelMatrix(CSR_Scene* pScene, const void* pModel, CSR_Matrix4* pMatrix);
 
         /**
         * Gets a scene item matching with a model or a matrix
@@ -396,13 +493,14 @@ struct CSR_SceneContext
         /**
         * Detects the collisions happening in a scene
         *@param pScene - scene in which the collisions should be detected
-        *@param pRay - ray describing the movement to check
-        *@param[in, out] pCollisionInfo - collision info
-        *@return 1 if a collision was found in the scene, otherwise 0
+        *@param pCollisionInput - collision input
+        *@param[in, out] pCollisionOutput - collision output containing the result
+        *@param fOnCustomDetectCollision - custom detection collision callback
         */
-        int csrSceneDetectCollision(const CSR_Scene*         pScene,
-                                    const CSR_Ray3*          pRay,
-                                          CSR_CollisionInfo* pCollisionInfo);
+        void csrSceneDetectCollision(const CSR_Scene*                   pScene,
+                                     const CSR_CollisionInput*          pCollisionInput,
+                                           CSR_CollisionOutput*         pCollisionOutput,
+                                           CSR_fOnCustomDetectCollision fOnCustomDetectCollision);
 
         /**
         * Converts a touch position (e.g. the mouse pointer or the finger) to a viewport position

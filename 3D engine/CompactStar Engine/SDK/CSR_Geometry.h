@@ -359,7 +359,7 @@ typedef struct
 
         /**
         * Gets matrix identity
-        *@param[out] pR - resulting identity matrix
+        *@param[out] pR - identity matrix
         */
         void csrMat4Identity(CSR_Matrix4* pR);
 
@@ -371,7 +371,7 @@ typedef struct
         *@param top - top view rect edge
         *@param zNear - z near clipping value
         *@param zFar - z far clipping value
-        *@param[out] pR - resulting orthogonal matrix
+        *@param[out] pR - orthogonal matrix
         */
         void csrMat4Ortho(float        left,
                           float        right,
@@ -389,7 +389,7 @@ typedef struct
         *@param top - top view rect edge
         *@param zNear - z near clipping value
         *@param zFar - z far clipping value
-        *@param[out] pR - resulting frustrum matrix
+        *@param[out] pR - frustrum matrix
         */
         void csrMat4Frustum(float        left,
                             float        right,
@@ -405,7 +405,7 @@ typedef struct
         *@param aspect - aspect ratio
         *@param zNear - z near clipping value
         *@param zFar - z far clipping value
-        *@param[out] pR - resulting perspective matrix
+        *@param[out] pR - perspective matrix
         */
         void csrMat4Perspective(float        fovyDeg,
                                 float        aspect,
@@ -418,7 +418,7 @@ typedef struct
         *@param pPos - eye (or camera) target position
         *@param pDir - eye (or camera) direction vector
         *@param pUp - up vector direction
-        *@param[out] pR - look at matrix
+        *@param[out] pR - left-hand look at matrix
         */
         void csrMat4LookAtLH(const CSR_Vector3* pPos,
                              const CSR_Vector3* pDir,
@@ -430,7 +430,7 @@ typedef struct
         *@param pPos - eye (or camera) target position
         *@param pDir - eye (or camera) direction vector
         *@param pUp - up vector direction
-        *@param[out] pR - look at matrix
+        *@param[out] pR - right-hand look at matrix
         */
         void csrMat4LookAtRH(const CSR_Vector3* pPos,
                              const CSR_Vector3* pDir,
@@ -440,7 +440,7 @@ typedef struct
         /**
         * Gets translation matrix
         *@param pT - translation vector
-        *@param[out] pR - resulting translation matrix
+        *@param[out] pR - translation matrix
         */
         void csrMat4Translate(const CSR_Vector3* pT, CSR_Matrix4* pR);
 
@@ -448,14 +448,14 @@ typedef struct
         * Gets rotation matrix
         *@param angle - rotation angle, in radians
         *@param pAxis - rotation axis
-        *@param[out] pR - resulting orthogonal matrix
+        *@param[out] pR - rotation matrix
         */
         void csrMat4Rotate(float angle, const CSR_Vector3* pAxis, CSR_Matrix4* pR);
 
         /**
         * Gets scale matrix
         *@param pFactor - scale factor
-        *@param[out] pR - resulting scale matrix
+        *@param[out] pR - scale matrix
         */
         void csrMat4Scale(const CSR_Vector3* pFactor, CSR_Matrix4* pR);
 
@@ -463,9 +463,16 @@ typedef struct
         * Multiplies matrix by another matrix
         *@param pM1 - first matrix to multiply
         *@param pM2 - second matrix to multiply with
-        *@param[out] pR - resulting orthogonal matrix
+        *@param[out] pR - multiplied matrix
         */
         void csrMat4Multiply(const CSR_Matrix4* pM1, const CSR_Matrix4* pM2, CSR_Matrix4* pR);
+
+        /**
+        * Transposes a matrix
+        *@param pM - matrix to transpose
+        *@param[out] pR - transposed matrix
+        */
+        void csrMat4Transpose(const CSR_Matrix4* pM, CSR_Matrix4* pR);
 
         /**
         * Inverses a matrix
@@ -525,6 +532,15 @@ typedef struct
         *@param[out] pZ - angle on z axis in radian
         */
         void csrMat4RotationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ);
+
+        /**
+        * Gets the x, y and z scaling factor from a matrix
+        *@param pM - matrix
+        *@param[out] pX - factor on x axis
+        *@param[out] pY - factor on y axis
+        *@param[out] pZ - factor on z axis
+        */
+        void csrMat4ScalingFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ);
 
         //-------------------------------------------------------------------
         // Quaternion functions
@@ -676,10 +692,18 @@ typedef struct
                                       CSR_Plane*   pR);
 
         /**
+        * Transforms a plane by a matrix
+        *@param pPlane - plane to transform
+        *@param pM - the inverse transpose of the transformation matrix
+        *@param[out] pR - transformed plane
+        */
+        void csrPlaneTransform(const CSR_Plane* pPlane, const CSR_Matrix4* pM, CSR_Plane* pR);
+
+        /**
         * Calculates a distance between a point and a plane
         *@param pP - point
         *@param pPl - plane
-        *@param[out] - resulting distance
+        *@param[out] - distance between the point and the plane
         */
         void csrPlaneDistanceTo(const CSR_Vector3* pP, const CSR_Plane* pPl, float* pR);
 

@@ -448,5 +448,81 @@ void csrTextureShaderInit(CSR_TextureShader* pTextureShader)
     // initialize the texture shader content
     pTextureShader->m_TextureID = M_CSR_Error_Code;
     pTextureShader->m_BumpMapID = M_CSR_Error_Code;
+    pTextureShader->m_CubeMapID = M_CSR_Error_Code;
+}
+//---------------------------------------------------------------------------
+// Cubemap functions
+//------------------------------------------------------------------------------
+GLuint csrCubemapLoad(const char** pFileNames)
+{
+    size_t i;
+
+    // create a cubemap texture
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    // iterate through cubemap faces to load
+    for (i = 0; i < 6; ++i)
+    {
+        unsigned char* pPixels;
+        int            doReleasePixels = 0;
+
+        // load the texture content from file
+        CSR_PixelBuffer* pPixelBuffer = csrPixelBufferFromBitmap(pFileNames[i]);
+
+        // failed?
+        if (!pPixelBuffer)
+            continue;
+
+        // reorder the pixels if image is a bitmap
+        if (pPixelBuffer->m_ImageType == CSR_IT_Bitmap)
+        {
+            size_t x;
+            size_t y;
+            size_t c;
+
+            doReleasePixels = 1;
+
+            pPixels = (unsigned char*)malloc(sizeof(unsigned char)  *
+                                             pPixelBuffer->m_Width  *
+                                             pPixelBuffer->m_Height *
+                                             3);
+
+            // get bitmap data into right format
+            for (y = 0; y < pPixelBuffer->m_Height; ++y)
+                for (x = 0; x < pPixelBuffer->m_Width; ++x)
+                    for (c = 0; c < 3; ++c)
+                        pPixels[3 * (pPixelBuffer->m_Width * y + x) + c] =
+                                ((unsigned char*)pPixelBuffer->m_pData)
+                                        [pPixelBuffer->m_Stride * y + 3 * (pPixelBuffer->m_Width - x - 1) + (2 - c)];
+        }
+        else
+            pPixels = (unsigned char*)pPixelBuffer->m_pData;
+
+        // load the texture on the GPU
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                     0,
+                     GL_RGB,
+                     pPixelBuffer->m_Width,
+                     pPixelBuffer->m_Height,
+                     0,
+                     GL_RGB,
+                     GL_UNSIGNED_BYTE,
+                     pPixels);
+
+        if (doReleasePixels)
+            free(pPixels);
+
+        // release the previously loaded bitmap
+        csrPixelBufferRelease(pPixelBuffer);
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S,     GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T,     GL_CLAMP_TO_EDGE);
+
+    return textureID;
 }
 //---------------------------------------------------------------------------

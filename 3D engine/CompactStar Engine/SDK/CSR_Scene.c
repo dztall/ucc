@@ -20,54 +20,164 @@
 #include <math.h>
 
 //---------------------------------------------------------------------------
-// Collision info functions
+// Hit model functions
 //---------------------------------------------------------------------------
-CSR_CollisionInfo* csrCollisionInfoCreate(void)
+CSR_HitModel* csrHitModelCreate(void)
 {
-    // create a new collision info
-    CSR_CollisionInfo* pCI = (CSR_CollisionInfo*)malloc(sizeof(CSR_CollisionInfo));
+    // create a new hit model
+    CSR_HitModel* pHitModel = (CSR_HitModel*)malloc(sizeof(CSR_HitModel));
+
+    // succeeded?
+    if (!pHitModel)
+        return 0;
+
+    // initialize the hit model content
+    csrHitModelInit(pHitModel);
+
+    return pHitModel;
+}
+//---------------------------------------------------------------------------
+void csrHitModelRelease(CSR_HitModel* pHitModel)
+{
+    // no hit model to release?
+    if (!pHitModel)
+        return;
+
+    // free the found polygons
+    if (pHitModel->m_Polygons.m_Count)
+        free(pHitModel->m_Polygons.m_pPolygon);
+
+    // free the hit model
+    free(pHitModel);
+}
+//---------------------------------------------------------------------------
+void csrHitModelInit(CSR_HitModel* pHitModel)
+{
+    // no hit model to initialize?
+    if (!pHitModel)
+        return;
+
+    // initialize the hit model
+    pHitModel->m_pModel              = 0;
+    pHitModel->m_Type                = CSR_MT_Mesh;
+    pHitModel->m_pAABBTree           = 0;
+    pHitModel->m_Polygons.m_pPolygon = 0;
+    pHitModel->m_Polygons.m_Count    = 0;
+
+    // initialize the model matrix
+    csrMat4Identity(&pHitModel->m_Matrix);
+}
+//---------------------------------------------------------------------------
+// Collision input functions
+//---------------------------------------------------------------------------
+CSR_CollisionInput* csrCollisionInputCreate(void)
+{
+    // create a new collision input
+    CSR_CollisionInput* pCI = (CSR_CollisionInput*)malloc(sizeof(CSR_CollisionInput));
 
     // succeeded?
     if (!pCI)
         return 0;
 
-    // initialize the collision info content
-    csrCollisionInfoInit(pCI);
+    // initialize the collision input content
+    csrCollisionInputInit(pCI);
 
     return pCI;
 }
 //---------------------------------------------------------------------------
-void csrCollisionInfoRelease(CSR_CollisionInfo* pCI)
+void csrCollisionInputRelease(CSR_CollisionInput* pCI)
 {
-    size_t i;
-
-    // no collision info to release?
+    // no collision input to release?
     if (!pCI)
         return;
 
-    // free the polygon buffer
-    if (pCI->m_Polygons.m_pPolygon)
-        free(pCI->m_Polygons.m_pPolygon);
-
-    // free the model array
-    if (pCI->m_pModels)
-        csrArrayRelease(pCI->m_pModels);
-
-    // free the scene
+    // free the collision input
     free(pCI);
 }
 //---------------------------------------------------------------------------
-void csrCollisionInfoInit(CSR_CollisionInfo* pCI)
+void csrCollisionInputInit(CSR_CollisionInput* pCI)
 {
-    // no collision info to initialize?
+    // no collision input to initialize?
     if (!pCI)
         return;
 
-    // initialize the collision info
-    pCI->m_Collision           = 0;
-    pCI->m_Polygons.m_pPolygon = 0;
-    pCI->m_Polygons.m_Count    = 0;
-    pCI->m_pModels             = 0;
+    // initialize the collision input
+    pCI->m_MouseRay.m_Pos.m_X          = 0.0f;
+    pCI->m_MouseRay.m_Pos.m_Y          = 0.0f;
+    pCI->m_MouseRay.m_Pos.m_Z          = 0.0f;
+    pCI->m_MouseRay.m_Dir.m_X          = 0.0f;
+    pCI->m_MouseRay.m_Dir.m_Y          = 0.0f;
+    pCI->m_MouseRay.m_Dir.m_Z          = 0.0f;
+    pCI->m_MouseRay.m_InvDir.m_X       = 0.0f;
+    pCI->m_MouseRay.m_InvDir.m_Y       = 0.0f;
+    pCI->m_MouseRay.m_InvDir.m_Z       = 0.0f;
+    pCI->m_BoundingSphere.m_Center.m_X = 0.0f;
+    pCI->m_BoundingSphere.m_Center.m_Y = 0.0f;
+    pCI->m_BoundingSphere.m_Center.m_Z = 0.0f;
+    pCI->m_BoundingSphere.m_Radius     = 0.0f;
+    pCI->m_CheckPos.m_X                = 0.0f;
+    pCI->m_CheckPos.m_Y                = 0.0f;
+    pCI->m_CheckPos.m_Z                = 0.0f;
+}
+//---------------------------------------------------------------------------
+// Collision output functions
+//---------------------------------------------------------------------------
+CSR_CollisionOutput* csrCollisionOutputCreate(void)
+{
+    // create a new collision output
+    CSR_CollisionOutput* pCO = (CSR_CollisionOutput*)malloc(sizeof(CSR_CollisionOutput));
+
+    // succeeded?
+    if (!pCO)
+        return 0;
+
+    // initialize the collision output content
+    csrCollisionOutputInit(pCO);
+
+    return pCO;
+}
+//---------------------------------------------------------------------------
+void csrCollisionOutputRelease(CSR_CollisionOutput* pCO)
+{
+    size_t i;
+
+    // no collision output to release?
+    if (!pCO)
+        return;
+
+    // release the hit polygons
+    if (pCO->m_pHitModel)
+    {
+        // iterate through hit models and free each of them
+        for (i = 0; i < pCO->m_pHitModel->m_Count; ++i)
+            csrHitModelRelease((CSR_HitModel*)pCO->m_pHitModel->m_pItem[i].m_pData);
+
+        // free the hit model container
+        csrArrayRelease(pCO->m_pHitModel);
+    }
+
+    // free the collision output
+    free(pCO);
+}
+//---------------------------------------------------------------------------
+void csrCollisionOutputInit(CSR_CollisionOutput* pCO)
+{
+    // no collision output to initialize?
+    if (!pCO)
+        return;
+
+    // initialize the collision output
+    pCO->m_Collision          = CSR_CO_None;
+    pCO->m_GroundPos          = M_CSR_NoGround;
+    pCO->m_CollisionPlane.m_A = 0.0f;
+    pCO->m_CollisionPlane.m_B = 0.0f;
+    pCO->m_CollisionPlane.m_C = 0.0f;
+    pCO->m_CollisionPlane.m_D = 0.0f;
+    pCO->m_GroundPlane.m_A    = 0.0f;
+    pCO->m_GroundPlane.m_B    = 0.0f;
+    pCO->m_GroundPlane.m_C    = 0.0f;
+    pCO->m_GroundPlane.m_D    = 0.0f;
+    pCO->m_pHitModel          = 0;
 }
 //---------------------------------------------------------------------------
 // Scene context functions
@@ -201,9 +311,11 @@ void csrSceneItemInit(CSR_SceneItem* pSceneItem)
     // initialize the scene item
     pSceneItem->m_pModel        = 0;
     pSceneItem->m_Type          = CSR_MT_Model;
+    pSceneItem->m_CollisionType = CSR_CO_None;
     pSceneItem->m_pMatrixArray  = 0;
     pSceneItem->m_pAABBTree     = 0;
     pSceneItem->m_AABBTreeCount = 0;
+    pSceneItem->m_AABBTreeIndex = 0;
 }
 //---------------------------------------------------------------------------
 void csrSceneItemDraw(const CSR_Scene*        pScene,
@@ -235,7 +347,7 @@ void csrSceneItemDraw(const CSR_Scene*        pScene,
 
     // connect view matrix to shader
     if (slot >= 0)
-        glUniformMatrix4fv(slot, 1, 0, &pScene->m_Matrix.m_Table[0][0]);
+        glUniformMatrix4fv(slot, 1, 0, &pScene->m_ViewMatrix.m_Table[0][0]);
 
     // draw the model
     switch (pItem->m_Type)
@@ -294,114 +406,187 @@ void csrSceneItemDraw(const CSR_Scene*        pScene,
     csrShaderEnable(0);
 }
 //---------------------------------------------------------------------------
-int csrSceneItemDetectCollision(const CSR_SceneItem*     pSceneItem,
-                                const CSR_Ray3*          pRay,
-                                      CSR_CollisionInfo* pCollisionInfo)
+void csrSceneItemDetectCollision(const CSR_Scene*                   pScene,
+                                 const CSR_SceneItem*               pSceneItem,
+                                 const CSR_CollisionInput*          pCollisionInput,
+                                       CSR_CollisionOutput*         pCollisionOutput,
+                                       CSR_fOnCustomDetectCollision fOnCustomDetectCollision)
 {
-    int         collision;
     size_t      i;
-    size_t      j;
-    float       determinant;
     CSR_Vector3 rayPos;
     CSR_Vector3 rayDir;
     CSR_Vector3 rayDirN;
-    CSR_Matrix4 invertModel;
-    CSR_Ray3    rayModel;
+    CSR_Sphere  sphere;
 
     // validate the inputs
-    if (!pSceneItem || !pRay || !pCollisionInfo)
-        return 0;
+    if (!pScene || !pSceneItem || !pCollisionInput || !pCollisionOutput)
+        return;
 
     // can detect collision on this model?
-    if (!pSceneItem->m_pMatrixArray || !pSceneItem->m_AABBTreeCount)
-        return 0;
+    if (!(pSceneItem->m_CollisionType & CSR_CO_Custom) &&
+         (pSceneItem->m_CollisionType == CSR_CO_None   ||
+         !pSceneItem->m_pMatrixArray                   ||
+         !pSceneItem->m_pMatrixArray->m_Count          ||
+         !pSceneItem->m_AABBTreeCount                  ||
+          pSceneItem->m_AABBTreeIndex >= pSceneItem->m_AABBTreeCount))
+        return;
 
-    collision = 0;
+    // copy the sphere radius
+    sphere.m_Radius = pCollisionInput->m_BoundingSphere.m_Radius;
 
     // iterate through each model position
     for (i = 0; i < pSceneItem->m_pMatrixArray->m_Count; ++i)
     {
-        // transform the ray to match with the model position
-        csrMat4Inverse((CSR_Matrix4*)pSceneItem->m_pMatrixArray[i].m_pItem->m_pData,
-                                    &invertModel,
-                                    &determinant);
-        csrMat4ApplyToVector(&invertModel, &pRay->m_Pos, &rayPos);
-        csrMat4ApplyToNormal(&invertModel, &pRay->m_Dir, &rayDir);
-        csrVec3Normalize(&rayDir, &rayDirN);
+        CSR_Matrix4 invertMatrix;
+        float       determinant;
 
-        // get the transformed ray
-        csrRay3FromPointDir(&rayPos, &rayDirN, &rayModel);
+        // inverse the model matrix
+        csrMat4Inverse(&((CSR_Matrix4*)pSceneItem->m_pMatrixArray->m_pItem->m_pData)[i],
+                       &invertMatrix,
+                       &determinant);
 
-        // iterate through AABB trees to check
-        for (j = 0; j < pSceneItem->m_AABBTreeCount; ++j)
-            // check for collision. NOTE set deep to 1, thus the polygon buffer will not be reseted
-            if (csrAABBTreeResolve(&rayModel, &pSceneItem->m_pAABBTree[j], 1, &pCollisionInfo->m_Polygons))
+        // let the caller process custom collisions if required
+        if (fOnCustomDetectCollision && pSceneItem->m_CollisionType & CSR_CO_Custom)
+        {
+            if (fOnCustomDetectCollision(pScene,
+                                         pSceneItem,
+                                         i,
+                                        &invertMatrix,
+                                         pCollisionInput,
+                                         pCollisionOutput))
+                continue;
+
+            // because not checked above, to prevent that stupid things happen...
+            if (!pSceneItem->m_AABBTreeCount || pSceneItem->m_AABBTreeIndex >= pSceneItem->m_AABBTreeCount)
+                continue;
+        }
+
+        // put the bounding sphere into the model coordinate system (at the location where the
+        // collision should be checked)
+        csrMat4Transform(&invertMatrix, &pCollisionInput->m_CheckPos, &sphere.m_Center);
+
+        // do detect the ground collision on this model?
+        if (pSceneItem->m_CollisionType & CSR_CO_Ground)
+        {
+            CSR_Polygon3 groundPolygon;
+            float        posY;
+
+            // calculate the y position where to place the point of view
+            if (csrGroundPosY(&sphere,
+                              &pSceneItem->m_pAABBTree[pSceneItem->m_AABBTreeIndex],
+                              &pScene->m_GroundDir,
+                              &groundPolygon,
+                              &posY))
             {
-                CSR_CollisionModelInfo* pModelInfo;
+                CSR_Plane   polygonPlane;
+                CSR_Matrix4 transposedMatrix;
 
-                // a collision was found
-                collision                   = 1;
+                // notify that a ground collision happened
+                pCollisionOutput->m_Collision |= CSR_CO_Ground;
+
+                // set the new ground position
+                pCollisionOutput->m_GroundPos = posY;
+
+                // calculate and set the new ground plane
+                csrPlaneFromPoints(&groundPolygon.m_Vertex[0],
+                                   &groundPolygon.m_Vertex[1],
+                                   &groundPolygon.m_Vertex[2],
+                                   &polygonPlane);
+                csrMat4Transpose(&invertMatrix, &transposedMatrix);
+                csrPlaneTransform(&polygonPlane, &transposedMatrix, &pCollisionOutput->m_GroundPlane);
+            }
+        }
+
+        // do detect the edge collision on this model?
+        if (pSceneItem->m_CollisionType & CSR_CO_Edge)
+        {
+            CSR_Vector3 motionDir;
+            CSR_Vector3 motionDirN;
+            CSR_Ray3    motionRay;
+
+            // calculate the motion ray and put it into the model coordinate system
+            csrVec3Sub(&pCollisionInput->m_CheckPos, &pCollisionInput->m_BoundingSphere.m_Center, &motionDir);
+            csrVec3Normalize(&motionDir, &motionDirN);
+            csrMat4ApplyToVector(&invertMatrix, &pCollisionInput->m_BoundingSphere.m_Center, &rayPos);
+            csrMat4ApplyToNormal(&invertMatrix, &motionDir, &rayDir);
+            csrVec3Normalize(&rayDir, &rayDirN);
+            csrRay3FromPointDir(&rayPos, &rayDirN, &motionRay);
+
+            // 1. detect if the motion ray intersects one of the polygon. If yes the detection is terminated
+            // 2. detect if the sphere intersects one of the polygon
+
+            /*
+            CSR_Polygon3Buffer polygonBuffer;
+
+            // check for collision
+            if (csrAABBTreeResolve(&transformedRay,
+                                   &pSceneItem->m_pAABBTree[pSceneItem->m_AABBTreeIndex],
+                                    0,
+                                   &polygonBuffer))
+            {
+                // found at least 1 collision
                 pCollisionInfo->m_Collision = 1;
 
-                // create a collision model info
-                pModelInfo = (CSR_CollisionModelInfo*)malloc(sizeof(CSR_CollisionModelInfo));
-
-                // succeeded?
-                if (pModelInfo)
-                {
-                    size_t         index;
-                    CSR_ArrayItem* pItem;
-
-                    // populate the collision model info
-                    pModelInfo->m_pItem        = pSceneItem;
-                    pModelInfo->m_MatrixIndex  = i;
-                    pModelInfo->m_AABBTreeItem = j;
-
-                    // if no model array exists, create one
-                    if (!pCollisionInfo->m_pModels)
-                    {
-                        // create a new model array
-                        pCollisionInfo->m_pModels = (CSR_Array*)malloc(sizeof(CSR_Array));
-
-                        // succeeded?
-                        if (!pCollisionInfo->m_pModels)
-                        {
-                            free(pModelInfo);
-                            continue;
-                        }
-
-                        // initialize the model array
-                        pCollisionInfo->m_pModels->m_pItem = 0;
-                        pCollisionInfo->m_pModels->m_Count = 0;
-                    }
-
-                    // add a new item to the model array
-                    pItem = (CSR_ArrayItem*)csrMemoryAlloc(pCollisionInfo->m_pModels->m_pItem,
-                                                           sizeof(CSR_ArrayItem),
-                                                           pCollisionInfo->m_pModels->m_Count + 1);
-
-                    // succeeded?
-                    if (!pItem)
-                    {
-                        free(pModelInfo);
-                        continue;
-                    }
-
-                    // get the matrix item index
-                    index = pCollisionInfo->m_pModels->m_Count;
-
-                    // update the array
-                    pCollisionInfo->m_pModels->m_pItem = pItem;
-                    ++pCollisionInfo->m_pModels->m_Count;
-
-                    // add collision model info to the model array
-                    pCollisionInfo->m_pModels->m_pItem[index].m_pData    = pModelInfo;
-                    pCollisionInfo->m_pModels->m_pItem[index].m_AutoFree = 1;
-                }
+                // FIXME calculate the resulting sliding plane
             }
-    }
 
-    return collision;
+            // delete found polygons (no longer needed from now)
+            if (polygonBuffer.m_Count)
+                free(polygonBuffer.m_pPolygon);
+            */
+        }
+
+        // do detect the mouse collision on this model?
+        if (pSceneItem->m_CollisionType & CSR_CO_Mouse)
+        {
+            CSR_Ray3      mouseRay;
+            CSR_HitModel* pHitModel;
+
+            // put the mouse ray into the model coordinate system
+            csrMat4ApplyToVector(&invertMatrix, &pCollisionInput->m_MouseRay.m_Pos, &rayPos);
+            csrMat4ApplyToNormal(&invertMatrix, &pCollisionInput->m_MouseRay.m_Dir, &rayDir);
+            csrVec3Normalize(&rayDir, &rayDirN);
+            csrRay3FromPointDir(&rayPos, &rayDirN, &mouseRay);
+
+            // create a new hit model container, if required
+            if (!pCollisionOutput->m_pHitModel)
+                pCollisionOutput->m_pHitModel = csrArrayCreate();
+
+            // create a new hit model
+            pHitModel = csrHitModelCreate();
+
+            // succeeded?
+            if (!pHitModel)
+                continue;
+
+            // using the mouse ray, resolve aligned-axis bounding box tree
+            csrAABBTreeResolve(&mouseRay,
+                               &pSceneItem->m_pAABBTree[pSceneItem->m_AABBTreeIndex],
+                                0,
+                               &pHitModel->m_Polygons);
+
+            // found a collision with the mouse ray?
+            if (pHitModel->m_Polygons.m_Count)
+            {
+                // notify that a mouse collision happened
+                pCollisionOutput->m_Collision |= CSR_CO_Mouse;
+
+                // populate the hit model structure
+                pHitModel->m_pModel    = pSceneItem->m_pModel;
+                pHitModel->m_Type      = pSceneItem->m_Type;
+                pHitModel->m_Matrix    = ((CSR_Matrix4*)pSceneItem->m_pMatrixArray->m_pItem->m_pData)[i];
+                pHitModel->m_pAABBTree = &pSceneItem->m_pAABBTree[pSceneItem->m_AABBTreeIndex];
+
+                // add the hit model structure in the array
+                csrArrayAdd(pHitModel, pCollisionOutput->m_pHitModel, 0);
+            }
+            else
+            {
+                // no found collision, release the hit model
+                csrHitModelRelease(pHitModel);
+            }
+        }
+    }
 }
 //---------------------------------------------------------------------------
 // Scene functions
@@ -428,6 +613,10 @@ void csrSceneRelease(CSR_Scene* pScene)
     // no scene to release?
     if (!pScene)
         return;
+
+    // do free the skybox?
+    if (pScene->m_pSkybox)
+        csrMeshRelease(pScene->m_pSkybox);
 
     // do free the normal items content?
     if (pScene->m_pItem)
@@ -462,20 +651,24 @@ void csrSceneInit(CSR_Scene* pScene)
         return;
 
     // initialize the scene
-    pScene->m_Color.m_R            = 0.0f;
-    pScene->m_Color.m_G            = 0.0f;
-    pScene->m_Color.m_B            = 0.0f;
-    pScene->m_Color.m_A            = 1.0f;
-    pScene->m_pItem                = 0;
-    pScene->m_ItemCount            = 0;
-    pScene->m_pTransparentItem     = 0;
-    pScene->m_TransparentItemCount = 0;
+    pScene->m_Color.m_R            =  0.0f;
+    pScene->m_Color.m_G            =  0.0f;
+    pScene->m_Color.m_B            =  0.0f;
+    pScene->m_Color.m_A            =  1.0f;
+    pScene->m_GroundDir.m_X        =  0.0f;
+    pScene->m_GroundDir.m_Y        = -1.0f;
+    pScene->m_GroundDir.m_Z        =  0.0f;
+    pScene->m_pSkybox              =  0;
+    pScene->m_pItem                =  0;
+    pScene->m_ItemCount            =  0;
+    pScene->m_pTransparentItem     =  0;
+    pScene->m_TransparentItemCount =  0;
 
     // set the default item matrix to identity
-    csrMat4Identity(&pScene->m_Matrix);
+    csrMat4Identity(&pScene->m_ViewMatrix);
 }
 //---------------------------------------------------------------------------
-int csrSceneAddMesh(CSR_Scene* pScene, CSR_Mesh* pMesh, int transparent, int aabb)
+CSR_SceneItem* csrSceneAddMesh(CSR_Scene* pScene, CSR_Mesh* pMesh, int transparent, int aabb)
 {
     CSR_SceneItem* pItem;
     int            index;
@@ -484,9 +677,12 @@ int csrSceneAddMesh(CSR_Scene* pScene, CSR_Mesh* pMesh, int transparent, int aab
     if (!pScene || !pMesh)
         return 0;
 
-    // is mesh already added in the scene?
-    if (csrSceneGetItem(pScene, pMesh))
-        return 1;
+    // search for a scene item which already contains the same mesh
+    pItem = csrSceneGetItem(pScene, pMesh);
+
+    // found one?
+    if (pItem)
+        return pItem;
 
     // do add a transparent item?
     if (transparent)
@@ -563,10 +759,10 @@ int csrSceneAddMesh(CSR_Scene* pScene, CSR_Mesh* pMesh, int transparent, int aab
         ++pScene->m_ItemCount;
     }
 
-    return 1;
+    return pItem;
 }
 //---------------------------------------------------------------------------
-int csrSceneAddModel(CSR_Scene* pScene, CSR_Model* pModel, int transparent, int aabb)
+CSR_SceneItem* csrSceneAddModel(CSR_Scene* pScene, CSR_Model* pModel, int transparent, int aabb)
 {
     CSR_SceneItem* pItem;
     int            index;
@@ -575,9 +771,12 @@ int csrSceneAddModel(CSR_Scene* pScene, CSR_Model* pModel, int transparent, int 
     if (!pScene || !pModel)
         return 0;
 
-    // is model already added in the scene?
-    if (csrSceneGetItem(pScene, pModel))
-        return 1;
+    // search for a scene item which already contains the same model
+    pItem = csrSceneGetItem(pScene, pModel);
+
+    // found one?
+    if (pItem)
+        return pItem;
 
     // do add a transparent item?
     if (transparent)
@@ -695,10 +894,10 @@ int csrSceneAddModel(CSR_Scene* pScene, CSR_Model* pModel, int transparent, int 
         ++pScene->m_ItemCount;
     }
 
-    return 1;
+    return pItem;
 }
 //---------------------------------------------------------------------------
-int csrSceneAddMDL(CSR_Scene* pScene, CSR_MDL* pMDL, int transparent, int aabb)
+CSR_SceneItem* csrSceneAddMDL(CSR_Scene* pScene, CSR_MDL* pMDL, int transparent, int aabb)
 {
     CSR_SceneItem* pItem;
     int            index;
@@ -707,9 +906,12 @@ int csrSceneAddMDL(CSR_Scene* pScene, CSR_MDL* pMDL, int transparent, int aabb)
     if (!pScene || !pMDL)
         return 0;
 
-    // is model already added in the scene?
-    if (csrSceneGetItem(pScene, pMDL))
-        return 1;
+    // search for a scene item which already contains the same model
+    pItem = csrSceneGetItem(pScene, pMDL);
+
+    // found one?
+    if (pItem)
+        return pItem;
 
     // do add a transparent item?
     if (transparent)
@@ -828,10 +1030,10 @@ int csrSceneAddMDL(CSR_Scene* pScene, CSR_MDL* pMDL, int transparent, int aabb)
         ++pScene->m_ItemCount;
     }
 
-    return 1;
+    return pItem;
 }
 //---------------------------------------------------------------------------
-int csrSceneAddModelMatrix(CSR_Scene* pScene, const void* pModel, CSR_Matrix4* pMatrix)
+CSR_SceneItem* csrSceneAddModelMatrix(CSR_Scene* pScene, const void* pModel, CSR_Matrix4* pMatrix)
 {
     size_t         i;
     CSR_SceneItem* pSceneItem;
@@ -864,7 +1066,7 @@ int csrSceneAddModelMatrix(CSR_Scene* pScene, const void* pModel, CSR_Matrix4* p
     // add the matrix to the array
     csrArrayAddUnique(pMatrix, pSceneItem->m_pMatrixArray, 0);
 
-    return 1;
+    return pSceneItem;
 }
 //---------------------------------------------------------------------------
 CSR_SceneItem* csrSceneGetItem(const CSR_Scene* pScene, const void* pKey)
@@ -995,6 +1197,63 @@ void csrSceneDraw(const CSR_Scene* pScene, const CSR_SceneContext* pContext)
         pContext->m_fOnSceneBegin(pScene, pContext);
     else
         csrDrawBegin(&pScene->m_Color);
+
+    // do draw the skybox?
+    if (pScene->m_pSkybox)
+    {
+        CSR_Shader* pShader = 0;
+
+        // get the shader to use with the skybox
+        if (pContext->m_fOnGetShader)
+            pShader = pContext->m_fOnGetShader(pScene->m_pSkybox, CSR_MT_Mesh);
+
+        // found one?
+        if (pShader)
+        {
+            GLint slot;
+
+            // disable the depth buffer writing
+            glDepthMask(GL_FALSE);
+
+            // enable the skybox shader
+            csrShaderEnable(pShader);
+
+            // get the projection matrix slot from shader
+            slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uProjection");
+
+            // connect projection matrix to shader
+            if (slot >= 0)
+                glUniformMatrix4fv(slot, 1, 0, &pScene->m_ProjectionMatrix.m_Table[0][0]);
+
+            // get the view matrix slot from shader
+            slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uView");
+
+            // connect view matrix to shader
+            if (slot >= 0)
+            {
+                // copy the view matrix
+                CSR_Matrix4 skyboxViewMatrix;
+                memcpy(&skyboxViewMatrix, &pScene->m_ViewMatrix.m_Table, sizeof(CSR_Matrix4));
+
+                // remove the translation values from the view matrix
+                skyboxViewMatrix.m_Table[3][0] = 0.0f;
+                skyboxViewMatrix.m_Table[3][1] = 0.0f;
+                skyboxViewMatrix.m_Table[3][2] = 0.0f;
+
+                // apply the untranslated scene matrix
+                glUniformMatrix4fv(slot, 1, 0, &skyboxViewMatrix.m_Table[0][0]);
+            }
+
+            // draw the skybox
+            csrDrawMesh(pScene->m_pSkybox, pShader, 0);
+
+            // disable the item shader
+            csrShaderEnable(pShader);
+
+            // enable the depth buffer writing again
+            glDepthMask(GL_TRUE);
+        }
+    }
 
     // first draw the standard models
     for (i = 0; i < pScene->m_ItemCount; ++i)
@@ -1153,35 +1412,35 @@ void csrSceneCameraToMatrix(const CSR_Camera* pCamera, CSR_Matrix4* pR)
     }
 }
 //---------------------------------------------------------------------------
-int csrSceneDetectCollision(const CSR_Scene*         pScene,
-                            const CSR_Ray3*          pRay,
-                                  CSR_CollisionInfo* pCollisionInfo)
+void csrSceneDetectCollision(const CSR_Scene*                   pScene,
+                             const CSR_CollisionInput*          pCollisionInput,
+                                   CSR_CollisionOutput*         pCollisionOutput,
+                                   CSR_fOnCustomDetectCollision fOnCustomDetectCollision)
 {
-    int    collision;
     size_t i;
 
     // validate the inputs
-    if (!pScene || !pRay || !pCollisionInfo)
-        return 0;
+    if (!pScene || !pCollisionInput || !pCollisionOutput)
+        return;
 
-    // initialize the collision info
-    pCollisionInfo->m_Collision = 0;
-
-    // release any previously found polygon
-    if (pCollisionInfo->m_Polygons.m_pPolygon)
-        free(pCollisionInfo->m_Polygons.m_pPolygon);
-
-    collision = 0;
+    // initialize the collision output
+    csrCollisionOutputInit(pCollisionOutput);
 
     // iterate through the scene items
     for (i = 0; i < pScene->m_ItemCount; ++i)
-        collision |= csrSceneItemDetectCollision(&pScene->m_pItem[i], pRay, pCollisionInfo);
+        csrSceneItemDetectCollision(pScene,
+                                   &pScene->m_pItem[i],
+                                    pCollisionInput,
+                                    pCollisionOutput,
+                                    fOnCustomDetectCollision);
 
     // iterate through the scene transparent items
     for (i = 0; i < pScene->m_TransparentItemCount; ++i)
-        collision |= csrSceneItemDetectCollision(&pScene->m_pTransparentItem[i], pRay, pCollisionInfo);
-
-    return collision;
+        csrSceneItemDetectCollision(pScene,
+                                   &pScene->m_pTransparentItem[i],
+                                    pCollisionInput,
+                                    pCollisionOutput,
+                                    fOnCustomDetectCollision);
 }
 //---------------------------------------------------------------------------
 void csrSceneTouchPosToViewportPos(const CSR_Vector2* pTouchPos,

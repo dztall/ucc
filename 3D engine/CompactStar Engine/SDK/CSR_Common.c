@@ -454,10 +454,10 @@ int csrBufferRead(const CSR_Buffer* pBuffer,
     return 1;
 }
 //---------------------------------------------------------------------------
-int csrBufferWrite(      CSR_Buffer* pBuffer,
-                   const void*       pData,
-                         size_t      length,
-                         size_t      count)
+int csrBufferWrite(CSR_Buffer* pBuffer,
+             const void*       pData,
+                   size_t      length,
+                   size_t      count)
 {
     size_t offset;
     size_t lengthToWrite;
