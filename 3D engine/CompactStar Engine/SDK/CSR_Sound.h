@@ -94,30 +94,28 @@ typedef struct
         void csrSoundRelease(CSR_Sound* pSound);
 
         /**
-        * Opens a sound from a file
+        * Opens a sound from a wav file
         *@param pOpenALDevice - OpenAL device to use
         *@param pOpenALContext - OpenAL context to use
-        *@param pFileName - file name
-        *@param sampling - sound sampling (standard values are e.g. 48000, 44100, ...)
+        *@param pFileName - wav file name
         *@return opened sound on success, 0 on error
         *@note The sound must be released when no longer used, see csrReleaseSound()
         */
-        CSR_Sound* csrSoundOpen(const ALCdevice*  pOpenALDevice,
-                                const ALCcontext* pOpenALContext,
-                                      const char* pFileName,
-                                      unsigned    sampling);
+        CSR_Sound* csrSoundOpenWavFile(const ALCdevice*  pOpenALDevice,
+                                       const ALCcontext* pOpenALContext,
+                                       const char*       pFileName);
 
         /**
-        * Opens a sound from a Wav file
+        * Opens a sound from a wav buffer
         *@param pOpenALDevice - OpenAL device to use
         *@param pOpenALContext - OpenAL context to use
-        *@param pFileName - file name
+        *@param pBuffer - buffer containing the wav file
         *@return opened sound on success, 0 on error
         *@note The sound must be released when no longer used, see csrReleaseSound()
         */
-        CSR_Sound* csrSoundOpenWav(const ALCdevice*  pOpenALDevice,
-                                   const ALCcontext* pOpenALContext,
-                                         const char* pFileName);
+        CSR_Sound* csrSoundOpenWavBuffer(const ALCdevice*  pOpenALDevice,
+                                         const ALCcontext* pOpenALContext,
+                                         const CSR_Buffer* pBuffer);
 
         /**
         * Initializes a sound structure

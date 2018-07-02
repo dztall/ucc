@@ -163,7 +163,7 @@ int LoadLandscapeFromBitmap(const char* fileName)
         return 0;
 
     // load a default grayscale bitmap from which a landscape will be generated
-    pBitmap = csrPixelBufferFromBitmap(fileName);
+    pBitmap = csrPixelBufferFromBitmapFile(fileName);
 
     // succeeded?
     if (!pBitmap)
@@ -366,7 +366,7 @@ void on_GLES2_Init(int view_w, int view_h)
     }
 
     // load landscape texture
-    pPixelBuffer                                                     = csrPixelBufferFromBitmap(LANDSCAPE_TEXTURE_FILE);
+    pPixelBuffer                                                     = csrPixelBufferFromBitmapFile(LANDSCAPE_TEXTURE_FILE);
     ((CSR_Model*)(pItem->m_pModel))->m_pMesh[0].m_Shader.m_TextureID = csrTextureFromPixelBuffer(pPixelBuffer);
 
     // landscape texture will no longer be used
@@ -412,7 +412,7 @@ void on_GLES2_Init(int view_w, int view_h)
     csrSoundInitializeOpenAL(&g_pOpenALDevice, &g_pOpenALContext);
 
     // load step sound file
-    g_pSound = csrSoundOpen(g_pOpenALDevice, g_pOpenALContext, PLAYER_STEP_SOUND_FILE, 44100);
+    g_pSound = csrSoundOpenWavFile(g_pOpenALDevice, g_pOpenALContext, PLAYER_STEP_SOUND_FILE);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
