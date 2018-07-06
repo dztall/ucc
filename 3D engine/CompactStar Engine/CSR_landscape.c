@@ -212,7 +212,7 @@ void on_GLES2_Init(int view_w, int view_h)
     glDepthRangef(0.0f, 1.0f);
 
     // load landscape data from grayscale image model
-    pPixelBuffer = csrPixelBufferFromBitmap(LANDSCAPE_DATA_FILE);
+    pPixelBuffer = csrPixelBufferFromBitmapFile(LANDSCAPE_DATA_FILE);
 
     // configure the vertex format
     vertexFormat.m_HasNormal         = 0;
@@ -239,7 +239,7 @@ void on_GLES2_Init(int view_w, int view_h)
     g_pTree = csrAABBTreeFromMesh(g_pMesh);
 
     // load landscape texture
-    pPixelBuffer                  = csrPixelBufferFromBitmap(LANDSCAPE_TEXTURE_FILE);
+    pPixelBuffer                  = csrPixelBufferFromBitmapFile(LANDSCAPE_TEXTURE_FILE);
     g_pMesh->m_Shader.m_TextureID = csrTextureFromPixelBuffer(pPixelBuffer);
 
     // landscape texture will no longer be used
@@ -248,7 +248,7 @@ void on_GLES2_Init(int view_w, int view_h)
     csrSoundInitializeOpenAL(&g_pOpenALDevice, &g_pOpenALContext);
 
     // load step sound file
-    g_pSound = csrSoundOpen(g_pOpenALDevice, g_pOpenALContext, PLAYER_STEP_SOUND_FILE, 44100);
+    g_pSound = csrSoundOpenWavFile(g_pOpenALDevice, g_pOpenALContext, PLAYER_STEP_SOUND_FILE);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Final()

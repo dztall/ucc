@@ -67,9 +67,25 @@ void csrPixelBufferInit(CSR_PixelBuffer* pPB)
     pPB->m_pData        = 0;
 }
 //---------------------------------------------------------------------------
-CSR_PixelBuffer* csrPixelBufferFromBitmap(const char* pFileName)
+CSR_PixelBuffer* csrPixelBufferFromBitmapFile(const char* pFileName)
 {
     CSR_Buffer*      pBuffer;
+    CSR_PixelBuffer* pPixelBuffer;
+
+    // open bitmap file
+    pBuffer = csrFileOpen(pFileName);
+
+    // convert to pixel buffer
+    pPixelBuffer = csrPixelBufferFromBitmapBuffer(pBuffer);
+
+    // free the bitmap file
+    csrBufferRelease(pBuffer);
+
+    return pPixelBuffer;
+}
+//---------------------------------------------------------------------------
+CSR_PixelBuffer* csrPixelBufferFromBitmapBuffer(const CSR_Buffer* pBuffer)
+{
     CSR_PixelBuffer* pPixelBuffer;
     size_t           offset;
     unsigned         dataOffset;
@@ -78,10 +94,7 @@ CSR_PixelBuffer* csrPixelBufferFromBitmap(const char* pFileName)
     unsigned short   compressed;
     unsigned char    signature[2];
 
-    // open bitmap file
-    pBuffer = csrFileOpen(pFileName);
-
-    // succeeded?
+    // validate the input
     if (!pBuffer)
         return 0;
 
@@ -92,20 +105,14 @@ CSR_PixelBuffer* csrPixelBufferFromBitmap(const char* pFileName)
 
     // is bitmap signature correct?
     if (signature[0] != 'B' || signature[1] != 'M')
-    {
-        csrBufferRelease(pBuffer);
         return 0;
-    }
 
     // create a pixel buffer
     pPixelBuffer = csrPixelBufferCreate();
 
     // succeeded?
     if (!pPixelBuffer)
-    {
-        csrBufferRelease(pBuffer);
         return 0;
-    }
 
     // initialize the pixel buffer
     csrPixelBufferInit(pPixelBuffer);
@@ -141,7 +148,6 @@ CSR_PixelBuffer* csrPixelBufferFromBitmap(const char* pFileName)
             if (bpp != 24)
             {
                 csrPixelBufferRelease(pPixelBuffer);
-                csrBufferRelease(pBuffer);
                 return 0;
             }
 
@@ -152,7 +158,6 @@ CSR_PixelBuffer* csrPixelBufferFromBitmap(const char* pFileName)
             if (compressed)
             {
                 csrPixelBufferRelease(pPixelBuffer);
-                csrBufferRelease(pBuffer);
                 return 0;
             }
 
@@ -184,7 +189,6 @@ CSR_PixelBuffer* csrPixelBufferFromBitmap(const char* pFileName)
             if (bpp != 24)
             {
                 csrPixelBufferRelease(pPixelBuffer);
-                csrBufferRelease(pBuffer);
                 return 0;
             }
 
@@ -219,7 +223,6 @@ CSR_PixelBuffer* csrPixelBufferFromBitmap(const char* pFileName)
             if (bpp != 24)
             {
                 csrPixelBufferRelease(pPixelBuffer);
-                csrBufferRelease(pBuffer);
                 return 0;
             }
 
@@ -229,7 +232,6 @@ CSR_PixelBuffer* csrPixelBufferFromBitmap(const char* pFileName)
         default:
             // unsupported bitmap format
             csrPixelBufferRelease(pPixelBuffer);
-            csrBufferRelease(pBuffer);
             return 0;
     }
 
@@ -248,8 +250,6 @@ CSR_PixelBuffer* csrPixelBufferFromBitmap(const char* pFileName)
                   sizeof(unsigned char),
                   pPixelBuffer->m_DataLength,
                   pPixelBuffer->m_pData);
-
-    csrBufferRelease(pBuffer);
 
     return pPixelBuffer;
 }
@@ -469,7 +469,7 @@ GLuint csrCubemapLoad(const char** pFileNames)
         int            doReleasePixels = 0;
 
         // load the texture content from file
-        CSR_PixelBuffer* pPixelBuffer = csrPixelBufferFromBitmap(pFileNames[i]);
+        CSR_PixelBuffer* pPixelBuffer = csrPixelBufferFromBitmapFile(pFileNames[i]);
 
         // failed?
         if (!pPixelBuffer)

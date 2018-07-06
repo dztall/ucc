@@ -127,7 +127,16 @@ typedef struct
         *@note For now only most common bitmaps are loaded, some bitmap types may be unsupported
         *@note The pixel buffer must be released when no longer used, see csrPixelBufferRelease()
         */
-        CSR_PixelBuffer* csrPixelBufferFromBitmap(const char* pFileName);
+        CSR_PixelBuffer* csrPixelBufferFromBitmapFile(const char* pFileName);
+
+        /**
+        * Loads a pixel buffer from a bitmap buffer
+        *@param pBuffer - buffer containing the bitmap to load from
+        *@return pixel buffer, 0 on error
+        *@note For now only most common bitmaps are loaded, some bitmap types may be unsupported
+        *@note The pixel buffer must be released when no longer used, see csrPixelBufferRelease()
+        */
+        CSR_PixelBuffer* csrPixelBufferFromBitmapBuffer(const CSR_Buffer* pBuffer);
 
         //-------------------------------------------------------------------
         // Texture functions

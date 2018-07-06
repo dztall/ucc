@@ -153,10 +153,9 @@ void csrSoundRelease(CSR_Sound* pSound)
     free(pSound);
 }
 //---------------------------------------------------------------------------
-CSR_Sound* csrSoundOpen(const ALCdevice*  pOpenALDevice,
-                        const ALCcontext* pOpenALContext,
-                              const char* pFileName,
-                              unsigned    sampling)
+CSR_Sound* csrSoundOpenWavFile(const ALCdevice*  pOpenALDevice,
+                               const ALCcontext* pOpenALContext,
+                               const char*       pFileName)
 {
     CSR_Buffer* pBuffer;
     CSR_Sound*  pSound;
@@ -164,15 +163,8 @@ CSR_Sound* csrSoundOpen(const ALCdevice*  pOpenALDevice,
     // open the sound file
     pBuffer = csrFileOpen(pFileName);
 
-    // succeeded?
-    if (!pBuffer || !pBuffer->m_Length)
-    {
-        csrBufferRelease(pBuffer);
-        return 0;
-    }
-
-    // create the sound from file content
-    pSound = csrSoundCreate(pOpenALDevice, pOpenALContext, pBuffer, sampling);
+    // create the sound from the Wav file content
+    pSound = csrSoundOpenWavBuffer(pOpenALDevice, pOpenALContext, pBuffer);
 
     // release the file buffer (no longer required)
     csrBufferRelease(pBuffer);
@@ -180,26 +172,23 @@ CSR_Sound* csrSoundOpen(const ALCdevice*  pOpenALDevice,
     return pSound;
 }
 //---------------------------------------------------------------------------
-CSR_Sound* csrSoundOpenWav(const ALCdevice*  pOpenALDevice,
-                           const ALCcontext* pOpenALContext,
-                                 const char* pFileName)
+CSR_Sound* csrSoundOpenWavBuffer(const ALCdevice*  pOpenALDevice,
+                                 const ALCcontext* pOpenALContext,
+                                 const CSR_Buffer* pBuffer)
 {
-    CSR_Buffer*   pBuffer;
     CSR_Buffer    dataBuffer;
     CSR_Sound*    pSound;
     size_t        offset;
     unsigned char signature[4];
     unsigned      sampleRate;
 
-    // open the sound file
-    pBuffer = csrFileOpen(pFileName);
-
-    // succeeded?
-    if (!pBuffer || !pBuffer->m_Length)
-    {
-        csrBufferRelease(pBuffer);
+    // no buffer?
+    if (!pBuffer)
         return 0;
-    }
+
+    // is buffer empty?
+    if (!pBuffer->m_Length)
+        return 0;
 
     offset = 0;
 
@@ -208,10 +197,7 @@ CSR_Sound* csrSoundOpenWav(const ALCdevice*  pOpenALDevice,
 
     // check the RIFF signature
     if (signature[0] != 'R' || signature[1] != 'I' || signature[2] != 'F' || signature[3] != 'F')
-    {
-        csrBufferRelease(pBuffer);
         return 0;
-    }
 
     // skip 4 next bytes (this is the entire WAV data length)
     offset += 4;
@@ -221,10 +207,7 @@ CSR_Sound* csrSoundOpenWav(const ALCdevice*  pOpenALDevice,
 
     // check the WAVE signature
     if (signature[0] != 'W' || signature[1] != 'A' || signature[2] != 'V' || signature[3] != 'E')
-    {
-        csrBufferRelease(pBuffer);
         return 0;
-    }
 
     // skip next bytes until the sample rate
     offset += 12;
@@ -237,20 +220,14 @@ CSR_Sound* csrSoundOpenWav(const ALCdevice*  pOpenALDevice,
 
     // check for data corruption
     if (offset >= pBuffer->m_Length)
-    {
-        csrBufferRelease(pBuffer);
         return 0;
-    }
 
     // populate a pseudo-buffer to read the sound data
     dataBuffer.m_pData  = ((unsigned char*)pBuffer->m_pData) + offset;
     dataBuffer.m_Length = pBuffer->m_Length - offset;
 
-    // create the sound from file content
+    // create the sound from the file content
     pSound = csrSoundCreate(pOpenALDevice, pOpenALContext, &dataBuffer, sampleRate);
-
-    // release the file buffer (no longer required)
-    csrBufferRelease(pBuffer);
 
     return pSound;
 }
