@@ -144,11 +144,13 @@ void on_GLES2_Init(int view_w, int view_h)
     glDepthRangef(0.0f, 1.0f);
 
     // configure the vertex format
+    csrVertexFormatInit(&vertexFormat);
     vertexFormat.m_HasNormal         = 0;
     vertexFormat.m_HasTexCoords      = 0;
     vertexFormat.m_HasPerVertexColor = 0;
 
     // configure the material
+    csrMaterialInit(&material);
     material.m_Color       = 0xFFFF;
     material.m_Transparent = 0;
 

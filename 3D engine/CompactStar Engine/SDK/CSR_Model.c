@@ -3343,25 +3343,25 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
     // calculate the normal and uv offsets. Be careful, the face values follows one each other in
     // the file, without distinction, so the correct format (v, v/n, v/f or v/n/f) should be
     // determined and used
-    normalOffset = (pNormal && pNormal->m_Count) ? 1                : 0;
-    uvOffset     = (pUV     && pUV->m_Count)     ? normalOffset + 1 : 0;
+    uvOffset     = (pUV     && pUV->m_Count)     ? 1            : 0;
+    normalOffset = (pNormal && pNormal->m_Count) ? uvOffset + 1 : 0;
 
     // wavefront faces are organized as triangle fan, so get the first vertex
     // and build all others from it
     baseVertexIndex = (pFace->m_pData[0] - 1) * 3;
     faceStride      = 1;
 
-    // get the first normal
-    if (pNormal->m_Count)
-    {
-        baseNormalIndex = (pFace->m_pData[normalOffset] - 1) * 3;
-        ++faceStride;
-    }
-
     // get the first texture coordinate
     if (pUV->m_Count)
     {
         baseUVIndex = (pFace->m_pData[uvOffset] - 1) * 2;
+        ++faceStride;
+    }
+
+    // get the first normal
+    if (pNormal->m_Count)
+    {
+        baseNormalIndex = (pFace->m_pData[normalOffset] - 1) * 3;
         ++faceStride;
     }
 
@@ -3374,8 +3374,8 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
 
         // build polygon vertex 1
         int vertexIndex =                                baseVertexIndex;
-        int normalIndex = pVB->m_Format.m_HasNormal    ? baseNormalIndex : 0;
         int uvIndex     = pVB->m_Format.m_HasTexCoords ? baseUVIndex     : 0;
+        int normalIndex = pVB->m_Format.m_HasNormal    ? baseNormalIndex : 0;
 
         // set vertex data
         vertex.m_X = pVertex->m_pData[vertexIndex];
@@ -3401,16 +3401,16 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
 
         // add the vertex to the buffer
         csrVertexBufferAdd(&vertex,
-                            &normal,
-                            &uv,
-                             vertexIndex,
-                             fOnGetVertexColor,
-                             pVB);
+                           &normal,
+                           &uv,
+                            vertexIndex,
+                            fOnGetVertexColor,
+                            pVB);
 
         // build polygon vertex 2
         vertexIndex =                                (pFace->m_pData[ i * faceStride]                 - 1) * 3;
-        normalIndex = pVB->m_Format.m_HasNormal    ? (pFace->m_pData[(i * faceStride) + normalOffset] - 1) * 3 : 0;
         uvIndex     = pVB->m_Format.m_HasTexCoords ? (pFace->m_pData[(i * faceStride) + uvOffset]     - 1) * 2 : 0;
+        normalIndex = pVB->m_Format.m_HasNormal    ? (pFace->m_pData[(i * faceStride) + normalOffset] - 1) * 3 : 0;
 
         // set vertex data
         vertex.m_X = pVertex->m_pData[vertexIndex];
@@ -3444,8 +3444,8 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
 
         // build polygon vertex 3
         vertexIndex =                                (pFace->m_pData[ (i + 1) * faceStride]                 - 1) * 3;
-        normalIndex = pVB->m_Format.m_HasNormal    ? (pFace->m_pData[((i + 1) * faceStride) + normalOffset] - 1) * 3 : 0;
         uvIndex     = pVB->m_Format.m_HasTexCoords ? (pFace->m_pData[((i + 1) * faceStride) + uvOffset]     - 1) * 2 : 0;
+        normalIndex = pVB->m_Format.m_HasNormal    ? (pFace->m_pData[((i + 1) * faceStride) + normalOffset] - 1) * 3 : 0;
 
         // set vertex data
         vertex.m_X = pVertex->m_pData[vertexIndex];
