@@ -128,6 +128,13 @@
         void csrDrawEnd(void);
 
         /**
+        * Draws a line
+        *@param pLine - line to draw
+        *@param pShader - shader that will be used to draw the line
+        */
+        void csrDrawLine(const CSR_Line* pLine, const CSR_Shader* pShader);
+
+        /**
         * Draws a vertex buffer in a scene
         *@param pVB - vertex buffer to draw
         *@param pShader - shader to use to draw the vertex buffer

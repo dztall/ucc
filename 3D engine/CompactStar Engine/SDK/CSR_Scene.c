@@ -264,6 +264,7 @@ void csrSceneItemContentRelease(CSR_SceneItem* pSceneItem)
     if (pSceneItem->m_pModel)
         switch (pSceneItem->m_Type)
         {
+            case CSR_MT_Line:  free((CSR_Line*)pSceneItem->m_pModel); break;
             case CSR_MT_Mesh:  csrMeshRelease(pSceneItem->m_pModel);  break;
             case CSR_MT_Model: csrModelRelease(pSceneItem->m_pModel); break;
             case CSR_MT_MDL:   csrMDLRelease(pSceneItem->m_pModel);   break;
@@ -342,16 +343,28 @@ void csrSceneItemDraw(const CSR_Scene*        pScene,
     // enable the item shader
     csrShaderEnable(pShader);
 
+    // get the projection matrix slot from shader
+    slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uProjection");
+
+    // connect the projection matrix to shader
+    if (slot >= 0)
+        glUniformMatrix4fv(slot, 1, GL_FALSE, &pScene->m_ProjectionMatrix.m_Table[0][0]);
+
     // get the view matrix slot from shader
     slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uView");
 
-    // connect view matrix to shader
+    // connect the view matrix to shader
     if (slot >= 0)
         glUniformMatrix4fv(slot, 1, 0, &pScene->m_ViewMatrix.m_Table[0][0]);
 
     // draw the model
     switch (pItem->m_Type)
     {
+        case CSR_MT_Line:
+            // draw the line
+            csrDrawLine((const CSR_Line*)pItem->m_pModel, pShader);
+            break;
+
         case CSR_MT_Mesh:
             // draw the mesh
             csrDrawMesh((const CSR_Mesh*)pItem->m_pModel,
@@ -666,6 +679,76 @@ void csrSceneInit(CSR_Scene* pScene)
 
     // set the default item matrix to identity
     csrMat4Identity(&pScene->m_ViewMatrix);
+}
+//---------------------------------------------------------------------------
+CSR_SceneItem* csrSceneAddLine(CSR_Scene* pScene, CSR_Line* pLine, int transparent)
+{
+    CSR_SceneItem* pItem;
+    int            index;
+
+    // validate the inputs
+    if (!pScene || !pLine)
+        return 0;
+
+    // search for a scene item which already contains the same line
+    pItem = csrSceneGetItem(pScene, pLine);
+
+    // found one?
+    if (pItem)
+        return pItem;
+
+    // do add a transparent line?
+    if (transparent)
+    {
+        // add a new item to the transparent items
+        pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pTransparentItem,
+                                               sizeof(CSR_SceneItem),
+                                               pScene->m_TransparentItemCount + 1);
+
+        // succeeded?
+        if (!pItem)
+            return 0;
+
+        // get the item index to update
+        index = pScene->m_TransparentItemCount;
+    }
+    else
+    {
+        // add a new item to the scene items
+        pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pItem,
+                                               sizeof(CSR_SceneItem),
+                                               pScene->m_ItemCount + 1);
+
+        // succeeded?
+        if (!pItem)
+            return 0;
+
+        // get the scene item index to update
+        index = pScene->m_ItemCount;
+    }
+
+    // initialize the newly created item with the default values
+    csrSceneItemInit(&pItem[index]);
+
+    // configure the item
+    pItem[index].m_pModel = pLine;
+    pItem[index].m_Type   = CSR_MT_Line;
+
+    // do add a transparent item?
+    if (transparent)
+    {
+        // add item to the transparent item list
+        pScene->m_pTransparentItem = pItem;
+        ++pScene->m_TransparentItemCount;
+    }
+    else
+    {
+        // add item to the normal item list
+        pScene->m_pItem = pItem;
+        ++pScene->m_ItemCount;
+    }
+
+    return &pItem[index];
 }
 //---------------------------------------------------------------------------
 CSR_SceneItem* csrSceneAddMesh(CSR_Scene* pScene, CSR_Mesh* pMesh, int transparent, int aabb)
@@ -1112,9 +1195,9 @@ CSR_SceneItem* csrSceneGetItem(const CSR_Scene* pScene, const void* pKey)
 //---------------------------------------------------------------------------
 void csrSceneDeleteFrom(CSR_Scene* pScene, const void* pKey)
 {
-    size_t          i;
-    size_t          j;
-    CSR_SceneItem*  pSceneItem;
+    size_t         i;
+    size_t         j;
+    CSR_SceneItem* pSceneItem;
 
     // validate inputs
     if (!pScene || !pKey)

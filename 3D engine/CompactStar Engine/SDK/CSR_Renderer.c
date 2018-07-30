@@ -469,6 +469,100 @@ void csrDrawBegin(const CSR_Color* pColor)
 void csrDrawEnd(void)
 {}
 //---------------------------------------------------------------------------
+void csrDrawLine(const CSR_Line* pLine, const CSR_Shader* pShader)
+{
+    GLint  slot;
+    size_t stride;
+    float  lineVertex[14];
+
+    // validate the inputs
+    if (!pLine || !pShader || pLine->m_Width <= 0.0f)
+        return;
+
+    // set the line width to use
+    glLineWidth(pLine->m_Width);
+
+    #ifndef CSR_OPENGL_2_ONLY
+        // do draw smooth lines?
+        if (pLine->m_Smooth)
+        {
+            // enabled the line smoothing mode
+            glEnable(GL_LINE_SMOOTH);
+            glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+        }
+    #endif
+
+    // bind shader program
+    csrShaderEnable(pShader);
+
+    // get the model matrix slot from shader
+    slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uModel");
+
+    // found it?
+    if (slot >= 0)
+    {
+        CSR_Matrix4 matrix;
+        csrMat4Identity(&matrix);
+
+        // connect default model matrix to shader
+        glUniformMatrix4fv(slot, 1, GL_FALSE, &matrix.m_Table[0][0]);
+    }
+
+    // generate the line vertex buffer
+    lineVertex[0]  = pLine->m_Start.m_X;
+    lineVertex[1]  = pLine->m_Start.m_Y;
+    lineVertex[2]  = pLine->m_Start.m_Z;
+    lineVertex[3]  = pLine->m_StartColor.m_R;
+    lineVertex[4]  = pLine->m_StartColor.m_G;
+    lineVertex[5]  = pLine->m_StartColor.m_B;
+    lineVertex[6]  = pLine->m_StartColor.m_A;
+    lineVertex[7]  = pLine->m_End.m_X;
+    lineVertex[8]  = pLine->m_End.m_Y;
+    lineVertex[9]  = pLine->m_End.m_Z;
+    lineVertex[10] = pLine->m_EndColor.m_R;
+    lineVertex[11] = pLine->m_EndColor.m_G;
+    lineVertex[12] = pLine->m_EndColor.m_B;
+    lineVertex[13] = pLine->m_EndColor.m_A;
+
+    stride = 7;
+
+    // found it?
+    if (pShader->m_VertexSlot < 0)
+        return;
+
+    // found it?
+    if (pShader->m_ColorSlot < 0)
+        return;
+
+    // enable shader slots
+    glEnableVertexAttribArray(pShader->m_VertexSlot);
+    glEnableVertexAttribArray(pShader->m_ColorSlot);
+
+    // link the line buffer to the shader
+    glVertexAttribPointer(pShader->m_VertexSlot,
+                          3,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          stride * sizeof(float),
+                          &lineVertex[0]);
+    glVertexAttribPointer(pShader->m_ColorSlot,
+                          4,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          stride * sizeof(float),
+                          &lineVertex[3]);
+
+    // draw the line
+    glDrawArrays(GL_LINES, 0, 2);
+
+    // disable shader slots
+    glDisableVertexAttribArray(pShader->m_VertexSlot);
+    glDisableVertexAttribArray(pShader->m_ColorSlot);
+
+    // unbind shader program
+    csrShaderEnable(0);
+}
+//---------------------------------------------------------------------------
 void csrDrawVertexBuffer(const CSR_VertexBuffer* pVB,
                          const CSR_Shader*       pShader,
                          const CSR_Array*        pMatrixArray)

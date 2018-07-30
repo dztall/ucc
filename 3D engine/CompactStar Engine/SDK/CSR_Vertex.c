@@ -19,6 +19,33 @@
 #include <stdlib.h>
 
 //---------------------------------------------------------------------------
+// Line functions
+//---------------------------------------------------------------------------
+void csrLineInit(CSR_Line* pLine)
+{
+    // no line to initialize?
+    if (!pLine)
+        return;
+
+    // initialize the line content
+    pLine->m_Start.m_X      =  0.0f;
+    pLine->m_Start.m_Y      = -1.0f;
+    pLine->m_Start.m_Z      =  0.0f;
+    pLine->m_End.m_X        =  0.0f;
+    pLine->m_End.m_Y        =  1.0f;
+    pLine->m_End.m_Z        =  0.0f;
+    pLine->m_StartColor.m_R =  1.0f;
+    pLine->m_StartColor.m_G =  1.0f;
+    pLine->m_StartColor.m_B =  1.0f;
+    pLine->m_StartColor.m_A =  1.0f;
+    pLine->m_EndColor.m_R   =  1.0f;
+    pLine->m_EndColor.m_G   =  1.0f;
+    pLine->m_EndColor.m_B   =  1.0f;
+    pLine->m_EndColor.m_A   =  1.0f;
+    pLine->m_Width          =  1.0f;
+    pLine->m_Smooth         =  1;
+}
+//---------------------------------------------------------------------------
 // Vertex format functions
 //---------------------------------------------------------------------------
 void csrVertexFormatInit(CSR_VertexFormat* pVertexFormat)
