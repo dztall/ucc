@@ -280,9 +280,6 @@ void CreateViewport(float w, float h)
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
 {
-    unsigned         playerStepSoundFileLen;
-    unsigned         playerFireSoundFileLen;
-    unsigned char*   pPlayerStepSndBuffer;
     CSR_VertexFormat vertexFormat;
     CSR_Material     material;
     CSR_PixelBuffer* pPixelBuffer = 0;
@@ -317,9 +314,9 @@ void on_GLES2_Init(int view_w, int view_h)
     g_SceneContext.m_fOnGetShader = OnGetShader;
 
     // compile, link and use shader
-    g_pShader = csrShaderLoadFromStr(&g_VSTextured,
+    g_pShader = csrShaderLoadFromStr(&g_VSTextured[0],
                                       sizeof(g_VSTextured),
-                                     &g_FSTextured,
+                                     &g_FSTextured[0],
                                       sizeof(g_FSTextured),
                                       0,
                                       0);
@@ -373,9 +370,9 @@ void on_GLES2_Init(int view_w, int view_h)
     csrPixelBufferRelease(pPixelBuffer);
 
     // load the skybox shader
-    g_pSkyboxShader = csrShaderLoadFromStr(&g_VSSkybox,
+    g_pSkyboxShader = csrShaderLoadFromStr(&g_VSSkybox[0],
                                             sizeof(g_VSSkybox),
-                                           &g_FSSkybox,
+                                           &g_FSSkybox[0],
                                             sizeof(g_FSSkybox),
                                             0,
                                             0);
