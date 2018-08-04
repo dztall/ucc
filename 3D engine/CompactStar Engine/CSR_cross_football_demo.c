@@ -1,9 +1,8 @@
 ﻿/*****************************************************************************
- * ==> Landscape, skybox and ground collision demo --------------------------*
+ * ==> Cross football game demo ---------------------------------------------*
  *****************************************************************************
- * Description : A landscape generator based on a grayscale image, with      *
- *               ground collision to walk on his surface. Swipe up or down   *
- *               to walk, and left or right to rotate                        *
+ * Description : A cross football game demo. Swipe up or down to walk, and   *
+ *               left or right to rotate. Tap to shoot the ball              *
  * Developer   : Jean-Milost Reymond                                         *
  * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
@@ -39,12 +38,18 @@
 #include "SDK/CSR_Shader.h"
 #include "SDK/CSR_Renderer.h"
 #include "SDK/CSR_Scene.h"
+#include "SDK/CSR_Physics.h"
 #include "SDK/CSR_Sound.h"
+#include "SDK/CSR_MobileC_Debug.h"
 
 #include <ccr.h>
 
+// energy factor for the shoot
+#define M_ShootEnergyFactor 23.5f
+
 #define LANDSCAPE_TEXTURE_FILE "Resources/grass.bmp"
-#define LANDSCAPE_DATA_FILE    "Resources/the_face.bmp"
+#define BALL_TEXTURE_FILE      "Resources/soccer_ball.bmp"
+#define LANDSCAPE_DATA_FILE    "Resources/level.bmp"
 #define SKYBOX_LEFT            "Resources/skybox_left_small.bmp"
 #define SKYBOX_TOP             "Resources/skybox_top_small.bmp"
 #define SKYBOX_RIGHT           "Resources/skybox_right_small.bmp"
@@ -112,24 +117,37 @@ const char g_FSSkybox[] =
     "    gl_FragColor = textureCube(csr_sCubemap, csr_vTexCoord);"
     "}";
 //------------------------------------------------------------------------------
+typedef struct
+{
+    void*       m_pKey;
+    CSR_Matrix4 m_Matrix;
+    CSR_Sphere  m_Geometry;
+    CSR_Body    m_Body;
+} CSR_Ball;
+//------------------------------------------------------------------------------
 CSR_Scene*       g_pScene        = 0;
 CSR_Shader*      g_pShader       = 0;
 CSR_Shader*      g_pSkyboxShader = 0;
 void*            g_pLandscapeKey = 0;
 float            g_MapHeight     = 3.0f;
 float            g_MapScale      = 0.2f;
-float            g_Angle         = 0.0f;
+float            g_Angle         = M_PI / -4.0f;
+float            g_RollAngle     = 0.0f;
+float            g_BallDirAngle  = 0.0f;
+float            g_BallOffset    = 0.0f;
 float            g_RotationSpeed = 0.02f;
 float            g_StepTime      = 0.0f;
 float            g_StepInterval  = 300.0f;
 const float      g_PosVelocity   = 10.0f;
 const float      g_DirVelocity   = 30.0f;
 const float      g_ControlRadius = 40.0f;
+CSR_Ball         g_Ball;
 CSR_SceneContext g_SceneContext;
-CSR_Sphere       g_BoundingSphere;
+CSR_Sphere       g_ViewSphere;
 CSR_Matrix4      g_LandscapeMatrix;
 CSR_Vector2      g_TouchOrigin;
 CSR_Vector2      g_TouchPosition;
+CSR_Vector3      g_FrictionForce;
 CSR_Color        g_Color;
 ALCdevice*       g_pOpenALDevice  = 0;
 ALCcontext*      g_pOpenALContext = 0;
@@ -194,7 +212,10 @@ int LoadLandscapeFromBitmap(const char* fileName)
     return 1;
 }
 //---------------------------------------------------------------------------
-int ApplyGroundCollision(const CSR_Sphere* pBoundingSphere, CSR_Matrix4* pMatrix)
+int ApplyGroundCollision(const CSR_Sphere*  pBoundingSphere,
+                               float        dir,
+                               CSR_Matrix4* pMatrix,
+                               CSR_Plane*   pGroundPlane)
 {
     if (!g_pScene)
         return 0;
@@ -214,7 +235,7 @@ int ApplyGroundCollision(const CSR_Sphere* pBoundingSphere, CSR_Matrix4* pMatrix
     camera.m_Position.m_Y =  0.0f;
     camera.m_Position.m_Z = -pBoundingSphere->m_Center.m_Z;
     camera.m_xAngle       =  0.0f;
-    camera.m_yAngle       =  g_Angle;
+    camera.m_yAngle       =  dir;
     camera.m_zAngle       =  0.0f;
     camera.m_Factor.m_X   =  1.0f;
     camera.m_Factor.m_Y   =  1.0f;
@@ -231,12 +252,12 @@ int ApplyGroundCollision(const CSR_Sphere* pBoundingSphere, CSR_Matrix4* pMatrix
     modelCenter.m_Y = 0.0f;
     modelCenter.m_Z = 0.0f;
 
-    CSR_Matrix4 invertView;
+    CSR_Matrix4 invertMatrix;
     float       determinant;
 
     // calculate the current camera position above the landscape
-    csrMat4Inverse(pMatrix, &invertView, &determinant);
-    csrMat4Transform(&invertView, &modelCenter, &collisionInput.m_BoundingSphere.m_Center);
+    csrMat4Inverse(pMatrix, &invertMatrix, &determinant);
+    csrMat4Transform(&invertMatrix, &modelCenter, &collisionInput.m_BoundingSphere.m_Center);
     collisionInput.m_CheckPos = collisionInput.m_BoundingSphere.m_Center;
 
     CSR_CollisionOutput collisionOutput;
@@ -247,10 +268,156 @@ int ApplyGroundCollision(const CSR_Sphere* pBoundingSphere, CSR_Matrix4* pMatrix
     // update the ground position directly inside the matrix (this is where the final value is required)
     pMatrix->m_Table[3][1] = -collisionOutput.m_GroundPos;
 
+    // get the resulting plane
+    *pGroundPlane = collisionOutput.m_GroundPlane;
+
     if (collisionOutput.m_Collision & CSR_CO_Ground)
         return 1;
 
     return 0;
+}
+//---------------------------------------------------------------------------
+void ApplyPhysics(float elapsedTime)
+{
+    float       gravity;
+    float       thetaX;
+    float       thetaZ;
+    CSR_Plane   groundPlane;
+    CSR_Vector3 planeNormal;
+    CSR_Vector3 acceleration;
+    CSR_Vector3 prevCenter;
+
+    // apply the ground collision on the current position and get the ground polygon
+    ApplyGroundCollision(&g_Ball.m_Geometry, 0.0f, &g_Ball.m_Matrix, &groundPlane);
+
+    // get the normal of the plane
+    planeNormal.m_X = groundPlane.m_A;
+    planeNormal.m_Y = groundPlane.m_B;
+    planeNormal.m_Z = groundPlane.m_C;
+
+    // calculate the next ball roll position
+    csrPhysicsRoll(&planeNormal, g_Ball.m_Body.m_Mass, 0.0025f, elapsedTime, &g_Ball.m_Body.m_Velocity);
+
+    // keep the previous ball position
+    prevCenter = g_Ball.m_Geometry.m_Center;
+
+    // calculate the new position ( using the formula pos = pos + (v * dt))
+    g_Ball.m_Geometry.m_Center.m_X += g_Ball.m_Body.m_Velocity.m_X * elapsedTime;
+    g_Ball.m_Geometry.m_Center.m_Y += g_Ball.m_Body.m_Velocity.m_Y * elapsedTime;
+    g_Ball.m_Geometry.m_Center.m_Z += g_Ball.m_Body.m_Velocity.m_Z * elapsedTime;
+
+    // check if the new position is valid
+    if (!ApplyGroundCollision(&g_Ball.m_Geometry, 0.0f, &g_Ball.m_Matrix, &groundPlane))
+    {
+        // do perform a rebound on the x or z axis?
+        const int xRebound = g_Ball.m_Geometry.m_Center.m_X <= -3.08f || g_Ball.m_Geometry.m_Center.m_X >= 3.08f;
+        const int zRebound = g_Ball.m_Geometry.m_Center.m_Z <= -3.08f || g_Ball.m_Geometry.m_Center.m_Z >= 3.08f;
+
+        // reset the ball to the previous position
+        g_Ball.m_Geometry.m_Center = prevCenter;
+
+        // do perform a rebound on the x axis?
+        if (xRebound)
+            g_Ball.m_Body.m_Velocity.m_X = -g_Ball.m_Body.m_Velocity.m_X;
+
+        // do perform a rebound on the z axis?
+        if (zRebound)
+            g_Ball.m_Body.m_Velocity.m_Z = -g_Ball.m_Body.m_Velocity.m_Z;
+    }
+    else
+    {
+        float       distance;
+        float       ballDirAngle;
+        CSR_Matrix4 rxMatrix;
+        CSR_Matrix4 ryMatrix;
+        CSR_Matrix4 rzMatrix;
+        CSR_Matrix4 rMatrix;
+        CSR_Matrix4 ballMatrix;
+        CSR_Vector3 rollDistance;
+        CSR_Vector3 rollDir;
+        CSR_Vector3 axis;
+
+        // calculate the rolling angle (depends on the distance the ball moved)
+        csrVec3Sub(&g_Ball.m_Geometry.m_Center, &prevCenter, &rollDistance);
+        csrVec3Length(&rollDistance, &distance);
+        g_RollAngle = fmod(g_RollAngle + (distance * 10.0f), M_PI * 2.0f);
+
+        axis.m_X = 1.0f;
+        axis.m_Y = 0.0f;
+        axis.m_Z = 0.0f;
+
+        // the ball moved since the last frame?
+        if (distance)
+        {
+            // calculate the new ball direction angle
+            csrVec3Normalize(&rollDistance, &rollDir);
+            csrVec3Dot(&rollDir, &axis, &g_BallDirAngle);
+        }
+
+        // calculate the rotation matrix on the x axis
+        csrMat4Rotate(g_RollAngle, &axis, &rxMatrix);
+
+        axis.m_X = 0.0f;
+        axis.m_Y = 1.0f;
+        axis.m_Z = 0.0f;
+
+        // ball moved on the z axis since the last frame?
+        if (rollDistance.m_Z)
+            // calculate the offset to apply to the ball direction
+            g_BallOffset = (rollDistance.m_Z > 0.0f ? 1.0f : -1.0f);
+
+        // calculate the rotation matrix on the y axis
+        csrMat4Rotate((M_PI * 2.0f) - ((acos(g_BallDirAngle) * g_BallOffset) - (M_PI / 2.0f)),
+                      &axis,
+                      &ryMatrix);
+
+        // build the final matrix
+        csrMat4Multiply(&rxMatrix, &ryMatrix, &ballMatrix);
+
+        // replace the ball in the model coordinate system (do that directly on the matrix)
+        ballMatrix.m_Table[3][0] = -g_Ball.m_Matrix.m_Table[3][0];
+        ballMatrix.m_Table[3][1] = -g_Ball.m_Matrix.m_Table[3][1];
+        ballMatrix.m_Table[3][2] = -g_Ball.m_Matrix.m_Table[3][2];
+
+        g_Ball.m_Matrix = ballMatrix;
+    }
+}
+//---------------------------------------------------------------------------
+void Shoot()
+{
+    CSR_Circle  playerCircle;
+    CSR_Circle  ballCircle;
+    CSR_Figure2 f1;
+    CSR_Figure2 f2;
+
+    // get the player position as a circle (i.e. ignore the y axis)
+    playerCircle.m_Center.m_X = g_ViewSphere.m_Center.m_X;
+    playerCircle.m_Center.m_Y = g_ViewSphere.m_Center.m_Z;
+    playerCircle.m_Radius     = g_ViewSphere.m_Radius + 0.15f;
+
+    // get the ball position as a circle (i.e. ignore the y axis)
+    ballCircle.m_Center.m_X = g_Ball.m_Geometry.m_Center.m_X;
+    ballCircle.m_Center.m_Y = g_Ball.m_Geometry.m_Center.m_Z;
+    ballCircle.m_Radius     = g_Ball.m_Geometry.m_Radius;
+
+    f1.m_Type    = CSR_F2_Circle;
+    f1.m_pFigure = &playerCircle;
+
+    f2.m_Type    = CSR_F2_Circle;
+    f2.m_pFigure = &ballCircle;
+
+    // check if the player is closer enough to the ball to shoot it
+    if (csrIntersect2(&f1, &f2, 0, 0))
+    {
+        // calculate the direction and intensity of the shoot
+        CSR_Vector2 distance;
+        csrVec2Sub(&ballCircle.m_Center, &playerCircle.m_Center, &distance);
+
+        // shoot the ball
+        g_Ball.m_Body.m_Velocity.m_X = M_ShootEnergyFactor * distance.m_X;
+        g_Ball.m_Body.m_Velocity.m_Y = 0.0f;
+        g_Ball.m_Body.m_Velocity.m_Z = M_ShootEnergyFactor * distance.m_Y;
+    }
 }
 //---------------------------------------------------------------------------
 CSR_Shader* OnGetShader(const void* pModel, CSR_EModelType type)
@@ -284,7 +451,7 @@ void on_GLES2_Init(int view_w, int view_h)
     CSR_Material     material;
     CSR_PixelBuffer* pPixelBuffer = 0;
     CSR_Mesh*        pMesh;
-    CSR_Model*       pModel;
+    CSR_SceneItem*   pSceneItem;
 
     // initialize the scene
     g_pScene = csrSceneCreate();
@@ -304,10 +471,22 @@ void on_GLES2_Init(int view_w, int view_h)
     csrMat4Identity(&g_pScene->m_ViewMatrix);
 
     // set the viewpoint bounding sphere default position
-    g_BoundingSphere.m_Center.m_X = 0.0f;
-    g_BoundingSphere.m_Center.m_Y = 0.0f;
-    g_BoundingSphere.m_Center.m_Z = 0.0f;
-    g_BoundingSphere.m_Radius     = 0.1f;
+    g_ViewSphere.m_Center.m_X = 3.08f;
+    g_ViewSphere.m_Center.m_Y = 0.0f;
+    g_ViewSphere.m_Center.m_Z = 3.08f;
+    g_ViewSphere.m_Radius     = 0.1f;
+
+    // set the ball bounding sphere default position
+    g_Ball.m_Geometry.m_Center.m_X = 0.0f;
+    g_Ball.m_Geometry.m_Center.m_Y = 0.0f;
+    g_Ball.m_Geometry.m_Center.m_Z = 0.0f;
+    g_Ball.m_Geometry.m_Radius     = 0.025f;
+    csrBodyInit(&g_Ball.m_Body);
+
+    // configure the friction force
+    g_FrictionForce.m_X = 0.1f;
+    g_FrictionForce.m_Y = 0.1f;
+    g_FrictionForce.m_Z = 0.1f;
 
     // configure the scene context
     csrSceneContextInit(&g_SceneContext);
@@ -368,6 +547,38 @@ void on_GLES2_Init(int view_w, int view_h)
 
     // landscape texture will no longer be used
     csrPixelBufferRelease(pPixelBuffer);
+
+    vertexFormat.m_HasNormal         = 0;
+    vertexFormat.m_HasPerVertexColor = 1;
+    vertexFormat.m_HasTexCoords      = 1;
+
+    material.m_Color       = 0xFFFFFFFF;
+    material.m_Transparent = 0;
+    material.m_Wireframe   = 0;
+
+    // create the ball
+    pMesh = csrShapeCreateSphere(g_Ball.m_Geometry.m_Radius, 
+                                 20,
+                                 20,
+                                &vertexFormat,
+                                 0,
+                                &material,
+                                 0);
+
+    // load ball texture
+    pPixelBuffer                = csrPixelBufferFromBitmapFile(BALL_TEXTURE_FILE);
+    pMesh->m_Shader.m_TextureID = csrTextureFromPixelBuffer(pPixelBuffer);
+
+    // ball texture will no longer be used
+    csrPixelBufferRelease(pPixelBuffer);
+
+    // add the mesh to the scene
+    pSceneItem = csrSceneAddMesh(g_pScene, pMesh, 0, 1);
+    csrSceneAddModelMatrix(g_pScene, pMesh, &g_Ball.m_Matrix);
+
+    // configure the ball particle
+    g_Ball.m_pKey        = pSceneItem->m_pModel;
+    g_Ball.m_Body.m_Mass = 0.3f;
 
     // load the skybox shader
     g_pSkyboxShader = csrShaderLoadFromStr(&g_VSSkybox[0],
@@ -444,12 +655,15 @@ void on_GLES2_Update(float timeStep_sec)
 {
     float      angle;
     CSR_Sphere prevSphere;
+    CSR_Plane  groundPlane;
+
+    ApplyPhysics(timeStep_sec);
 
     // if screen isn't touched, do nothing
     if (!g_TouchOrigin.m_X || !g_TouchOrigin.m_Y)
         return;
 
-    prevSphere = g_BoundingSphere;
+    prevSphere = g_ViewSphere;
 
     // calculate the angle formed by the touch gesture x and y distances
     if ((g_TouchPosition.m_X < g_TouchOrigin.m_X || g_TouchPosition.m_Y < g_TouchOrigin.m_Y) &&
@@ -492,11 +706,11 @@ void on_GLES2_Update(float timeStep_sec)
         g_Angle += M_PI * 2.0f;
 
     // calculate the next player position
-    g_BoundingSphere.m_Center.m_X += posVelocity * cosf(g_Angle + (M_PI * 0.5f)) * timeStep_sec;
-    g_BoundingSphere.m_Center.m_Z += posVelocity * sinf(g_Angle + (M_PI * 0.5f)) * timeStep_sec;
+    g_ViewSphere.m_Center.m_X += posVelocity * cosf(g_Angle + (M_PI * 0.5f)) * timeStep_sec;
+    g_ViewSphere.m_Center.m_Z += posVelocity * sinf(g_Angle + (M_PI * 0.5f)) * timeStep_sec;
 
     // calculate the ground position and check if next position is valid
-    if (!ApplyGroundCollision(&g_BoundingSphere, &g_pScene->m_ViewMatrix))
+    if (!ApplyGroundCollision(&g_ViewSphere, g_Angle, &g_pScene->m_ViewMatrix, &groundPlane))
     {
         // invalid next position, get the scene item (just one for this scene)
         const CSR_SceneItem* pItem = csrSceneGetItem(g_pScene, g_pLandscapeKey);
@@ -505,24 +719,42 @@ void on_GLES2_Update(float timeStep_sec)
         if (pItem)
         {
             // check if the x position is out of bounds, and correct it if yes
-            if (g_BoundingSphere.m_Center.m_X <= pItem->m_pAABBTree->m_pBox->m_Min.m_X ||
-                g_BoundingSphere.m_Center.m_X >= pItem->m_pAABBTree->m_pBox->m_Max.m_X)
-                g_BoundingSphere.m_Center.m_X = prevSphere.m_Center.m_X;
+            if (g_ViewSphere.m_Center.m_X <= pItem->m_pAABBTree->m_pBox->m_Min.m_X ||
+                g_ViewSphere.m_Center.m_X >= pItem->m_pAABBTree->m_pBox->m_Max.m_X)
+                g_ViewSphere.m_Center.m_X = prevSphere.m_Center.m_X;
 
             // do the same thing with the z position. Doing that separately for each axis will make
             // the point of view to slide against the landscape border (this is possible because the
             // landscape is axis-aligned)
-            if (g_BoundingSphere.m_Center.m_Z <= pItem->m_pAABBTree->m_pBox->m_Min.m_Z ||
-                g_BoundingSphere.m_Center.m_Z >= pItem->m_pAABBTree->m_pBox->m_Max.m_Z)
-                g_BoundingSphere.m_Center.m_Z = prevSphere.m_Center.m_Z;
+            if (g_ViewSphere.m_Center.m_Z <= pItem->m_pAABBTree->m_pBox->m_Min.m_Z ||
+                g_ViewSphere.m_Center.m_Z >= pItem->m_pAABBTree->m_pBox->m_Max.m_Z)
+                g_ViewSphere.m_Center.m_Z = prevSphere.m_Center.m_Z;
         }
         else
             // failed to get the scene item, just revert the position
-            g_BoundingSphere.m_Center = prevSphere.m_Center;
+            g_ViewSphere.m_Center = prevSphere.m_Center;
 
         // recalculate the ground value (this time the collision result isn't tested, because the
         // previous position is always considered as valid)
-        ApplyGroundCollision(&g_BoundingSphere, &g_pScene->m_ViewMatrix);
+        ApplyGroundCollision(&g_ViewSphere, g_Angle, &g_pScene->m_ViewMatrix, &groundPlane);
+    }
+    else
+    {
+        float       groundAngle;
+        CSR_Vector3 slopeDir;
+
+        // get the slope direction
+        slopeDir.m_X = groundPlane.m_A;
+        slopeDir.m_Y = groundPlane.m_B;
+        slopeDir.m_Z = groundPlane.m_C;
+
+        // calculate the slope angle
+        csrVec3Dot(&g_pScene->m_GroundDir, &slopeDir, &groundAngle);
+
+        // is the slope too inclined to allow the player to walk on it?
+        if (fabs(groundAngle) < 0.5f)
+            // revert the position
+            g_ViewSphere.m_Center = prevSphere.m_Center;
     }
 
     // calculate next time where the step sound should be played
@@ -539,8 +771,10 @@ void on_GLES2_Update(float timeStep_sec)
 //------------------------------------------------------------------------------
 void on_GLES2_Render()
 {
+    CSR_Plane groundPlane;
+
     // finalize the view matrix
-    ApplyGroundCollision(&g_BoundingSphere, &g_pScene->m_ViewMatrix);
+    ApplyGroundCollision(&g_ViewSphere, g_Angle, &g_pScene->m_ViewMatrix, &groundPlane);
 
     // draw the scene
     csrSceneDraw(g_pScene, &g_SceneContext);
@@ -557,6 +791,9 @@ void on_GLES2_TouchBegin(float x, float y)
 //------------------------------------------------------------------------------
 void on_GLES2_TouchEnd(float x, float y)
 {
+    if (g_TouchPosition.m_X == g_TouchOrigin.m_X && g_TouchPosition.m_Y == g_TouchOrigin.m_Y)
+        Shoot();
+
     // reset the position
     g_TouchOrigin.m_X   = 0;
     g_TouchOrigin.m_Y   = 0;
