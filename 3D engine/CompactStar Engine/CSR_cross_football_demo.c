@@ -47,7 +47,7 @@
 // energy factor for the shoot
 #define M_ShootEnergyFactor 23.5f
 
-#define LANDSCAPE_TEXTURE_FILE "Resources/grass.bmp"
+#define LANDSCAPE_TEXTURE_FILE "Resources/football_ground.bmp"
 #define BALL_TEXTURE_FILE      "Resources/soccer_ball.bmp"
 #define LANDSCAPE_DATA_FILE    "Resources/level.bmp"
 #define SKYBOX_LEFT            "Resources/skybox_left_small.bmp"
