@@ -18,6 +18,7 @@
 // std
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 // this code is EXPERIMENTAL and should be STRONGLY TESTED on big endian machines before be activated
 #define CONVERT_ENDIANNESS
@@ -410,7 +411,6 @@ CSR_Mesh* csrShapeCreateBox(float                 width,
                       const CSR_Material*         pMaterial,
                       const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
-    unsigned    color;
     size_t      i;
     CSR_Vector3 vertices[8];
     CSR_Vector3 normals[6];
@@ -637,7 +637,6 @@ CSR_Mesh* csrShapeCreateSphere(float                 radius,
     float             x;
     float             y;
     size_t            index;
-    size_t            vbLength;
     CSR_Mesh*         pMesh;
     CSR_VertexBuffer* pVB;
     CSR_Vector3       vertex;
@@ -980,6 +979,8 @@ CSR_Mesh* csrShapeCreateDisk(float                 centerX,
     // iterate through disk slices to create
     for (i = 0; i <= slices + 1; ++i)
     {
+        angle = 0.0f;
+
         // is the first point to calculate?
         if (!i)
         {
@@ -1418,28 +1419,32 @@ void csrModelRelease(CSR_Model* pModel)
         for (i = 0; i < pModel->m_MeshCount; ++i)
         {
             // delete the texture
-            if (pModel->m_pMesh[i].m_Shader.m_TextureID != M_CSR_Error_Code)
-            {
-                // check if the same texture is assigned to several meshes
-                for (j = i + 1; j < pModel->m_MeshCount; ++j)
-                    if (pModel->m_pMesh[i].m_Shader.m_TextureID == pModel->m_pMesh[j].m_Shader.m_TextureID)
-                        // reset the identifier to avoid to delete it twice
-                        pModel->m_pMesh[j].m_Shader.m_TextureID = M_CSR_Error_Code;
+            #ifdef CSR_USE_OPENGL
+                if (pModel->m_pMesh[i].m_Shader.m_TextureID != M_CSR_Error_Code)
+                {
+                    // check if the same texture is assigned to several meshes
+                    for (j = i + 1; j < pModel->m_MeshCount; ++j)
+                        if (pModel->m_pMesh[i].m_Shader.m_TextureID == pModel->m_pMesh[j].m_Shader.m_TextureID)
+                            // reset the identifier to avoid to delete it twice
+                            pModel->m_pMesh[j].m_Shader.m_TextureID = M_CSR_Error_Code;
 
-                glDeleteTextures(1, &pModel->m_pMesh[i].m_Shader.m_TextureID);
-            }
+                    glDeleteTextures(1, &pModel->m_pMesh[i].m_Shader.m_TextureID);
+                }
+            #endif
 
-            // delete the bump map
-            if (pModel->m_pMesh[i].m_Shader.m_BumpMapID != M_CSR_Error_Code)
-            {
-                // check if the same bump map is assigned to several meshes
-                for (j = i + 1; j < pModel->m_MeshCount; ++j)
-                    if (pModel->m_pMesh[i].m_Shader.m_BumpMapID == pModel->m_pMesh[j].m_Shader.m_BumpMapID)
-                        // reset the identifier to avoid to delete it twice
-                        pModel->m_pMesh[j].m_Shader.m_BumpMapID = M_CSR_Error_Code;
+            #ifdef CSR_USE_OPENGL
+                // delete the bump map
+                if (pModel->m_pMesh[i].m_Shader.m_BumpMapID != M_CSR_Error_Code)
+                {
+                    // check if the same bump map is assigned to several meshes
+                    for (j = i + 1; j < pModel->m_MeshCount; ++j)
+                        if (pModel->m_pMesh[i].m_Shader.m_BumpMapID == pModel->m_pMesh[j].m_Shader.m_BumpMapID)
+                            // reset the identifier to avoid to delete it twice
+                            pModel->m_pMesh[j].m_Shader.m_BumpMapID = M_CSR_Error_Code;
 
-                glDeleteTextures(1, &pModel->m_pMesh[i].m_Shader.m_BumpMapID);
-            }
+                    glDeleteTextures(1, &pModel->m_pMesh[i].m_Shader.m_BumpMapID);
+                }
+            #endif
 
             // do free the mesh vertex buffer?
             if (pModel->m_pMesh[i].m_pVB)
@@ -1491,14 +1496,12 @@ CSR_MDL* csrMDLCreate(const CSR_Buffer*           pBuffer,
     CSR_MDLFrameGroup*   pFrameGroup;
     CSR_MDL*             pMDL;
     CSR_PixelBuffer*     pPixelBuffer;
-    CSR_ModelTexture*    pTexture;
     CSR_ModelAnimation*  pAnimation;
-    unsigned char        skinName[16];
-    unsigned char        prevSkinName[16];
+    char                 skinName[16];
+    char                 prevSkinName[16];
     unsigned             animationStartIndex;
     unsigned             skinNameIndex;
     const unsigned       skinNameLength = sizeof(skinName);
-    GLuint               textureID;
     size_t               i;
     size_t               j;
     size_t               offset        = 0;
@@ -1703,14 +1706,20 @@ CSR_MDL* csrMDLCreate(const CSR_Buffer*           pBuffer,
                 }
 
                 // create a GPU texture for the model
-                pMDL->m_pTexture[i].m_TextureID = csrTextureFromPixelBuffer(pPixelBuffer);
+                #ifdef CSR_USE_OPENGL
+                    pMDL->m_pTexture[i].m_TextureID = csrTextureFromPixelBuffer(pPixelBuffer);
+                #endif
             }
-            else
-                // texture isn't used
-                pMDL->m_pTexture[i].m_TextureID = M_CSR_Error_Code;
+            #ifdef CSR_USE_OPENGL
+                else
+                    // texture isn't used
+                    pMDL->m_pTexture[i].m_TextureID = M_CSR_Error_Code;
+            #endif
 
             // the mdl file contains no bump map. This may be used later, but for now it's unused
-            pMDL->m_pTexture[i].m_BumpMapID = M_CSR_Error_Code;
+            #ifdef CSR_USE_OPENGL
+                pMDL->m_pTexture[i].m_BumpMapID = M_CSR_Error_Code;
+            #endif
 
             // release the pixel buffer
             csrPixelBufferRelease(pPixelBuffer);
@@ -1750,7 +1759,7 @@ CSR_MDL* csrMDLCreate(const CSR_Buffer*           pBuffer,
             for (j = 0; j < skinNameLength; ++j)
             {
                 // calculate the skin name index
-                skinNameIndex = (skinNameLength - 1) - j;
+                skinNameIndex = (unsigned)((skinNameLength - 1) - j);
 
                 // is char empty or is a number?
                 if (skinName[skinNameIndex] == 0x0 ||
@@ -1813,7 +1822,7 @@ CSR_MDL* csrMDLCreate(const CSR_Buffer*           pBuffer,
                 }
 
                 // prepare the values for the next animation
-                animationStartIndex = i;
+                animationStartIndex = (unsigned)i;
                 memset(prevSkinName, 0x0, skinNameLength);
             }
         }
@@ -1888,11 +1897,15 @@ void csrMDLRelease(CSR_MDL* pMDL)
         // delete each texture
         for (i = 0; i < pMDL->m_TextureCount; ++i)
         {
-            if (pMDL->m_pTexture[i].m_TextureID != M_CSR_Error_Code)
-                glDeleteTextures(1, &pMDL->m_pTexture[i].m_TextureID);
+            #ifdef CSR_USE_OPENGL
+                if (pMDL->m_pTexture[i].m_TextureID != M_CSR_Error_Code)
+                    glDeleteTextures(1, &pMDL->m_pTexture[i].m_TextureID);
+            #endif
 
-            if (pMDL->m_pTexture[i].m_BumpMapID != M_CSR_Error_Code)
-                glDeleteTextures(1, &pMDL->m_pTexture[i].m_BumpMapID);
+            #ifdef CSR_USE_OPENGL
+                if (pMDL->m_pTexture[i].m_BumpMapID != M_CSR_Error_Code)
+                    glDeleteTextures(1, &pMDL->m_pTexture[i].m_BumpMapID);
+            #endif
         }
 
         // free the textures
@@ -2457,10 +2470,10 @@ CSR_PixelBuffer* csrMDLUncompressTexture(const CSR_MDLSkin* pSkin,
     // populate the pixel buffer and calculate the start offset
     pPB->m_ImageType    = CSR_IT_Raw;
     pPB->m_PixelType    = CSR_PT_RGB;
-    pPB->m_Width        = width;
-    pPB->m_Height       = height;
+    pPB->m_Width        = (unsigned)width;
+    pPB->m_Height       = (unsigned)height;
     pPB->m_BytePerPixel = bpp;
-    pPB->m_Stride       = width * pPB->m_BytePerPixel;
+    pPB->m_Stride       = (unsigned)(width * pPB->m_BytePerPixel);
     pPB->m_DataLength   = sizeof(unsigned char) * pSkin->m_TexLen * 3;
     offset              = pSkin->m_TexLen * index;
 
@@ -2580,8 +2593,10 @@ void csrMDLPopulateModel(const CSR_MDLHeader*        pHeader,
         csrVertexFormatCalculateStride(&pModel->m_pMesh[i].m_pVB->m_Format);
 
         // configure the model texture
-        pModel->m_pMesh[i].m_Shader.m_TextureID = M_CSR_Error_Code;
-        pModel->m_pMesh[i].m_Shader.m_BumpMapID = M_CSR_Error_Code;
+        #ifdef CSR_USE_OPENGL
+            pModel->m_pMesh[i].m_Shader.m_TextureID = M_CSR_Error_Code;
+            pModel->m_pMesh[i].m_Shader.m_BumpMapID = M_CSR_Error_Code;
+        #endif
 
         // configure the frame time
         if (pFrameGroup->m_pTime)
@@ -2696,7 +2711,6 @@ CSR_Model* csrWaveFrontCreate(const CSR_Buffer*           pBuffer,
     int                    objectChanging;
     int                    groupChanging;
     char                   ch;
-    char                   buffer[256];
     CSR_WavefrontVertex*   pVertex;
     CSR_WavefrontNormal*   pNormal;
     CSR_WavefrontTexCoord* pUV;
@@ -3335,7 +3349,6 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
     size_t faceStride;
     size_t normalOffset;
     size_t uvOffset;
-    size_t dataIndex;
     int    baseVertexIndex;
     int    baseNormalIndex;
     int    baseUVIndex;
@@ -3357,6 +3370,8 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
         baseUVIndex = (pFace->m_pData[uvOffset] - 1) * 2;
         ++faceStride;
     }
+    else
+        baseUVIndex = 0;
 
     // get the first normal
     if (pNormal->m_Count)
@@ -3364,6 +3379,8 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
         baseNormalIndex = (pFace->m_pData[normalOffset] - 1) * 3;
         ++faceStride;
     }
+    else
+        baseNormalIndex = 0;
 
     // iterate through remaining indices
     for (i = 1; i <= (pFace->m_Count / faceStride) - 2; ++i)

@@ -52,7 +52,7 @@ typedef struct
 * Called when a motion should be calculated for a particle
 *@param pParticles - particle system at which the particle belongs
 *@param pParticle - particle for which the motion should be calculated
-*@param elapedTime - elapsed time since last animation, in milliseconds
+*@param elapsedTime - elapsed time since last animation, in milliseconds
 */
 typedef void (*CSR_fOnCalculateMotion)(const CSR_Particles* pParticles,
                                              CSR_Particle*  pParticle,
@@ -148,7 +148,7 @@ struct CSR_Particles
         /**
         * Animates the particles
         *@param pParticles - particle system for which the particles should be animated
-        *@param elapedTime - elapsed time since last animation, in milliseconds
+        *@param elapsedTime - elapsed time since last animation, in milliseconds
         */
         void csrParticlesAnimate(CSR_Particles* pParticles, float elapsedTime);
 

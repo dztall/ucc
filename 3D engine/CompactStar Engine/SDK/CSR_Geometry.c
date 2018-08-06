@@ -1986,7 +1986,6 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
             CSR_Figure3 plane;
             CSR_Plane   polygonPlane;
             CSR_Vector3 pointOnPlane;
-            CSR_Vector3 point;
 
             // get the figures to check
             const CSR_Polygon3* pPolygon = (CSR_Polygon3*)pSecond;
@@ -2062,7 +2061,7 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
             // calculate the point who the segment from center of sphere in the direction of the
             // plane will cross the border of the sphere
             pointOnSphere.m_X = pSphere->m_Center.m_X + (pSphere->m_Radius * sphereNormal.m_X);
-            pointOnSphere.m_Y = pSphere->m_Center.m_Y + (pSphere->m_Radius * sphereNormal.m_Y),
+            pointOnSphere.m_Y = pSphere->m_Center.m_Y + (pSphere->m_Radius * sphereNormal.m_Y);
             pointOnSphere.m_Z = pSphere->m_Center.m_Z + (pSphere->m_Radius * sphereNormal.m_Z);
 
             // calculate the distance between the border of the sphere and the plane

@@ -17,7 +17,9 @@
 #include "CSR_SoftwareRaster.h"
 
 // std
+#include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 //---------------------------------------------------------------------------
 CSR_FrameBuffer* csrFrameBufferCreate(size_t width, size_t height)
@@ -502,6 +504,7 @@ int csrRasterDrawPolygon(const CSR_Polygon3*              pPolygon,
         case CSR_CT_None:
             // both faces are accepted
             cullingType = 2;
+            cullingMode = 0;
             break;
 
         case CSR_CT_Front:
@@ -566,8 +569,8 @@ int csrRasterDrawPolygon(const CSR_Polygon3*              pPolygon,
     }
 
     // invert the vertex z-coordinate (to allow multiplication later instead of division)
-    rasterPoly.m_Vertex[0].m_Z = 1.0f / rasterPoly.m_Vertex[0].m_Z,
-    rasterPoly.m_Vertex[1].m_Z = 1.0f / rasterPoly.m_Vertex[1].m_Z,
+    rasterPoly.m_Vertex[0].m_Z = 1.0f / rasterPoly.m_Vertex[0].m_Z;
+    rasterPoly.m_Vertex[1].m_Z = 1.0f / rasterPoly.m_Vertex[1].m_Z;
     rasterPoly.m_Vertex[2].m_Z = 1.0f / rasterPoly.m_Vertex[2].m_Z;
 
     // calculate the texture coordinates, divde them by their vertex z-coordinate
@@ -737,10 +740,8 @@ int csrRasterDraw(const CSR_Matrix4*               pMatrix,
                   const CSR_fOnApplyVertexShader   fOnApplyVertexShader,
                   const CSR_fOnApplyFragmentShader fOnApplyFragmentShader)
 {
-    size_t       vertexCount;
     size_t       i;
     size_t       index;
-    float        determinant;
     CSR_Rect     screenRect;
     CSR_Polygon3 polygon;
     CSR_Vector3  normal[3];
@@ -804,7 +805,7 @@ int csrRasterDraw(const CSR_Matrix4*               pMatrix,
         case CSR_VT_TriangleStrip:
         {
             // calculate length to read in triangle strip buffer
-            const unsigned stripLength = (pVB->m_Count - (pVB->m_Format.m_Stride * 2));
+            const unsigned stripLength = (unsigned)(pVB->m_Count - (pVB->m_Format.m_Stride * 2));
 
             index = 0;
 
@@ -867,7 +868,7 @@ int csrRasterDraw(const CSR_Matrix4*               pMatrix,
         case CSR_VT_TriangleFan:
         {
             // calculate length to read in triangle fan buffer
-            const unsigned fanLength = (pVB->m_Count - pVB->m_Format.m_Stride);
+            const unsigned fanLength = (unsigned)(pVB->m_Count - pVB->m_Format.m_Stride);
 
             // iterate through source vertices
             for (i = pVB->m_Format.m_Stride; i < fanLength; i += pVB->m_Format.m_Stride)
@@ -913,10 +914,10 @@ int csrRasterDraw(const CSR_Matrix4*               pMatrix,
             for (i = 0; i < pVB->m_Count; i += step)
             {
                 // calculate vertices position
-                const unsigned v1 = i;
-                const unsigned v2 = i +  pVB->m_Format.m_Stride;
-                const unsigned v3 = i + (pVB->m_Format.m_Stride * 2);
-                const unsigned v4 = i + (pVB->m_Format.m_Stride * 3);
+                const unsigned v1 = (unsigned) i;
+                const unsigned v2 = (unsigned)(i +  pVB->m_Format.m_Stride);
+                const unsigned v3 = (unsigned)(i + (pVB->m_Format.m_Stride * 2));
+                const unsigned v4 = (unsigned)(i + (pVB->m_Format.m_Stride * 3));
 
                 // get the next polygon to draw
                 if (!csrRasterGetPolygon(pMatrix,
@@ -984,16 +985,16 @@ int csrRasterDraw(const CSR_Matrix4*               pMatrix,
             const unsigned step = (pVB->m_Format.m_Stride * 2);
 
             // calculate length to read in triangle strip buffer
-            const unsigned stripLength = (pVB->m_Count - (pVB->m_Format.m_Stride * 2));
+            const unsigned stripLength = (unsigned)(pVB->m_Count - (pVB->m_Format.m_Stride * 2));
 
             // iterate through source vertices
             for (i = 0; i < stripLength; i += step)
             {
                 // calculate vertices position
-                const unsigned v1 = i;
-                const unsigned v2 = i +  pVB->m_Format.m_Stride;
-                const unsigned v3 = i + (pVB->m_Format.m_Stride * 2);
-                const unsigned v4 = i + (pVB->m_Format.m_Stride * 3);
+                const unsigned v1 = (unsigned) i;
+                const unsigned v2 = (unsigned)(i +  pVB->m_Format.m_Stride);
+                const unsigned v3 = (unsigned)(i + (pVB->m_Format.m_Stride * 2));
+                const unsigned v4 = (unsigned)(i + (pVB->m_Format.m_Stride * 3));
 
                 // get the next polygon to draw
                 if (!csrRasterGetPolygon(pMatrix,

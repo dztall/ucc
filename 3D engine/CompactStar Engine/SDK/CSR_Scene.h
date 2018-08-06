@@ -196,7 +196,9 @@ typedef void (*CSR_fOnSceneEnd)(const CSR_Scene* pScene, const CSR_SceneContext*
 *@return shader to use to draw the model, 0 if no shader
 *@note The model will not be drawn if no shader is returned
 */
-typedef CSR_Shader* (*CSR_fOnGetShader)(const void* pModel, CSR_EModelType type);
+#ifdef CSR_USE_OPENGL
+    typedef CSR_Shader* (*CSR_fOnGetShader)(const void* pModel, CSR_EModelType type);
+#endif
 
 /**
 * Called when a model index should be get
@@ -208,9 +210,9 @@ typedef void (*CSR_fOnGetModelIndex)(const CSR_Model* pModel, size_t* pIndex);
 /**
 * Called when the MDL model indexes should be get
 *@param pMDL - MDL model for which the indexes should be get
-*@param[in, out] textureIndex - texture index
-*@param[in, out] modelIndex - model index
-*@param[in, out] meshIndex - mesh index
+*@param[in, out] pTextureIndex - texture index
+*@param[in, out] pModelIndex - model index
+*@param[in, out] pMeshIndex - mesh index
 */
 typedef void (*CSR_fOnGetMDLIndex)(const CSR_MDL* pMDL,
                                          size_t*  pTextureIndex,
@@ -247,9 +249,11 @@ struct CSR_SceneContext
     size_t               m_Handle;
     CSR_fOnSceneBegin    m_fOnSceneBegin;
     CSR_fOnSceneEnd      m_fOnSceneEnd;
-    CSR_fOnGetShader     m_fOnGetShader;
     CSR_fOnGetModelIndex m_fOnGetModelIndex;
     CSR_fOnGetMDLIndex   m_fOnGetMDLIndex;
+    #ifdef CSR_USE_OPENGL
+        CSR_fOnGetShader m_fOnGetShader;
+    #endif
 };
 
 #ifdef __cplusplus
@@ -372,10 +376,9 @@ struct CSR_SceneContext
 
         /**
         * Detects the collisions happening against a scene item
+        *@param pScene - scene containing the item to check
         *@param pSceneItem - scene item against which the collision should be detected
-        *@param pGroundDir - the scene ground direction
         *@param pCollisionInput - collision input
-        *@param pCollisionItemInput - collision item input
         *@param[in, out] pCollisionOutput - collision output containing the result
         *@param fOnCustomDetectCollision - custom collision detection callback
         */
@@ -434,7 +437,7 @@ struct CSR_SceneContext
         /**
         * Adds a model to a scene
         *@param pScene - scene in which the model will be added
-        *@param pModel- model to add
+        *@param pModel - model to add
         *@param transparent - if 1, the model is transparent, if 0 the model is opaque
         *@param aabb - if 1, the AABB tree will be generated for the mesh
         *@return the scene item containing the model on success, otherwise 0

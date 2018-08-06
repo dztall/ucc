@@ -114,10 +114,12 @@ typedef struct
 */
 typedef struct
 {
-    CSR_TextureShader m_Shader;
-    CSR_VertexBuffer* m_pVB;
-    size_t            m_Count;
-    double            m_Time;
+    #ifdef CSR_USE_OPENGL
+        CSR_TextureShader m_Shader;
+    #endif
+    CSR_VertexBuffer*     m_pVB;
+    size_t                m_Count;
+    double                m_Time;
 } CSR_Mesh;
 
 /**

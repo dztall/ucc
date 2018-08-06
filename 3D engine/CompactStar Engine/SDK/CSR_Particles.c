@@ -17,6 +17,7 @@
 
 // std
 #include <stdlib.h>
+#include <string.h>
 
 //---------------------------------------------------------------------------
 // Particle private functions
@@ -192,7 +193,7 @@ CSR_Particle* csrParticlesAdd(CSR_Particles* pParticles)
         return 0;
 
     // get the particle index to update
-    index = pParticles->m_Count;
+    index = (int)pParticles->m_Count;
 
     // initialize the newly created particle with the default values
     csrParticleInit(&pParticle[index]);

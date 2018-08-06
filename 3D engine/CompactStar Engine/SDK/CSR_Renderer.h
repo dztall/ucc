@@ -29,7 +29,7 @@
 /**
 * Multisampling antialiasing
 */
-#ifndef CSR_OPENGL_2_ONLY
+#if defined(CSR_USE_OPENGL) && !defined(CSR_OPENGL_2_ONLY)
     typedef struct
     {
         CSR_Shader*       m_pShader;
@@ -60,7 +60,7 @@
         *@return newly created multisample antialiasing, 0 on error
         *@note The multisample antialiasing must be released when no longer used, see csrMSAARelease()
         */
-        #ifndef CSR_OPENGL_2_ONLY
+        #if defined(CSR_USE_OPENGL) && !defined(CSR_OPENGL_2_ONLY)
             CSR_MSAA* csrMSAACreate(size_t width, size_t height, size_t factor);
         #endif
 
@@ -68,7 +68,7 @@
         * Releases a multisample antialiasing
         *@param[in, out] pMSAA - multisample antialiasing to release
         */
-        #ifndef CSR_OPENGL_2_ONLY
+        #if defined(CSR_USE_OPENGL) && !defined(CSR_OPENGL_2_ONLY)
             void csrMSAARelease(CSR_MSAA* pMSAA);
         #endif
 
@@ -80,7 +80,7 @@
         *@param[in, out] pMSAA - multisample antialiasing to initialize
         *@return 1 on success, otherwise 0
         */
-        #ifndef CSR_OPENGL_2_ONLY
+        #if defined(CSR_USE_OPENGL) && !defined(CSR_OPENGL_2_ONLY)
             int csrMSAAInit(size_t width, size_t height, size_t factor, CSR_MSAA* pMSAA);
         #endif
 
@@ -91,7 +91,7 @@
         *@param[in, out] pMSAA - multisample antialiasing for which the size should change
         *@return 1 on success, otherwise 0
         */
-        #ifndef CSR_OPENGL_2_ONLY
+        #if defined(CSR_USE_OPENGL) && !defined(CSR_OPENGL_2_ONLY)
             int csrMSAAChangeSize(size_t width, size_t height, CSR_MSAA* pMSAA);
         #endif
 
@@ -100,7 +100,7 @@
         *@param pColor - scene background color
         *@param pMSAA - multisample antialiasing to apply
         */
-        #ifndef CSR_OPENGL_2_ONLY
+        #if defined(CSR_USE_OPENGL) && !defined(CSR_OPENGL_2_ONLY)
             void csrMSAADrawBegin(const CSR_Color* pColor, const CSR_MSAA* pMSAA);
         #endif
 
@@ -108,7 +108,7 @@
         * Ends to draw with antialiasing
         *@param pMSAA - applied multisample antialiasing
         */
-        #ifndef CSR_OPENGL_2_ONLY
+        #if defined(CSR_USE_OPENGL) && !defined(CSR_OPENGL_2_ONLY)
             void csrMSAADrawEnd(const CSR_MSAA* pMSAA);
         #endif
 
@@ -132,7 +132,9 @@
         *@param pLine - line to draw
         *@param pShader - shader that will be used to draw the line
         */
-        void csrDrawLine(const CSR_Line* pLine, const CSR_Shader* pShader);
+        #ifdef CSR_USE_OPENGL
+            void csrDrawLine(const CSR_Line* pLine, const CSR_Shader* pShader);
+        #endif
 
         /**
         * Draws a vertex buffer in a scene
@@ -142,9 +144,11 @@
         *                      matrix currently connected in the shader will be used
         *@note The shader must be first enabled with the csrShaderEnable() function
         */
-        void csrDrawVertexBuffer(const CSR_VertexBuffer* pVB,
-                                 const CSR_Shader*       pShader,
-                                 const CSR_Array*        pMatrixArray);
+        #ifdef CSR_USE_OPENGL
+            void csrDrawVertexBuffer(const CSR_VertexBuffer* pVB,
+                                     const CSR_Shader*       pShader,
+                                     const CSR_Array*        pMatrixArray);
+        #endif
 
         /**
         * Draws a mesh in a scene
@@ -153,9 +157,11 @@
         *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
         *                      matrix currently connected in the shader will be used
         */
-        void csrDrawMesh(const CSR_Mesh*   pMesh,
-                         const CSR_Shader* pShader,
-                         const CSR_Array*  pMatrixArray);
+        #ifdef CSR_USE_OPENGL
+            void csrDrawMesh(const CSR_Mesh*   pMesh,
+                             const CSR_Shader* pShader,
+                             const CSR_Array*  pMatrixArray);
+        #endif
 
         /**
         * Draws a model in a scene
@@ -165,10 +171,12 @@
         *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
         *                      matrix currently connected in the shader will be used
         */
-        void csrDrawModel(const CSR_Model*  pModel,
-                                size_t      index,
-                          const CSR_Shader* pShader,
-                          const CSR_Array*  pMatrixArray);
+        #ifdef CSR_USE_OPENGL
+            void csrDrawModel(const CSR_Model*  pModel,
+                                    size_t      index,
+                              const CSR_Shader* pShader,
+                              const CSR_Array*  pMatrixArray);
+        #endif
 
         /**
         * Draws a MDL model in a scene
@@ -180,12 +188,14 @@
         *@param modelIndex - model index
         *@param meshIndex - mesh index
         */
-        void csrDrawMDL(const CSR_MDL*    pMDL,
-                        const CSR_Shader* pShader,
-                        const CSR_Array*  pMatrixArray,
-                              size_t      textureIndex,
-                              size_t      modelIndex,
-                              size_t      meshIndex);
+        #ifdef CSR_USE_OPENGL
+            void csrDrawMDL(const CSR_MDL*    pMDL,
+                            const CSR_Shader* pShader,
+                            const CSR_Array*  pMatrixArray,
+                                  size_t      textureIndex,
+                                  size_t      modelIndex,
+                                  size_t      meshIndex);
+        #endif
 
 #ifdef __cplusplus
     }
