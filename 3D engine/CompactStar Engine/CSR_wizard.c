@@ -115,9 +115,9 @@ void on_GLES2_Init(int view_w, int view_h)
     g_ScreenWidth = view_w;
 
     // compile, link and use shader
-    g_pShader = csrShaderLoadFromStr(&g_VSTextured,
+    g_pShader = csrShaderLoadFromStr(&g_VSTextured[0],
                                       sizeof(g_VSTextured),
-                                     &g_FSTextured,
+                                     &g_FSTextured[0],
                                       sizeof(g_FSTextured),
                                       0,
                                       0);

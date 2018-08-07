@@ -83,7 +83,7 @@ float         g_MapScale      = 0.2f;
 float         g_Angle         = 0.0f;
 float         g_RotationSpeed = 0.02f;
 float         g_StepTime      = 0.0f;
-float         g_StepInterval  = 350.0f;
+float         g_StepInterval  = 300.0f;
 const float   g_PosVelocity   = 10.0f;
 const float   g_DirVelocity   = 30.0f;
 const float   g_ControlRadius = 40.0f;
@@ -190,9 +190,9 @@ void on_GLES2_Init(int view_w, int view_h)
     g_BoundingSphere.m_Radius     = 0.1f;
 
     // compile, link and use shader
-    g_pShader = csrShaderLoadFromStr(&g_VSTextured,
+    g_pShader = csrShaderLoadFromStr(&g_VSTextured[0],
                                       sizeof(g_VSTextured),
-                                     &g_FSTextured,
+                                     &g_FSTextured[0],
                                       sizeof(g_FSTextured),
                                       0,
                                       0);

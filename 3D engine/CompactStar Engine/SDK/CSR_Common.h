@@ -1,4 +1,4 @@
-/****************************************************************************
+﻿/****************************************************************************
  * ==> CSR_Common ----------------------------------------------------------*
  ****************************************************************************
  * Description : This module provides the common functions and types        *
@@ -21,6 +21,8 @@
 
 // openGL
 #if defined(_OS_IOS_) || defined(_OS_ANDROID_) || defined(_OS_WINDOWS_)
+    #define CSR_USE_OPENGL
+
     #include <gles2.h>
     #include <gles2ext.h>
 
@@ -28,9 +30,15 @@
     // several functions. For that reason, his usage is limited to OpenGL 2.0
     #define CSR_OPENGL_2_ONLY
 #elif defined(__APPLE__)
-    #include <OpenGLES/ES2/gl.h>
-    #include <OpenGLES/ES2/glext.h>
+    // OpenGL is (unfortunately) deprecated, Metal should be used instead
+    //#define CSR_USE_OPENGL
+
+    #ifdef CSR_USE_OPENGL
+        #include <OpenGLES/ES2/gl.h>
+        #include <OpenGLES/ES2/glext.h>
+    #endif
 #elif defined(__CODEGEARC__) || defined(__GNUC__)
+    #define CSR_USE_OPENGL
     #define WIN32_LEAN_AND_MEAN
     #include <Windows.h>
     #define GLEW_STATIC

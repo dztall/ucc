@@ -154,7 +154,7 @@ typedef struct
         /**
         * Changes sound pitch
         *@param pSound - sound for which pitch should be modified
-        *@param value - new pitch value (see OpenAL documentation for correct value range)
+        *@param pValue - new pitch value (see OpenAL documentation for correct value range)
         *@return 1 on success, otherwise 0
         */
         int csrSoundChangePitch(CSR_Sound* pSound, float pValue);
@@ -195,7 +195,6 @@ typedef struct
         * Loops sound when end is reached
         *@param pSound - sound to loop
         *@param value - if 1, sound will be looped on end reached, otherwise sound will be stopped
-        *@return 1 on success, otherwise 0
         */
         void csrSoundLoop(CSR_Sound* pSound, int value);
 

@@ -191,8 +191,8 @@ typedef void (*CSR_fOnApplyFragmentShader)(const CSR_Matrix4*  pMatrix,
 
         /**
         * Clears a depth buffer
-        *@param[in, out] pFB - the depth buffer to clear
-        *@param pPixel - the far clipping plane value with which the depth buffer will be filled
+        *@param[in, out] pDB - the depth buffer to clear
+        *@param zFar - the far clipping plane value with which the depth buffer will be filled
         */
         void csrDepthBufferClear(CSR_DepthBuffer* pDB, float zFar);
 
@@ -227,8 +227,8 @@ typedef void (*CSR_fOnApplyFragmentShader)(const CSR_Matrix4*  pMatrix,
         /**
         * Finds the edge value of a polygon
         *@param pV1 - first polygon vertex
-        *@param pV1 - second polygon vertex
-        *@param pV1 - third polygon vertex
+        *@param pV2 - second polygon vertex
+        *@param pV3 - third polygon vertex
         *@param[out] pR - the polygon edge value
         */
         void csrRasterFindEdge(const CSR_Vector3* pV1,

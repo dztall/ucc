@@ -44,24 +44,24 @@
 #include <ccr.h>
 
 //------------------------------------------------------------------------------
-unsigned char g_VSProgram[] = "precision mediump float;"
-                              "attribute vec4 csr_aVertices;"
-                              "attribute vec4 csr_aColor;"
-                              "uniform   mat4 csr_uProjection;"
-                              "uniform   mat4 csr_uModelview;"
-                              "varying   vec4 csr_vColor;"
-                              "void main(void)"
-                              "{"
-                              "    csr_vColor  = csr_aColor;"
-                              "    gl_Position = csr_uProjection * csr_uModelview * csr_aVertices;"
-                              "}";
+const char g_VSProgram[] = "precision mediump float;"
+                           "attribute vec4 csr_aVertices;"
+                           "attribute vec4 csr_aColor;"
+                           "uniform   mat4 csr_uProjection;"
+                           "uniform   mat4 csr_uModelview;"
+                           "varying   vec4 csr_vColor;"
+                           "void main(void)"
+                           "{"
+                           "    csr_vColor  = csr_aColor;"
+                           "    gl_Position = csr_uProjection * csr_uModelview * csr_aVertices;"
+                           "}";
 //----------------------------------------------------------------------------
-unsigned char g_FSProgram[] = "precision mediump float;"
-                              "varying lowp vec4 csr_vColor;"
-                              "void main(void)"
-                              "{"
-                              "    gl_FragColor = csr_vColor;"
-                              "}";
+const char g_FSProgram[] = "precision mediump float;"
+                           "varying lowp vec4 csr_vColor;"
+                           "void main(void)"
+                           "{"
+                           "    gl_FragColor = csr_vColor;"
+                           "}";
 //------------------------------------------------------------------------------
 CSR_Shader*        g_pShader              = 0;
 CSR_Mesh*          g_pMesh                = 0;
@@ -122,9 +122,9 @@ void on_GLES2_Init(int view_w, int view_h)
     csrMat4Identity(&g_ViewMatrix);
 
     // compile, link and use shader
-    g_pShader = csrShaderLoadFromStr(&g_VSProgram,
+    g_pShader = csrShaderLoadFromStr(&g_VSProgram[0],
                                       sizeof(g_VSProgram),
-                                     &g_FSProgram,
+                                     &g_FSProgram[0],
                                       sizeof(g_FSProgram),
                                       0,
                                       0);

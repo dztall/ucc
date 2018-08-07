@@ -63,6 +63,19 @@ typedef enum
 //---------------------------------------------------------------------------
 
 /**
+* Drawable line
+*/
+typedef struct
+{
+    CSR_Vector3 m_Start;
+    CSR_Vector3 m_End;
+    CSR_Color   m_StartColor;
+    CSR_Color   m_EndColor;
+    float       m_Width;
+    int         m_Smooth;
+} CSR_Line;
+
+/**
 * Vertex format
 */
 typedef struct
@@ -101,10 +114,12 @@ typedef struct
 */
 typedef struct
 {
-    CSR_TextureShader m_Shader;
-    CSR_VertexBuffer* m_pVB;
-    size_t            m_Count;
-    double            m_Time;
+    #ifdef CSR_USE_OPENGL
+        CSR_TextureShader m_Shader;
+    #endif
+    CSR_VertexBuffer*     m_pVB;
+    size_t                m_Count;
+    double                m_Time;
 } CSR_Mesh;
 
 /**
@@ -146,6 +161,16 @@ typedef unsigned (*CSR_fOnGetVertexColor)(const CSR_VertexBuffer* pVB,
     extern "C"
     {
 #endif
+        //-------------------------------------------------------------------
+        // Line functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Initializes a line
+        *@param pLine - line to initialize
+        */
+        void csrLineInit(CSR_Line* pLine);
+
         //-------------------------------------------------------------------
         // Vertex format functions
         //-------------------------------------------------------------------

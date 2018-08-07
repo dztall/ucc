@@ -299,7 +299,6 @@ int csrAABBTreeResolve(const CSR_Ray3*           pRay,
                              CSR_Polygon3Buffer* pPolygons)
 {
     unsigned      i;
-    unsigned      j;
     int           leftResolved  = 0;
     int           rightResolved = 0;
     CSR_Polygon3* pPolygonBuffer;

@@ -71,7 +71,9 @@ typedef struct
 {
     CSR_PixelBuffer* m_pBuffer;
     char*            m_pFileName;
-    GLuint           m_ID;
+    #ifdef CSR_USE_OPENGL
+        GLuint       m_ID;
+    #endif
 } CSR_TextureItem;
 
 /**
@@ -86,12 +88,14 @@ typedef struct
 /**
 * Texture shader (i.e. the GPU loaded textures that should be connected to the shader)
 */
-typedef struct
-{
-    GLuint m_TextureID;
-    GLuint m_BumpMapID;
-    GLuint m_CubeMapID;
-} CSR_TextureShader;
+#ifdef CSR_USE_OPENGL
+    typedef struct
+    {
+        GLuint m_TextureID;
+        GLuint m_BumpMapID;
+        GLuint m_CubeMapID;
+    } CSR_TextureShader;
+#endif
 
 #ifdef __cplusplus
     extern "C"
@@ -147,7 +151,9 @@ typedef struct
         *@param pPixelBuffer - pixel buffer containing the texture to load
         *@return loaded texture index, M_CSR_Error_Code on error
         */
-        GLuint csrTextureFromPixelBuffer(const CSR_PixelBuffer* pPixelBuffer);
+        #ifdef CSR_USE_OPENGL
+            GLuint csrTextureFromPixelBuffer(const CSR_PixelBuffer* pPixelBuffer);
+        #endif
 
         //-------------------------------------------------------------------
         // Texture item functions
@@ -204,7 +210,9 @@ typedef struct
         * Initializes a texture shader structure
         *@param[in, out] pTextureShader - texture shader to initialize
         */
-        void csrTextureShaderInit(CSR_TextureShader* pTextureShader);
+        #ifdef CSR_USE_OPENGL
+            void csrTextureShaderInit(CSR_TextureShader* pTextureShader);
+        #endif
 
         //-------------------------------------------------------------------
         // Cubemap functions
@@ -215,7 +223,9 @@ typedef struct
         *@param pFileNames - face textures file names
         *@return loaded texture index, M_CSR_Error_Code on error
         */
-        GLuint csrCubemapLoad(const char** pFileNames);
+        #ifdef CSR_USE_OPENGL
+            GLuint csrCubemapLoad(const char** pFileNames);
+        #endif
 
 #ifdef __cplusplus
     }

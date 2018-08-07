@@ -548,17 +548,17 @@ typedef struct
 
         /**
         * Gets a quaternion from an angle and a vector representing a rotation axis
-        *@param pAngle - rotation angle
-        *@param pAxis- rotation axis
+        *@param angle - rotation angle
+        *@param pAxis - rotation axis
         *@param[out] pR - resulting quaternion
         */
         void csrQuatFromAxis(float angle, const CSR_Vector3* pAxis, CSR_Quaternion* pR);
 
         /**
         * Gets a quaternion from Euler angles
-        *@param pAngleX - rotation angle on x axis
-        *@param pAngleY - rotation angle on y axis
-        *@param pAngleZ - rotation angle on z axis
+        *@param angleX - rotation angle on x axis
+        *@param angleY - rotation angle on y axis
+        *@param angleZ - rotation angle on z axis
         *@param[out] pR - resulting quaternion
         */
         void csrQuatFromEuler(float angleX, float angleY, float angleZ, CSR_Quaternion* pR);
@@ -588,7 +588,7 @@ typedef struct
 
         /**
         * Normalizes the quaternion
-        *@param pV - vector to normalize
+        *@param pQ - vector to normalize
         *@param[out] pR - normailzed vector
         */
         void csrQuatNormalize(const CSR_Quaternion* pQ, CSR_Quaternion* pR);
@@ -703,7 +703,7 @@ typedef struct
         * Calculates a distance between a point and a plane
         *@param pP - point
         *@param pPl - plane
-        *@param[out] - distance between the point and the plane
+        *@param[out] pR - distance between the point and the plane
         */
         void csrPlaneDistanceTo(const CSR_Vector3* pP, const CSR_Plane* pPl, float* pR);
 
@@ -858,8 +858,8 @@ typedef struct
         * Checks if a geometric 2D figure intersects another geometric 2D figure
         *@param pFigure1 - first geometric figure to check
         *@param pFigure2 - second geometric figure to check against
-        *@param[out] pP1 - first resulting point where the figures intersect (if any), ignored if 0
-        *@param[out] pP2 - second resulting point where the figures intersect (if any), ignored if 0
+        *@param[out] pR1 - first resulting point where the figures intersect (if any), ignored if 0
+        *@param[out] pR2 - second resulting point where the figures intersect (if any), ignored if 0
         *@return 1 if geometric figure intersect, otherwise 0
         *@note Some geometric figures may be unsupported. In this case the result is always 0
         */

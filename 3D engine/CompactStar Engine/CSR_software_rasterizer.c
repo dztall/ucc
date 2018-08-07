@@ -63,7 +63,6 @@ size_t           g_MeshIndex        = 0;
 SDL_Window*      g_pWindow          = 0;
 SDL_Texture*     g_pTexture         = 0;
 SDL_Renderer*    g_pRenderer        = 0;
-SDL_Texture*     g_pTexture         = 0;
 //------------------------------------------------------------------------------
 void OnTextureRead(size_t index, const CSR_PixelBuffer* pPixelBuffer, int* pNoGPU)
 {

@@ -98,7 +98,7 @@ CSR_Sound* csrSoundCreate(const ALCdevice*  pOpenALDevice,
     alBufferData(pSound->m_BufferID,
                  AL_FORMAT_STEREO16,
                  pBuffer->m_pData,
-                 pBuffer->m_Length,
+                 (ALsizei)pBuffer->m_Length,
                  sampling);
 
     // succeeded?

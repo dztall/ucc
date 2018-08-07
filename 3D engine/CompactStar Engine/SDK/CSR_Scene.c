@@ -18,6 +18,7 @@
 // std
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 //---------------------------------------------------------------------------
 // Hit model functions
@@ -192,9 +193,11 @@ void csrSceneContextInit(CSR_SceneContext* pContext)
     pContext->m_Handle             = 0;
     pContext->m_fOnSceneBegin      = 0;
     pContext->m_fOnSceneEnd        = 0;
-    pContext->m_fOnGetShader       = 0;
     pContext->m_fOnGetModelIndex   = 0;
     pContext->m_fOnGetMDLIndex     = 0;
+    #ifdef CSR_USE_OPENGL
+        pContext->m_fOnGetShader   = 0;
+    #endif
 }
 //---------------------------------------------------------------------------
 // Scene item private functions
@@ -264,6 +267,7 @@ void csrSceneItemContentRelease(CSR_SceneItem* pSceneItem)
     if (pSceneItem->m_pModel)
         switch (pSceneItem->m_Type)
         {
+            case CSR_MT_Line:  free((CSR_Line*)pSceneItem->m_pModel); break;
             case CSR_MT_Mesh:  csrMeshRelease(pSceneItem->m_pModel);  break;
             case CSR_MT_Model: csrModelRelease(pSceneItem->m_pModel); break;
             case CSR_MT_MDL:   csrMDLRelease(pSceneItem->m_pModel);   break;
@@ -322,88 +326,104 @@ void csrSceneItemDraw(const CSR_Scene*        pScene,
                       const CSR_SceneContext* pContext,
                       const CSR_SceneItem*    pItem)
 {
-    GLint       slot;
-    CSR_Shader* pShader;
+    #ifdef CSR_USE_OPENGL
+        GLint       slot;
+        CSR_Shader* pShader;
 
-    // validate the inputs
-    if (!pScene || !pContext || !pItem)
-        return;
+        // validate the inputs
+        if (!pScene || !pContext || !pItem)
+            return;
 
-    pShader = 0;
+        pShader = 0;
 
-    // get the shader to use with the model
-    if (pContext->m_fOnGetShader)
-        pShader = pContext->m_fOnGetShader(pItem->m_pModel, pItem->m_Type);
+        // get the shader to use with the model
+        if (pContext->m_fOnGetShader)
+            pShader = pContext->m_fOnGetShader(pItem->m_pModel, pItem->m_Type);
 
-    // found one?
-    if (!pShader)
-        return;
+        // found one?
+        if (!pShader)
+            return;
 
-    // enable the item shader
-    csrShaderEnable(pShader);
+        // enable the item shader
+        csrShaderEnable(pShader);
 
-    // get the view matrix slot from shader
-    slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uView");
+        // get the projection matrix slot from shader
+        slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uProjection");
 
-    // connect view matrix to shader
-    if (slot >= 0)
-        glUniformMatrix4fv(slot, 1, 0, &pScene->m_ViewMatrix.m_Table[0][0]);
+        // connect the projection matrix to shader
+        if (slot >= 0)
+            glUniformMatrix4fv(slot, 1, GL_FALSE, &pScene->m_ProjectionMatrix.m_Table[0][0]);
 
-    // draw the model
-    switch (pItem->m_Type)
-    {
-        case CSR_MT_Mesh:
-            // draw the mesh
-            csrDrawMesh((const CSR_Mesh*)pItem->m_pModel,
-                                         pShader,
-                                         pItem->m_pMatrixArray);
+        // get the view matrix slot from shader
+        slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uView");
 
-            break;
+        // connect the view matrix to shader
+        if (slot >= 0)
+            glUniformMatrix4fv(slot, 1, 0, &pScene->m_ViewMatrix.m_Table[0][0]);
 
-        case CSR_MT_Model:
+        // draw the model
+        switch (pItem->m_Type)
         {
-            size_t index = 0;
+            case CSR_MT_Line:
+                // draw the line
+                csrDrawLine((const CSR_Line*)pItem->m_pModel, pShader);
+                break;
 
-            // notify the caller that the model is about to be drawn
-            if (pContext->m_fOnGetModelIndex)
-                pContext->m_fOnGetModelIndex((const CSR_Model*)pItem->m_pModel, &index);
+            case CSR_MT_Mesh:
+                // draw the mesh
+                csrDrawMesh((const CSR_Mesh*)pItem->m_pModel,
+                                             pShader,
+                                             pItem->m_pMatrixArray);
 
-            // draw the model
-            csrDrawModel((const CSR_Model*)pItem->m_pModel,
-                                           index,
+                break;
+
+            case CSR_MT_Model:
+            {
+                size_t index = 0;
+
+                // notify the caller that the model is about to be drawn
+                if (pContext->m_fOnGetModelIndex)
+                    pContext->m_fOnGetModelIndex((const CSR_Model*)pItem->m_pModel, &index);
+
+                // draw the model
+                csrDrawModel((const CSR_Model*)pItem->m_pModel,
+                                               index,
+                                               pShader,
+                                               pItem->m_pMatrixArray);
+
+                break;
+            }
+
+            case CSR_MT_MDL:
+            {
+                size_t textureIndex = 0;
+                size_t modelIndex   = 0;
+                size_t meshIndex    = 0;
+
+                // notify the caller that the MDL model is about to be drawn
+                if (pContext->m_fOnGetMDLIndex)
+                    pContext->m_fOnGetMDLIndex((const CSR_MDL*)pItem->m_pModel,
+                                                              &textureIndex,
+                                                              &modelIndex,
+                                                              &meshIndex);
+
+                // draw the MDL model
+                csrDrawMDL((const CSR_MDL*)pItem->m_pModel,
                                            pShader,
-                                           pItem->m_pMatrixArray);
+                                           pItem->m_pMatrixArray,
+                                           textureIndex,
+                                           modelIndex,
+                                           meshIndex);
 
-            break;
+                break;
+            }
         }
 
-        case CSR_MT_MDL:
-        {
-            size_t textureIndex = 0;
-            size_t modelIndex   = 0;
-            size_t meshIndex    = 0;
-
-            // notify the caller that the MDL model is about to be drawn
-            if (pContext->m_fOnGetMDLIndex)
-                pContext->m_fOnGetMDLIndex((const CSR_MDL*)pItem->m_pModel,
-                                                          &textureIndex,
-                                                          &modelIndex,
-                                                          &meshIndex);
-
-            // draw the MDL model
-            csrDrawMDL((const CSR_MDL*)pItem->m_pModel,
-                                       pShader,
-                                       pItem->m_pMatrixArray,
-                                       textureIndex,
-                                       modelIndex,
-                                       meshIndex);
-
-            break;
-        }
-    }
-
-    // disable the item shader
-    csrShaderEnable(0);
+        // disable the item shader
+        csrShaderEnable(0);
+    #else
+        #warning "csrSceneItemDraw() isn't implemented and will not work on this platform";
+    #endif
 }
 //---------------------------------------------------------------------------
 void csrSceneItemDetectCollision(const CSR_Scene*                   pScene,
@@ -668,6 +688,76 @@ void csrSceneInit(CSR_Scene* pScene)
     csrMat4Identity(&pScene->m_ViewMatrix);
 }
 //---------------------------------------------------------------------------
+CSR_SceneItem* csrSceneAddLine(CSR_Scene* pScene, CSR_Line* pLine, int transparent)
+{
+    CSR_SceneItem* pItem;
+    int            index;
+
+    // validate the inputs
+    if (!pScene || !pLine)
+        return 0;
+
+    // search for a scene item which already contains the same line
+    pItem = csrSceneGetItem(pScene, pLine);
+
+    // found one?
+    if (pItem)
+        return pItem;
+
+    // do add a transparent line?
+    if (transparent)
+    {
+        // add a new item to the transparent items
+        pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pTransparentItem,
+                                               sizeof(CSR_SceneItem),
+                                               pScene->m_TransparentItemCount + 1);
+
+        // succeeded?
+        if (!pItem)
+            return 0;
+
+        // get the item index to update
+        index = (int)pScene->m_TransparentItemCount;
+    }
+    else
+    {
+        // add a new item to the scene items
+        pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pItem,
+                                               sizeof(CSR_SceneItem),
+                                               pScene->m_ItemCount + 1);
+
+        // succeeded?
+        if (!pItem)
+            return 0;
+
+        // get the scene item index to update
+        index = (int)pScene->m_ItemCount;
+    }
+
+    // initialize the newly created item with the default values
+    csrSceneItemInit(&pItem[index]);
+
+    // configure the item
+    pItem[index].m_pModel = pLine;
+    pItem[index].m_Type   = CSR_MT_Line;
+
+    // do add a transparent item?
+    if (transparent)
+    {
+        // add item to the transparent item list
+        pScene->m_pTransparentItem = pItem;
+        ++pScene->m_TransparentItemCount;
+    }
+    else
+    {
+        // add item to the normal item list
+        pScene->m_pItem = pItem;
+        ++pScene->m_ItemCount;
+    }
+
+    return &pItem[index];
+}
+//---------------------------------------------------------------------------
 CSR_SceneItem* csrSceneAddMesh(CSR_Scene* pScene, CSR_Mesh* pMesh, int transparent, int aabb)
 {
     CSR_SceneItem* pItem;
@@ -697,7 +787,7 @@ CSR_SceneItem* csrSceneAddMesh(CSR_Scene* pScene, CSR_Mesh* pMesh, int transpare
             return 0;
 
         // get the item index to update
-        index = pScene->m_TransparentItemCount;
+        index = (int)pScene->m_TransparentItemCount;
     }
     else
     {
@@ -711,7 +801,7 @@ CSR_SceneItem* csrSceneAddMesh(CSR_Scene* pScene, CSR_Mesh* pMesh, int transpare
             return 0;
 
         // get the scene item index to update
-        index = pScene->m_ItemCount;
+        index = (int)pScene->m_ItemCount;
     }
 
     // initialize the newly created item with the default values
@@ -791,7 +881,7 @@ CSR_SceneItem* csrSceneAddModel(CSR_Scene* pScene, CSR_Model* pModel, int transp
             return 0;
 
         // get the item index to update
-        index = pScene->m_TransparentItemCount;
+        index = (int)pScene->m_TransparentItemCount;
     }
     else
     {
@@ -805,7 +895,7 @@ CSR_SceneItem* csrSceneAddModel(CSR_Scene* pScene, CSR_Model* pModel, int transp
             return 0;
 
         // get the scene item index to update
-        index = pScene->m_ItemCount;
+        index = (int)pScene->m_ItemCount;
     }
 
     // initialize the newly created item with the default values
@@ -926,7 +1016,7 @@ CSR_SceneItem* csrSceneAddMDL(CSR_Scene* pScene, CSR_MDL* pMDL, int transparent,
             return 0;
 
         // get the item index to update
-        index = pScene->m_TransparentItemCount;
+        index = (int)pScene->m_TransparentItemCount;
     }
     else
     {
@@ -940,7 +1030,7 @@ CSR_SceneItem* csrSceneAddMDL(CSR_Scene* pScene, CSR_MDL* pMDL, int transparent,
             return 0;
 
         // get the scene item index to update
-        index = pScene->m_ItemCount;
+        index = (int)pScene->m_ItemCount;
     }
 
     // initialize the newly created item with the default values
@@ -1035,7 +1125,6 @@ CSR_SceneItem* csrSceneAddMDL(CSR_Scene* pScene, CSR_MDL* pMDL, int transparent,
 //---------------------------------------------------------------------------
 CSR_SceneItem* csrSceneAddModelMatrix(CSR_Scene* pScene, const void* pModel, CSR_Matrix4* pMatrix)
 {
-    size_t         i;
     CSR_SceneItem* pSceneItem;
 
     // validate inputs
@@ -1112,9 +1201,9 @@ CSR_SceneItem* csrSceneGetItem(const CSR_Scene* pScene, const void* pKey)
 //---------------------------------------------------------------------------
 void csrSceneDeleteFrom(CSR_Scene* pScene, const void* pKey)
 {
-    size_t          i;
-    size_t          j;
-    CSR_SceneItem*  pSceneItem;
+    size_t         i;
+    size_t         j;
+    CSR_SceneItem* pSceneItem;
 
     // validate inputs
     if (!pScene || !pKey)
@@ -1182,7 +1271,6 @@ void csrSceneDeleteFrom(CSR_Scene* pScene, const void* pKey)
 void csrSceneDraw(const CSR_Scene* pScene, const CSR_SceneContext* pContext)
 {
     size_t i;
-    GLint  slot;
 
     // no scene to draw?
     if (!pScene)
@@ -1201,58 +1289,62 @@ void csrSceneDraw(const CSR_Scene* pScene, const CSR_SceneContext* pContext)
     // do draw the skybox?
     if (pScene->m_pSkybox)
     {
-        CSR_Shader* pShader = 0;
+        #ifdef CSR_USE_OPENGL
+            CSR_Shader* pShader = 0;
 
-        // get the shader to use with the skybox
-        if (pContext->m_fOnGetShader)
-            pShader = pContext->m_fOnGetShader(pScene->m_pSkybox, CSR_MT_Mesh);
+            // get the shader to use with the skybox
+            if (pContext->m_fOnGetShader)
+                pShader = pContext->m_fOnGetShader(pScene->m_pSkybox, CSR_MT_Mesh);
 
-        // found one?
-        if (pShader)
-        {
-            GLint slot;
-
-            // disable the depth buffer writing
-            glDepthMask(GL_FALSE);
-
-            // enable the skybox shader
-            csrShaderEnable(pShader);
-
-            // get the projection matrix slot from shader
-            slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uProjection");
-
-            // connect projection matrix to shader
-            if (slot >= 0)
-                glUniformMatrix4fv(slot, 1, 0, &pScene->m_ProjectionMatrix.m_Table[0][0]);
-
-            // get the view matrix slot from shader
-            slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uView");
-
-            // connect view matrix to shader
-            if (slot >= 0)
+            // found one?
+            if (pShader)
             {
-                // copy the view matrix
-                CSR_Matrix4 skyboxViewMatrix;
-                memcpy(&skyboxViewMatrix, &pScene->m_ViewMatrix.m_Table, sizeof(CSR_Matrix4));
+                GLint slot;
 
-                // remove the translation values from the view matrix
-                skyboxViewMatrix.m_Table[3][0] = 0.0f;
-                skyboxViewMatrix.m_Table[3][1] = 0.0f;
-                skyboxViewMatrix.m_Table[3][2] = 0.0f;
+                // disable the depth buffer writing
+                glDepthMask(GL_FALSE);
 
-                // apply the untranslated scene matrix
-                glUniformMatrix4fv(slot, 1, 0, &skyboxViewMatrix.m_Table[0][0]);
+                // enable the skybox shader
+                csrShaderEnable(pShader);
+
+                // get the projection matrix slot from shader
+                slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uProjection");
+
+                // connect projection matrix to shader
+                if (slot >= 0)
+                    glUniformMatrix4fv(slot, 1, 0, &pScene->m_ProjectionMatrix.m_Table[0][0]);
+
+                // get the view matrix slot from shader
+                slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uView");
+
+                // connect view matrix to shader
+                if (slot >= 0)
+                {
+                    // copy the view matrix
+                    CSR_Matrix4 skyboxViewMatrix;
+                    memcpy(&skyboxViewMatrix, &pScene->m_ViewMatrix.m_Table, sizeof(CSR_Matrix4));
+
+                    // remove the translation values from the view matrix
+                    skyboxViewMatrix.m_Table[3][0] = 0.0f;
+                    skyboxViewMatrix.m_Table[3][1] = 0.0f;
+                    skyboxViewMatrix.m_Table[3][2] = 0.0f;
+
+                    // apply the untranslated scene matrix
+                    glUniformMatrix4fv(slot, 1, 0, &skyboxViewMatrix.m_Table[0][0]);
+                }
+
+                // draw the skybox
+                csrDrawMesh(pScene->m_pSkybox, pShader, 0);
+
+                // disable the item shader
+                csrShaderEnable(pShader);
+
+                // enable the depth buffer writing again
+                glDepthMask(GL_TRUE);
             }
-
-            // draw the skybox
-            csrDrawMesh(pScene->m_pSkybox, pShader, 0);
-
-            // disable the item shader
-            csrShaderEnable(pShader);
-
-            // enable the depth buffer writing again
-            glDepthMask(GL_TRUE);
-        }
+        #else
+            #warning "Skybox isn't implemented and will not work on this platform"
+        #endif
     }
 
     // first draw the standard models
