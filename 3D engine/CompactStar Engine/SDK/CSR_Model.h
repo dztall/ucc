@@ -54,18 +54,6 @@ typedef struct
 } CSR_ModelAnimation;
 
 /**
-* Model texture
-*/
-typedef struct
-{
-    #ifdef CSR_USE_OPENGL
-        GLuint m_TextureID;
-        GLuint m_BumpMapID;
-    #endif
-    double     m_Time;
-} CSR_ModelTexture;
-
-/**
 * Quake I (.mdl) model
 */
 typedef struct
@@ -74,8 +62,8 @@ typedef struct
     size_t              m_ModelCount;
     CSR_ModelAnimation* m_pAnimation;
     size_t              m_AnimationCount;
-    CSR_ModelTexture*   m_pTexture;
-    size_t              m_TextureCount;
+    CSR_Skin*           m_pSkin;
+    size_t              m_SkinCount;
 } CSR_MDL;
 
 /**
@@ -225,12 +213,12 @@ typedef struct
 //---------------------------------------------------------------------------
 
 /**
-* Called when a texture was read in a model
-*@param index - texture index in the model
-*@param pPixelBuffer - pixel buffer containing the read texture
-*@param[in, out] pNoGPU - if 1, the texture will not be loaded on the GPU while model is loading
+* Called when a skin should be applied to a model
+*@param index - skin index (in case the model contains several skins)
+*@param pSkin - skin
+*@param[in, out] pCanRelease - if 1, the skin content may be released after the skin is applied
 */
-typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBuffer, int* pNoGPU);
+typedef void (*CSR_fOnApplySkin)(size_t index, const CSR_Skin* pSkin, int* pCanRelease);
 
 #ifdef __cplusplus
     extern "C"
@@ -426,8 +414,9 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         /**
         * Releases a model
         *@param[in, out] pModel - model to release
+        *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
         */
-        void csrModelRelease(CSR_Model* pModel);
+        void csrModelRelease(CSR_Model* pModel, const CSR_fOnDeleteTexture fOnDeleteTexture);
 
         /**
         * Initializes a model structure
@@ -447,7 +436,8 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@param pVertCulling - model vertex culling, if 0 the default culling will be used
         *@param pMaterial - mesh material, if 0 the default material will be used
         *@param fOnGetVertexColor - get vertex color callback function to use, 0 if not used
-        *@param fOnTextureRead - called when a texture is read
+        *@param fOnApplySkin - called when a skin should be applied to the model
+        *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
         *@return the newly created MDL model, 0 on error
         *@note The MDL model must be released when no longer used, see csrMDLModelRelease()
         */
@@ -457,7 +447,8 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
                               const CSR_VertexCulling*    pVertCulling,
                               const CSR_Material*         pMaterial,
                               const CSR_fOnGetVertexColor fOnGetVertexColor,
-                              const CSR_fOnTextureRead    fOnTextureRead);
+                              const CSR_fOnApplySkin      fOnApplySkin,
+                              const CSR_fOnDeleteTexture  fOnDeleteTexture);
 
         /**
         * Opens a MDL model from a file
@@ -467,6 +458,8 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@param pVertCulling - model vertex culling, if 0 the default culling will be used
         *@param pMaterial - mesh material, if 0 the default material will be used
         *@param fOnGetVertexColor - get vertex color callback function to use, 0 if not used
+        *@param fOnApplySkin - called when a skin should be applied to the model
+        *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
         *@return the newly created MDL model, 0 on error
         *@note The MDL model must be released when no longer used, see csrMDLModelRelease()
         */
@@ -476,13 +469,15 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
                             const CSR_VertexCulling*    pVertCulling,
                             const CSR_Material*         pMaterial,
                             const CSR_fOnGetVertexColor fOnGetVertexColor,
-                            const CSR_fOnTextureRead    fOnTextureRead);
+                            const CSR_fOnApplySkin      fOnApplySkin,
+                            const CSR_fOnDeleteTexture  fOnDeleteTexture);
 
         /**
         * Releases a MDL model
         *@param[in, out] pMDL - MDL model to release
+        *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
         */
-        void csrMDLRelease(CSR_MDL* pMDL);
+        void csrMDLRelease(CSR_MDL* pMDL, const CSR_fOnDeleteTexture fOnDeleteTexture);
 
         /**
         * Initializes a MDL model structure
@@ -495,7 +490,7 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@param pMDL - MDL model
         *@param fps - frame per seconds to apply
         *@param animationIndex - animation index
-        *@param[in, out] pTextureIndex - texture index, new texture index on function ends
+        *@param[in, out] pSkinIndex - skin index, new skin index on function ends
         *@param[in, out] pModelIndex - model index, new model index on function ends
         *@param[in, out] pMeshIndex - mesh index, new mesh index on function ends
         *@param[in, out] pTextureLastTime - texture last known time
@@ -506,7 +501,7 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         void csrMDLUpdateIndex(const CSR_MDL* pMDL,
                                      size_t   fps,
                                      size_t   animationIndex,
-                                     size_t*  pTextureIndex,
+                                     size_t*  pSkinIndex,
                                      size_t*  pModelIndex,
                                      size_t*  pMeshIndex,
                                      double*  pTextureLastTime,
@@ -674,7 +669,8 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@param pVertCulling - model vertex culling, if 0 the default culling will be used
         *@param pMaterial - mesh material, if 0 the default material will be used
         *@param fOnGetVertexColor - get vertex color callback function to use, 0 if not used
-        *@param fOnTextureRead - called when a texture is read
+        *@param fOnApplySkin - called when a skin should be applied to the model
+        *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
         *@return model containing the WaveFront file on success, otherwise 0
         *@note The model content should be released using the csrModelRelease function when useless
         */
@@ -683,7 +679,8 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
                                       const CSR_VertexCulling*    pVertCulling,
                                       const CSR_Material*         pMaterial,
                                       const CSR_fOnGetVertexColor fOnGetVertexColor,
-                                      const CSR_fOnTextureRead    fOnTextureRead);
+                                      const CSR_fOnApplySkin      fOnApplySkin,
+                                      const CSR_fOnDeleteTexture  fOnDeleteTexture);
 
         /**
         * Opens a WaveFront file
@@ -692,7 +689,8 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@param pVertCulling - model vertex culling, if 0 the default culling will be used
         *@param pMaterial - mesh material, if 0 the default material will be used
         *@param fOnGetVertexColor - get vertex color callback function to use, 0 if not used
-        *@param fOnTextureRead - called when a texture is read
+        *@param fOnApplySkin - called when a skin should be applied to the model
+        *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
         *@return model containing the WaveFront file on success, otherwise 0
         *@note The model content should be released using the csrModelRelease when useless
         */
@@ -701,7 +699,8 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
                                     const CSR_VertexCulling*    pVertCulling,
                                     const CSR_Material*         pMaterial,
                                     const CSR_fOnGetVertexColor fOnGetVertexColor,
-                                    const CSR_fOnTextureRead    fOnTextureRead);
+                                    const CSR_fOnApplySkin      fOnApplySkin,
+                                    const CSR_fOnDeleteTexture  fOnDeleteTexture);
 
         /**
         * Reads a commented line from a WaveFront buffer
@@ -796,7 +795,7 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@param groupChanging - if 1, a new group should be created
         *@param[in, out] pModel - model in which the WaveFront data should be built
         *@param fOnGetVertexColor - get vertex color callback function to use, 0 if not used
-        *@param fOnTextureRead - called when a texture is read
+        *@param fOnApplySkin - called when a skin should be applied to the model
         *@return 1 on success, otherwise 0
         */
         int csrWaveFrontBuildFace(const CSR_WavefrontVertex*   pVertex,
@@ -810,7 +809,7 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
                                         int                    groupChanging,
                                         CSR_Model*             pModel,
                                   const CSR_fOnGetVertexColor  fOnGetVertexColor,
-                                  const CSR_fOnTextureRead     fOnTextureRead);
+                                  const CSR_fOnApplySkin       fOnApplySkin);
 
         /**
         * Builds a vertex buffer from a WaveFront data
@@ -820,7 +819,7 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
         *@param pFace - face array read in WaveFront file
         *@param[in, out] pVB - vertex buffer in which the WaveFront data should be built
         *@param fOnGetVertexColor - get vertex color callback function to use, 0 if not used
-        *@param fOnTextureRead - called when a texture is read
+        *@param fOnApplySkin - called when a skin should be applied to the model
         */
         void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
                                            const CSR_WavefrontNormal*   pNormal,
@@ -828,7 +827,7 @@ typedef void (*CSR_fOnTextureRead)(size_t index, const CSR_PixelBuffer* pPixelBu
                                            const CSR_WavefrontFace*     pFace,
                                                  CSR_VertexBuffer*      pVB,
                                            const CSR_fOnGetVertexColor  fOnGetVertexColor,
-                                           const CSR_fOnTextureRead     fOnTextureRead);
+                                           const CSR_fOnApplySkin       fOnApplySkin);
 
         //-------------------------------------------------------------------
         // Landscape creation functions
