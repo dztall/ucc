@@ -76,7 +76,6 @@ const char g_FSTextured[] =
     "}";
 //------------------------------------------------------------------------------
 CSR_OpenGLShader* g_pShader       = 0;
-CSR_OpenGLID*     g_pResource     = 0;
 CSR_Mesh*         g_pMesh         = 0;
 CSR_AABBNode*     g_pTree         = 0;
 float             g_MapHeight     = 3.0f;
@@ -97,25 +96,47 @@ CSR_Color         g_Color;
 ALCdevice*        g_pOpenALDevice  = 0;
 ALCcontext*       g_pOpenALContext = 0;
 CSR_Sound*        g_pSound         = 0;
+CSR_OpenGLID      g_ID[1];
 //---------------------------------------------------------------------------
 void* OnGetID(const void* pKey)
 {
-    // found the texture to delete?
-    if (!g_pResource || pKey != g_pResource->m_pKey)
-        return 0;
+    size_t i;
 
-    return g_pResource;
+    // iterate through resource ids
+    for (i = 0; i < 1; ++i)
+        // found the texture to get?
+        if (pKey == g_ID[i].m_pKey)
+            return &g_ID[i];
+
+    return 0;
 }
 //---------------------------------------------------------------------------
 void OnDeleteTexture(const CSR_Texture* pTexture)
 {
-    // found the texture to delete?
-    if (!g_pResource || pTexture != g_pResource->m_pKey)
-        return;
+    size_t i;
 
-    // delete the texture from the GPU
-    if (g_pResource->m_ID != M_CSR_Error_Code)
-        glDeleteTextures(1, (GLuint*)(&g_pResource->m_ID));
+    // iterate through resource ids
+    for (i = 0; i < 1; ++i)
+        // found the texture to delete?
+        if (pTexture == g_ID[i].m_pKey)
+        {
+            // unuse the texture
+            if (g_ID[i].m_UseCount)
+                --g_ID[i].m_UseCount;
+
+            // is texture no longer used?
+            if (g_ID[i].m_UseCount)
+                return;
+
+            // delete the texture from the GPU
+            if (g_ID[i].m_ID != M_CSR_Error_Code)
+            {
+                glDeleteTextures(1, (GLuint*)(&g_ID[i].m_ID));
+                g_ID[i].m_ID = M_CSR_Error_Code;
+            }
+
+            return;
+        }
 }
 //---------------------------------------------------------------------------
 void ApplyGroundCollision(const CSR_Sphere*   pBoundingSphere,
@@ -260,13 +281,12 @@ void on_GLES2_Init(int view_w, int view_h)
     g_pTree = csrAABBTreeFromMesh(g_pMesh);
 
     // create a resource for the landscape texture
-    g_pResource = csrOpenGLIDCreate();
-    g_pResource->m_pKey     = &g_pMesh->m_Skin.m_Texture;
-    g_pResource->m_UseCount = 1;
+    g_ID[0].m_pKey     = &g_pMesh->m_Skin.m_Texture;
+    g_ID[0].m_UseCount = 1;
 
     // load landscape texture
-    pPixelBuffer      = csrPixelBufferFromBitmapFile(LANDSCAPE_TEXTURE_FILE);
-    g_pResource->m_ID = csrOpenGLTextureFromPixelBuffer(pPixelBuffer);
+    pPixelBuffer = csrPixelBufferFromBitmapFile(LANDSCAPE_TEXTURE_FILE);
+    g_ID[0].m_ID = csrOpenGLTextureFromPixelBuffer(pPixelBuffer);
 
     // landscape texture will no longer be used
     csrPixelBufferRelease(pPixelBuffer);
@@ -286,10 +306,6 @@ void on_GLES2_Final()
     // delete shader
     csrOpenGLShaderRelease(g_pShader);
     g_pShader = 0;
-
-    // delete the resource
-    csrOpenGLIDRelease(g_pResource);
-    g_pResource = 0;
 
     // stop running step sound, if needed
     csrSoundStop(g_pSound);

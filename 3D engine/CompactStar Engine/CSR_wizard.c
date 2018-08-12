@@ -33,8 +33,8 @@
 #include "SDK/CSR_Common.h"
 #include "SDK/CSR_Vertex.h"
 #include "SDK/CSR_Model.h"
-#include "SDK/CSR_Shader.h"
 #include "SDK/CSR_Renderer.h"
+#include "SDK/CSR_Renderer_OpenGL.h"
 
 // NOTE the mdl model was extracted from the Quake game package
 #define MDL_FILE "Resources/wizard.mdl"
@@ -69,20 +69,75 @@ const char g_FSTextured[] =
     "    gl_FragColor = csr_vColor * texture2D(csr_sColorMap, csr_vTexCoord);"
     "}";
 //------------------------------------------------------------------------------
-CSR_Shader*    g_pShader         = 0;
-CSR_MDL*       g_pModel          = 0;
-float          g_ScreenWidth     = 0.0f;
-float          g_Time            = 0.0f;
-float          g_Interval        = 0.0f;
-double         g_TextureLastTime = 0.0;
-double         g_ModelLastTime   = 0.0;
-double         g_MeshLastTime    = 0.0;
-const unsigned g_FPS             = 10;
-size_t         g_AnimIndex       = 0;
-size_t         g_TextureIndex    = 0;
-size_t         g_ModelIndex      = 0;
-size_t         g_MeshIndex       = 0;
-CSR_Color      g_Background;
+CSR_OpenGLShader* g_pShader         = 0;
+CSR_MDL*          g_pModel          = 0;
+float             g_ScreenWidth     = 0.0f;
+float             g_Time            = 0.0f;
+float             g_Interval        = 0.0f;
+double            g_TextureLastTime = 0.0;
+double            g_ModelLastTime   = 0.0;
+double            g_MeshLastTime    = 0.0;
+const unsigned    g_FPS             = 10;
+size_t            g_AnimIndex       = 0;
+size_t            g_TextureIndex    = 0;
+size_t            g_ModelIndex      = 0;
+size_t            g_MeshIndex       = 0;
+CSR_Color         g_Background;
+CSR_OpenGLID      g_ID[1];
+//---------------------------------------------------------------------------
+void OnApplySkin(size_t index, const CSR_Skin* pSkin, int* pCanRelease)
+{
+    // should not be hardcoded, however there is only 1 model which will use this function in this demo,
+    // so it is safe to do that
+    g_ID[0].m_pKey     = (void*)(&pSkin->m_Texture);
+    g_ID[0].m_ID       = csrOpenGLTextureFromPixelBuffer(pSkin->m_Texture.m_pBuffer);
+    g_ID[0].m_UseCount = 1;
+
+    // from now the source texture will no longer be used
+    if (pCanRelease)
+        *pCanRelease = 1;
+}
+//---------------------------------------------------------------------------
+void* OnGetID(const void* pKey)
+{
+    size_t i;
+
+    // iterate through resource ids
+    for (i = 0; i < 1; ++i)
+        // found the texture to get?
+        if (pKey == g_ID[i].m_pKey)
+            return &g_ID[i];
+
+    return 0;
+}
+//---------------------------------------------------------------------------
+void OnDeleteTexture(const CSR_Texture* pTexture)
+{
+    size_t i;
+
+    // iterate through resource ids
+    for (i = 0; i < 1; ++i)
+        // found the texture to delete?
+        if (pTexture == g_ID[i].m_pKey)
+        {
+            // unuse the texture
+            if (g_ID[i].m_UseCount)
+                --g_ID[i].m_UseCount;
+
+            // is texture no longer used?
+            if (g_ID[i].m_UseCount)
+                return;
+
+            // delete the texture from the GPU
+            if (g_ID[i].m_ID != M_CSR_Error_Code)
+            {
+                glDeleteTextures(1, (GLuint*)(&g_ID[i].m_ID));
+                g_ID[i].m_ID = M_CSR_Error_Code;
+            }
+
+            return;
+        }
+}
 //------------------------------------------------------------------------------
 void ApplyMatrix(float w, float h)
 {
@@ -115,12 +170,12 @@ void on_GLES2_Init(int view_w, int view_h)
     g_ScreenWidth = view_w;
 
     // compile, link and use shader
-    g_pShader = csrShaderLoadFromStr(&g_VSTextured[0],
-                                      sizeof(g_VSTextured),
-                                     &g_FSTextured[0],
-                                      sizeof(g_FSTextured),
-                                      0,
-                                      0);
+    g_pShader = csrOpenGLShaderLoadFromStr(&g_VSTextured[0],
+                                            sizeof(g_VSTextured),
+                                           &g_FSTextured[0],
+                                            sizeof(g_FSTextured),
+                                            0,
+                                            0);
     glUseProgram(g_pShader->m_ProgramID);
 
     // configure the shader slots
@@ -141,7 +196,7 @@ void on_GLES2_Init(int view_w, int view_h)
     vertexFormat.m_HasPerVertexColor = 1;
 
     // load the MDL model
-    g_pModel = csrMDLOpen(MDL_FILE, 0, &vertexFormat, 0, 0, 0, 0);
+    g_pModel = csrMDLOpen(MDL_FILE, 0, &vertexFormat, 0, 0, 0, OnApplySkin, OnDeleteTexture);
 
     // calculate frame interval
     g_Interval = 1000.0f / g_FPS;
@@ -150,11 +205,11 @@ void on_GLES2_Init(int view_w, int view_h)
 void on_GLES2_Final()
 {
     // delete the model
-    csrMDLRelease(g_pModel);
+    csrMDLRelease(g_pModel, OnDeleteTexture);
     g_pModel = 0;
 
     // delete shader program
-    csrShaderRelease(g_pShader);
+    csrOpenGLShaderRelease(g_pShader);
     g_pShader = 0;
 }
 //------------------------------------------------------------------------------
@@ -243,7 +298,7 @@ void on_GLES2_Render()
     glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
 
     // draw the model
-    csrDrawMDL(g_pModel, g_pShader, 0, g_TextureIndex, g_ModelIndex, g_MeshIndex);
+    csrDrawMDL(g_pModel, g_pShader, 0, g_TextureIndex, g_ModelIndex, g_MeshIndex, OnGetID);
 
     csrDrawEnd();
 }
