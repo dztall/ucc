@@ -21,7 +21,6 @@
 #include "CSR_Geometry.h"
 #include "CSR_Collision.h"
 #include "CSR_Model.h"
-#include "CSR_Shader.h"
 #include "CSR_Renderer.h"
 
 //---------------------------------------------------------------------------
@@ -196,9 +195,7 @@ typedef void (*CSR_fOnSceneEnd)(const CSR_Scene* pScene, const CSR_SceneContext*
 *@return shader to use to draw the model, 0 if no shader
 *@note The model will not be drawn if no shader is returned
 */
-#ifdef CSR_USE_OPENGL
-    typedef CSR_Shader* (*CSR_fOnGetShader)(const void* pModel, CSR_EModelType type);
-#endif
+typedef void* (*CSR_fOnGetShader)(const void* pModel, CSR_EModelType type);
 
 /**
 * Called when a model index should be get
@@ -210,12 +207,12 @@ typedef void (*CSR_fOnGetModelIndex)(const CSR_Model* pModel, size_t* pIndex);
 /**
 * Called when the MDL model indexes should be get
 *@param pMDL - MDL model for which the indexes should be get
-*@param[in, out] pTextureIndex - texture index
+*@param[in, out] pSkinIndex - skin index
 *@param[in, out] pModelIndex - model index
 *@param[in, out] pMeshIndex - mesh index
 */
 typedef void (*CSR_fOnGetMDLIndex)(const CSR_MDL* pMDL,
-                                         size_t*  pTextureIndex,
+                                         size_t*  pSkinIndex,
                                          size_t*  pModelIndex,
                                          size_t*  pMeshIndex);
 
@@ -251,16 +248,15 @@ struct CSR_SceneContext
     CSR_fOnSceneEnd      m_fOnSceneEnd;
     CSR_fOnGetModelIndex m_fOnGetModelIndex;
     CSR_fOnGetMDLIndex   m_fOnGetMDLIndex;
-    #ifdef CSR_USE_OPENGL
-        CSR_fOnGetShader m_fOnGetShader;
-    #endif
+    CSR_fOnGetShader     m_fOnGetShader;
+    CSR_fOnGetID         m_fOnGetID;
+    CSR_fOnDeleteTexture m_fOnDeleteTexture;
 };
 
 #ifdef __cplusplus
     extern "C"
     {
 #endif
-
         //-------------------------------------------------------------------
         // Hit model functions
         //-------------------------------------------------------------------
@@ -354,9 +350,11 @@ struct CSR_SceneContext
         /**
         * Releases a scene item content
         *@param[in, out] pSI - scene item for which the content should be released
+        *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
         *@note Only the item content is released, the item itself is not released
         */
-        void csrSceneItemContentRelease(CSR_SceneItem* pSI);
+        void csrSceneItemContentRelease(CSR_SceneItem*       pSI,
+                                  const CSR_fOnDeleteTexture fOnDeleteTexture);
 
         /**
         * Initializes a scene item structure
@@ -402,8 +400,9 @@ struct CSR_SceneContext
         /**
         * Releases a scene
         *@param[in, out] pScene - scene to release
+        *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
         */
-        void csrSceneRelease(CSR_Scene* pScene);
+        void csrSceneRelease(CSR_Scene* pScene, const CSR_fOnDeleteTexture fOnDeleteTexture);
 
         /**
         * Initializes a scene structure
@@ -480,12 +479,16 @@ struct CSR_SceneContext
 
         /**
         * Deletes a model or a matrix from the scene
+        *@param pScene - scene from which the item should be deleted
         *@param pKey - key to delete, may be any model kind or a matrix
+        *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
         *@note The item and all his associated resources will be freed internally. For that reason
         *      the caller should not take care of deleting them. Be aware that the key will no longer
         *      be valid and should no longer be used after the function will be executed
         */
-        void csrSceneDeleteFrom(CSR_Scene* pScene, const void* pKey);
+        void csrSceneDeleteFrom(      CSR_Scene*           pScene,
+                                const void*                pKey,
+                                const CSR_fOnDeleteTexture fOnDeleteTexture);
 
         /**
         * Draws a scene

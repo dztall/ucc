@@ -36,8 +36,8 @@
 #include "SDK/CSR_Collision.h"
 #include "SDK/CSR_Vertex.h"
 #include "SDK/CSR_Model.h"
-#include "SDK/CSR_Shader.h"
 #include "SDK/CSR_Renderer.h"
+#include "SDK/CSR_Renderer_OpenGL.h"
 #include "SDK/CSR_Scene.h"
 #include "SDK/CSR_Sound.h"
 
@@ -75,27 +75,69 @@ const char g_FSTextured[] =
     "    gl_FragColor = csr_vColor * texture2D(csr_sColorMap, csr_vTexCoord);"
     "}";
 //------------------------------------------------------------------------------
-CSR_Shader*   g_pShader       = 0;
-CSR_Mesh*     g_pMesh         = 0;
-CSR_AABBNode* g_pTree         = 0;
-float         g_MapHeight     = 3.0f;
-float         g_MapScale      = 0.2f;
-float         g_Angle         = 0.0f;
-float         g_RotationSpeed = 0.02f;
-float         g_StepTime      = 0.0f;
-float         g_StepInterval  = 300.0f;
-const float   g_PosVelocity   = 10.0f;
-const float   g_DirVelocity   = 30.0f;
-const float   g_ControlRadius = 40.0f;
-CSR_Sphere    g_BoundingSphere;
-CSR_Matrix4   g_ViewMatrix;
-CSR_Matrix4   g_ModelMatrix;
-CSR_Vector2   g_TouchOrigin;
-CSR_Vector2   g_TouchPosition;
-CSR_Color     g_Color;
-ALCdevice*    g_pOpenALDevice  = 0;
-ALCcontext*   g_pOpenALContext = 0;
-CSR_Sound*    g_pSound         = 0;
+CSR_OpenGLShader* g_pShader       = 0;
+CSR_Mesh*         g_pMesh         = 0;
+CSR_AABBNode*     g_pTree         = 0;
+float             g_MapHeight     = 3.0f;
+float             g_MapScale      = 0.2f;
+float             g_Angle         = 0.0f;
+float             g_RotationSpeed = 0.02f;
+float             g_StepTime      = 0.0f;
+float             g_StepInterval  = 300.0f;
+const float       g_PosVelocity   = 10.0f;
+const float       g_DirVelocity   = 30.0f;
+const float       g_ControlRadius = 40.0f;
+CSR_Sphere        g_BoundingSphere;
+CSR_Matrix4       g_ViewMatrix;
+CSR_Matrix4       g_ModelMatrix;
+CSR_Vector2       g_TouchOrigin;
+CSR_Vector2       g_TouchPosition;
+CSR_Color         g_Color;
+ALCdevice*        g_pOpenALDevice  = 0;
+ALCcontext*       g_pOpenALContext = 0;
+CSR_Sound*        g_pSound         = 0;
+CSR_OpenGLID      g_ID[1];
+//---------------------------------------------------------------------------
+void* OnGetID(const void* pKey)
+{
+    size_t i;
+
+    // iterate through resource ids
+    for (i = 0; i < 1; ++i)
+        // found the texture to get?
+        if (pKey == g_ID[i].m_pKey)
+            return &g_ID[i];
+
+    return 0;
+}
+//---------------------------------------------------------------------------
+void OnDeleteTexture(const CSR_Texture* pTexture)
+{
+    size_t i;
+
+    // iterate through resource ids
+    for (i = 0; i < 1; ++i)
+        // found the texture to delete?
+        if (pTexture == g_ID[i].m_pKey)
+        {
+            // unuse the texture
+            if (g_ID[i].m_UseCount)
+                --g_ID[i].m_UseCount;
+
+            // is texture no longer used?
+            if (g_ID[i].m_UseCount)
+                return;
+
+            // delete the texture from the GPU
+            if (g_ID[i].m_ID != M_CSR_Error_Code)
+            {
+                glDeleteTextures(1, (GLuint*)(&g_ID[i].m_ID));
+                g_ID[i].m_ID = M_CSR_Error_Code;
+            }
+
+            return;
+        }
+}
 //---------------------------------------------------------------------------
 void ApplyGroundCollision(const CSR_Sphere*   pBoundingSphere,
                           const CSR_AABBNode* pTree,
@@ -190,12 +232,12 @@ void on_GLES2_Init(int view_w, int view_h)
     g_BoundingSphere.m_Radius     = 0.1f;
 
     // compile, link and use shader
-    g_pShader = csrShaderLoadFromStr(&g_VSTextured[0],
-                                      sizeof(g_VSTextured),
-                                     &g_FSTextured[0],
-                                      sizeof(g_FSTextured),
-                                      0,
-                                      0);
+    g_pShader = csrOpenGLShaderLoadFromStr(&g_VSTextured[0],
+                                            sizeof(g_VSTextured),
+                                           &g_FSTextured[0],
+                                            sizeof(g_FSTextured),
+                                            0,
+                                            0);
 
     csrShaderEnable(g_pShader);
 
@@ -238,9 +280,13 @@ void on_GLES2_Init(int view_w, int view_h)
     // create the AABB tree for the mountain model
     g_pTree = csrAABBTreeFromMesh(g_pMesh);
 
+    // create a resource for the landscape texture
+    g_ID[0].m_pKey     = &g_pMesh->m_Skin.m_Texture;
+    g_ID[0].m_UseCount = 1;
+
     // load landscape texture
-    pPixelBuffer                  = csrPixelBufferFromBitmapFile(LANDSCAPE_TEXTURE_FILE);
-    g_pMesh->m_Shader.m_TextureID = csrTextureFromPixelBuffer(pPixelBuffer);
+    pPixelBuffer = csrPixelBufferFromBitmapFile(LANDSCAPE_TEXTURE_FILE);
+    g_ID[0].m_ID = csrOpenGLTextureFromPixelBuffer(pPixelBuffer);
 
     // landscape texture will no longer be used
     csrPixelBufferRelease(pPixelBuffer);
@@ -254,11 +300,11 @@ void on_GLES2_Init(int view_w, int view_h)
 void on_GLES2_Final()
 {
     // delete the landscape
-    csrMeshRelease(g_pMesh);
+    csrMeshRelease(g_pMesh, OnDeleteTexture);
     g_pMesh = 0;
 
     // delete shader
-    csrShaderRelease(g_pShader);
+    csrOpenGLShaderRelease(g_pShader);
     g_pShader = 0;
 
     // stop running step sound, if needed
@@ -357,7 +403,7 @@ void on_GLES2_Render()
     glUniformMatrix4fv(modelSlot, 1, 0, &g_ModelMatrix.m_Table[0][0]);
 
     // draw the landscape
-    csrDrawMesh(g_pMesh, g_pShader, 0);
+    csrDrawMesh(g_pMesh, g_pShader, 0, OnGetID);
 
     csrDrawEnd();
 }

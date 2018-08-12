@@ -33,7 +33,6 @@
 #include "SDK/CSR_Common.h"
 #include "SDK/CSR_Vertex.h"
 #include "SDK/CSR_Model.h"
-#include "SDK/CSR_Shader.h"
 #include "SDK/CSR_Renderer.h"
 #include "SDK/CSR_SoftwareRaster.h"
 #include "SDK/CSR_MobileC_Debug.h"
@@ -64,14 +63,14 @@ SDL_Window*      g_pWindow          = 0;
 SDL_Texture*     g_pTexture         = 0;
 SDL_Renderer*    g_pRenderer        = 0;
 //------------------------------------------------------------------------------
-void OnTextureRead(size_t index, const CSR_PixelBuffer* pPixelBuffer, int* pNoGPU)
+void OnApplySkin(size_t index, const CSR_Skin* pSkin, int* pCanRelease)
 {
-    // disable the texture loading on the GPU
-    if (pNoGPU)
-        *pNoGPU = 1;
+    // notify that the texture may be released on the model side (no longer used)
+    if (pCanRelease)
+        *pCanRelease = 1;
 
-    // no pixel buffer?
-    if (!pPixelBuffer)
+    // no skin?
+    if (!pSkin)
         return;
 
     // release the previously existing texture, if any
@@ -80,11 +79,13 @@ void OnTextureRead(size_t index, const CSR_PixelBuffer* pPixelBuffer, int* pNoGP
 
     // copy the pixel buffer content (the source buffer will be released sooner)
     g_pModelTexture = (CSR_PixelBuffer*)malloc(sizeof(CSR_PixelBuffer));
-    memcpy(g_pModelTexture, pPixelBuffer, sizeof(CSR_PixelBuffer));
+    memcpy(g_pModelTexture, pSkin->m_Texture.m_pBuffer, sizeof(CSR_PixelBuffer));
 
     // copy the texture pixel data
-    g_pModelTexture->m_pData = (unsigned char*)malloc(pPixelBuffer->m_DataLength);
-    memcpy(g_pModelTexture->m_pData, pPixelBuffer->m_pData, pPixelBuffer->m_DataLength);
+    g_pModelTexture->m_pData = (unsigned char*)malloc(pSkin->m_Texture.m_pBuffer->m_DataLength);
+    memcpy(g_pModelTexture->m_pData,
+           pSkin->m_Texture.m_pBuffer->m_pData,
+           pSkin->m_Texture.m_pBuffer->m_DataLength);
 }
 //------------------------------------------------------------------------------
 void OnApplyFragmentShader(const CSR_Matrix4*  pMatrix,
@@ -127,7 +128,7 @@ int InitSDL(float width, float height)
     // start SDL
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
     {
-        printf("Error while SDL was initialized: %d\n", SDL_GetError());
+        printf("Error while SDL was initialized: %s\n", SDL_GetError());
         return 0;
     }
 
@@ -142,7 +143,7 @@ int InitSDL(float width, float height)
     // succeeded?
     if (!g_pWindow)
     {
-        printf("Error while SDL window was created: %d\n", SDL_GetError());
+        printf("Error while SDL window was created: %s\n", SDL_GetError());
         return 0;
     }
 
@@ -155,7 +156,7 @@ int InitSDL(float width, float height)
     if (!g_pRenderer)
     {
         SDL_DestroyWindow(g_pWindow);
-        printf("Error while SDL renderer was created: %d\n", SDL_GetError());
+        printf("Error while SDL renderer was created: %s\n", SDL_GetError());
         SDL_Quit();
         return 0;
     }
@@ -172,7 +173,7 @@ int InitSDL(float width, float height)
     {
         SDL_DestroyRenderer(g_pRenderer);
         SDL_DestroyWindow(g_pWindow);
-        printf("Error while SDL target texture was created: %d\n", SDL_GetError());
+        printf("Error while SDL target texture was created: %s\n", SDL_GetError());
         SDL_Quit();
         return 0;
     }
@@ -225,7 +226,7 @@ int OnInit(int width, int height)
     vertexCulling.m_Face = CSR_CF_CW;
 
     // load the MDL model
-    g_pModel = csrMDLOpen(MDL_FILE, 0, &vertexFormat, &vertexCulling, 0, 0, OnTextureRead);
+    g_pModel = csrMDLOpen(MDL_FILE, 0, &vertexFormat, &vertexCulling, 0, 0, OnApplySkin, 0);
 
     return 1;
 }
@@ -237,7 +238,7 @@ void OnRelease()
         csrPixelBufferRelease(g_pModelTexture);
 
     // delete the model
-    csrMDLRelease(g_pModel);
+    csrMDLRelease(g_pModel, 0);
     g_pModel = 0;
 
     // shutdown SDL

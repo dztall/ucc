@@ -1,4 +1,4 @@
-/****************************************************************************
+﻿/****************************************************************************
  * ==> CSR_Texture ---------------------------------------------------------*
  ****************************************************************************
  * Description : This module provides the texture functions and types       *
@@ -71,31 +71,37 @@ typedef struct
 {
     CSR_PixelBuffer* m_pBuffer;
     char*            m_pFileName;
-    #ifdef CSR_USE_OPENGL
-        GLuint       m_ID;
-    #endif
-} CSR_TextureItem;
+} CSR_Texture;
 
 /**
 * Texture array
 */
 typedef struct
 {
-    CSR_TextureItem* m_pItem;
-    size_t           m_Count;
+    CSR_Texture* m_pItem;
+    size_t       m_Count;
 } CSR_TextureArray;
 
 /**
-* Texture shader (i.e. the GPU loaded textures that should be connected to the shader)
+* Skin
 */
-#ifdef CSR_USE_OPENGL
-    typedef struct
-    {
-        GLuint m_TextureID;
-        GLuint m_BumpMapID;
-        GLuint m_CubeMapID;
-    } CSR_TextureShader;
-#endif
+typedef struct
+{
+    CSR_Texture m_Texture;
+    CSR_Texture m_BumpMap;
+    CSR_Texture m_CubeMap;
+    double      m_Time;
+} CSR_Skin;
+
+//---------------------------------------------------------------------------
+// Callbacks
+//---------------------------------------------------------------------------
+
+/**
+* Called when a texture should be deleted
+*@param pTexture - texture to delete
+*/
+typedef void (*CSR_fOnDeleteTexture)(const CSR_Texture* pTexture);
 
 #ifdef __cplusplus
     extern "C"
@@ -147,37 +153,31 @@ typedef struct
         //-------------------------------------------------------------------
 
         /**
-        * Loads a texture contained in a pixel buffer on the GPU
-        *@param pPixelBuffer - pixel buffer containing the texture to load
-        *@return loaded texture index, M_CSR_Error_Code on error
+        * Creates a texture
+        *@return newly created texture, 0 on error
+        *@note The texture must be released when no longer used, see csrTextureRelease()
         */
-        #ifdef CSR_USE_OPENGL
-            GLuint csrTextureFromPixelBuffer(const CSR_PixelBuffer* pPixelBuffer);
-        #endif
-
-        //-------------------------------------------------------------------
-        // Texture item functions
-        //-------------------------------------------------------------------
+        CSR_Texture* csrTextureCreate(void);
 
         /**
-        * Creates a texture item
-        *@return newly created texture item, 0 on error
-        *@note The texture item must be released when no longer used, see csrTextureItemContentRelease()
+        * Releases a texture
+        *@param[in, out] pTexture - texture to release
+        *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
         */
-        CSR_TextureItem* csrTextureItemCreate(void);
+        void csrTextureRelease(CSR_Texture* pTexture, const CSR_fOnDeleteTexture fOnDeleteTexture);
 
         /**
-        * Releases a texture item content
-        *@param[in, out] pTI - texture item for which the content should be released
-        *@note Only the item content is released, the item itself is not released
+        * Releases a texture content
+        *@param[in, out] pTexture - texture for which the content should be released
+        *@note Only the texture content is released, the texture itself is not released
         */
-        void csrTextureItemContentRelease(CSR_TextureItem* pTI);
+        void csrTextureContentRelease(CSR_Texture* pTexture);
 
         /**
-        * Initializes a texture item
-        *@param[in, out] pTI - texture item to initialize
+        * Initializes a texture
+        *@param[in, out] pTexture - texture to initialize
         */
-        void csrTextureItemInit(CSR_TextureItem* pTI);
+        void csrTextureInit(CSR_Texture* pTexture);
 
         //-------------------------------------------------------------------
         // Texture array functions
@@ -193,8 +193,9 @@ typedef struct
         /**
         * Releases a texture array
         *@param[in, out] pTA - texture array to release
+        *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
         */
-        void csrTextureArrayRelease(CSR_TextureArray* pTA);
+        void csrTextureArrayRelease(CSR_TextureArray* pTA, const CSR_fOnDeleteTexture fOnDeleteTexture);
 
         /**
         * Initializes a texture array structure
@@ -203,29 +204,36 @@ typedef struct
         void csrTextureArrayInit(CSR_TextureArray* pTA);
 
         //-------------------------------------------------------------------
-        // Texture shader functions
+        // Skin functions
         //-------------------------------------------------------------------
 
         /**
-        * Initializes a texture shader structure
-        *@param[in, out] pTextureShader - texture shader to initialize
+        * Creates a skin
+        *@return newly created skin, 0 on error
+        *@note The skin must be released when no longer used, see csrSkinRelease()
         */
-        #ifdef CSR_USE_OPENGL
-            void csrTextureShaderInit(CSR_TextureShader* pTextureShader);
-        #endif
-
-        //-------------------------------------------------------------------
-        // Cubemap functions
-        //-------------------------------------------------------------------
+        CSR_Skin* csrSkinCreate(void);
 
         /**
-        * Loads a cubemap texture from 6 images containing each faces on the GPU
-        *@param pFileNames - face textures file names
-        *@return loaded texture index, M_CSR_Error_Code on error
+        * Releases a skin
+        *@param[in, out] pSkin - skin to release
+        *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
         */
-        #ifdef CSR_USE_OPENGL
-            GLuint csrCubemapLoad(const char** pFileNames);
-        #endif
+        void csrSkinRelease(CSR_Skin* pSkin, const CSR_fOnDeleteTexture fOnDeleteTexture);
+
+        /**
+        * Releases a skin content
+        *@param[in, out] pSkin - skin for which the content should be released
+        *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
+        *@note Only the skin content is released, the skin itself is not released
+        */
+        void csrSkinContentRelease(CSR_Skin* pSkin, const CSR_fOnDeleteTexture fOnDeleteTexture);
+
+        /**
+        * Initializes a skin
+        *@param[in, out] pSkin - skin to initialize
+        */
+        void csrSkinInit(CSR_Skin* pSkin);
 
 #ifdef __cplusplus
     }

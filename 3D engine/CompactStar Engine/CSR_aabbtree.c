@@ -34,11 +34,11 @@
 // mini API
 #include "SDK/CSR_Common.h"
 #include "SDK/CSR_Geometry.h"
+#include "SDK/CSR_Collision.h"
 #include "SDK/CSR_Vertex.h"
 #include "SDK/CSR_Model.h"
-#include "SDK/CSR_Collision.h"
-#include "SDK/CSR_Shader.h"
 #include "SDK/CSR_Renderer.h"
+#include "SDK/CSR_Renderer_OpenGL.h"
 
 // libraries
 #include <ccr.h>
@@ -63,7 +63,7 @@ const char g_FSProgram[] = "precision mediump float;"
                            "    gl_FragColor = csr_vColor;"
                            "}";
 //------------------------------------------------------------------------------
-CSR_Shader*        g_pShader              = 0;
+CSR_OpenGLShader*  g_pShader              = 0;
 CSR_Mesh*          g_pMesh                = 0;
 CSR_AABBNode*      g_pAABBRoot            = 0;
 float              g_Radius               = 1.0f;
@@ -122,12 +122,12 @@ void on_GLES2_Init(int view_w, int view_h)
     csrMat4Identity(&g_ViewMatrix);
 
     // compile, link and use shader
-    g_pShader = csrShaderLoadFromStr(&g_VSProgram[0],
-                                      sizeof(g_VSProgram),
-                                     &g_FSProgram[0],
-                                      sizeof(g_FSProgram),
-                                      0,
-                                      0);
+    g_pShader = csrOpenGLShaderLoadFromStr(&g_VSProgram[0],
+                                            sizeof(g_VSProgram),
+                                           &g_FSProgram[0],
+                                            sizeof(g_FSProgram),
+                                            0,
+                                            0);
 
     // enable the shader
     csrShaderEnable(g_pShader);
@@ -182,11 +182,11 @@ void on_GLES2_Final()
     g_pAABBRoot = 0;
 
     // delete mesh
-    csrMeshRelease(g_pMesh);
+    csrMeshRelease(g_pMesh, 0);
     g_pMesh = 0;
 
     // delete shader
-    csrShaderRelease(g_pShader);
+    csrOpenGLShaderRelease(g_pShader);
     g_pShader = 0;
 }
 //------------------------------------------------------------------------------
@@ -352,18 +352,17 @@ void on_GLES2_Render()
         free(polygons.m_pPolygon);
 
     // draw the sphere
-    csrDrawMesh(g_pMesh, g_pShader, 0);
+    csrDrawMesh(g_pMesh, g_pShader, 0, 0);
 
     // enable position and color slots
     glEnableVertexAttribArray(g_pShader->m_VertexSlot);
     glEnableVertexAttribArray(g_pShader->m_ColorSlot);
 
     // configure the polygon mesh
-    polygonMesh.m_Shader.m_TextureID = GL_INVALID_VALUE;
-    polygonMesh.m_Shader.m_BumpMapID = GL_INVALID_VALUE;
-    polygonMesh.m_Time               = 0.0;
-    polygonMesh.m_pVB                = &polygonVB;
-    polygonMesh.m_Count              = 1;
+    csrSkinInit(&polygonMesh.m_Skin);
+    polygonMesh.m_Time  = 0.0;
+    polygonMesh.m_pVB   = &polygonVB;
+    polygonMesh.m_Count = 1;
 
     // configure the polygon vertex buffer
     polygonVB.m_Format.m_Type              = CSR_VT_Triangles;
@@ -376,7 +375,7 @@ void on_GLES2_Render()
     polygonVB.m_Material.m_Color           = 0xFFFFFFFF;
     polygonVB.m_Material.m_Transparent     = 0;
     polygonVB.m_Time                       = 0.0;
-    polygonVB.m_pData                      = &g_PolygonArray;
+    polygonVB.m_pData                      = g_PolygonArray;
     polygonVB.m_Count                      = sizeof(g_PolygonArray) / sizeof(float);
 
     // found collide polygons to draw?
@@ -398,7 +397,7 @@ void on_GLES2_Render()
         g_PolygonArray[16] = pPolygonsToDraw[i].m_Vertex[2].m_Z;
 
         // draw the polygon
-        csrDrawMesh(&polygonMesh, g_pShader, 0);
+        csrDrawMesh(&polygonMesh, g_pShader, 0, 0);
     }
 
     if (polygonsToDrawCount)

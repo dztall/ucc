@@ -36,8 +36,8 @@
 #include "SDK/CSR_Collision.h"
 #include "SDK/CSR_Vertex.h"
 #include "SDK/CSR_Model.h"
-#include "SDK/CSR_Shader.h"
 #include "SDK/CSR_Renderer.h"
+#include "SDK/CSR_Renderer_OpenGL.h"
 #include "SDK/CSR_Scene.h"
 #include "SDK/CSR_Sound.h"
 
@@ -112,28 +112,78 @@ const char g_FSSkybox[] =
     "    gl_FragColor = textureCube(csr_sCubemap, csr_vTexCoord);"
     "}";
 //------------------------------------------------------------------------------
-CSR_Scene*       g_pScene        = 0;
-CSR_Shader*      g_pShader       = 0;
-CSR_Shader*      g_pSkyboxShader = 0;
-void*            g_pLandscapeKey = 0;
-float            g_MapHeight     = 3.0f;
-float            g_MapScale      = 0.2f;
-float            g_Angle         = 0.0f;
-float            g_RotationSpeed = 0.02f;
-float            g_StepTime      = 0.0f;
-float            g_StepInterval  = 300.0f;
-const float      g_PosVelocity   = 10.0f;
-const float      g_DirVelocity   = 30.0f;
-const float      g_ControlRadius = 40.0f;
-CSR_SceneContext g_SceneContext;
-CSR_Sphere       g_BoundingSphere;
-CSR_Matrix4      g_LandscapeMatrix;
-CSR_Vector2      g_TouchOrigin;
-CSR_Vector2      g_TouchPosition;
-CSR_Color        g_Color;
-ALCdevice*       g_pOpenALDevice  = 0;
-ALCcontext*      g_pOpenALContext = 0;
-CSR_Sound*       g_pSound         = 0;
+CSR_Scene*        g_pScene        = 0;
+CSR_OpenGLShader* g_pShader       = 0;
+CSR_OpenGLShader* g_pSkyboxShader = 0;
+void*             g_pLandscapeKey = 0;
+float             g_MapHeight     = 3.0f;
+float             g_MapScale      = 0.2f;
+float             g_Angle         = 0.0f;
+float             g_RotationSpeed = 0.02f;
+float             g_StepTime      = 0.0f;
+float             g_StepInterval  = 300.0f;
+const float       g_PosVelocity   = 10.0f;
+const float       g_DirVelocity   = 30.0f;
+const float       g_ControlRadius = 40.0f;
+CSR_SceneContext  g_SceneContext;
+CSR_Sphere        g_BoundingSphere;
+CSR_Matrix4       g_LandscapeMatrix;
+CSR_Vector2       g_TouchOrigin;
+CSR_Vector2       g_TouchPosition;
+CSR_Color         g_Color;
+ALCdevice*        g_pOpenALDevice  = 0;
+ALCcontext*       g_pOpenALContext = 0;
+CSR_Sound*        g_pSound         = 0;
+CSR_OpenGLID      g_ID[2];
+//---------------------------------------------------------------------------
+void* OnGetShader(const void* pModel, CSR_EModelType type)
+{
+    if (pModel == g_pScene->m_pSkybox)
+        return g_pSkyboxShader;
+
+    return g_pShader;
+}
+//---------------------------------------------------------------------------
+void* OnGetID(const void* pKey)
+{
+    size_t i;
+
+    // iterate through resource ids
+    for (i = 0; i < 2; ++i)
+        // found the texture to get?
+        if (pKey == g_ID[i].m_pKey)
+            return &g_ID[i];
+
+    return 0;
+}
+//---------------------------------------------------------------------------
+void OnDeleteTexture(const CSR_Texture* pTexture)
+{
+    size_t i;
+
+    // iterate through resource ids
+    for (i = 0; i < 2; ++i)
+        // found the texture to delete?
+        if (pTexture == g_ID[i].m_pKey)
+        {
+            // unuse the texture
+            if (g_ID[i].m_UseCount)
+                --g_ID[i].m_UseCount;
+
+            // is texture no longer used?
+            if (g_ID[i].m_UseCount)
+                return;
+
+            // delete the texture from the GPU
+            if (g_ID[i].m_ID != M_CSR_Error_Code)
+            {
+                glDeleteTextures(1, (GLuint*)(&g_ID[i].m_ID));
+                g_ID[i].m_ID = M_CSR_Error_Code;
+            }
+
+            return;
+        }
+}
 //---------------------------------------------------------------------------
 int LoadLandscapeFromBitmap(const char* fileName)
 {
@@ -168,7 +218,7 @@ int LoadLandscapeFromBitmap(const char* fileName)
     // succeeded?
     if (!pBitmap)
     {
-        csrModelRelease(pModel);
+        csrModelRelease(pModel, OnDeleteTexture);
         return 0;
     }
 
@@ -252,14 +302,6 @@ int ApplyGroundCollision(const CSR_Sphere* pBoundingSphere, CSR_Matrix4* pMatrix
 
     return 0;
 }
-//---------------------------------------------------------------------------
-CSR_Shader* OnGetShader(const void* pModel, CSR_EModelType type)
-{
-    if (pModel == g_pScene->m_pSkybox)
-        return g_pSkyboxShader;
-
-    return g_pShader;
-}
 //------------------------------------------------------------------------------
 void CreateViewport(float w, float h)
 {
@@ -311,15 +353,17 @@ void on_GLES2_Init(int view_w, int view_h)
 
     // configure the scene context
     csrSceneContextInit(&g_SceneContext);
-    g_SceneContext.m_fOnGetShader = OnGetShader;
+    g_SceneContext.m_fOnGetShader     = OnGetShader;
+    g_SceneContext.m_fOnGetID         = OnGetID;
+    g_SceneContext.m_fOnDeleteTexture = OnDeleteTexture;
 
     // compile, link and use shader
-    g_pShader = csrShaderLoadFromStr(&g_VSTextured[0],
-                                      sizeof(g_VSTextured),
-                                     &g_FSTextured[0],
-                                      sizeof(g_FSTextured),
-                                      0,
-                                      0);
+    g_pShader = csrOpenGLShaderLoadFromStr(&g_VSTextured[0],
+                                            sizeof(g_VSTextured),
+                                           &g_FSTextured[0],
+                                            sizeof(g_FSTextured),
+                                            0,
+                                            0);
 
     // succeeded?
     if (!g_pShader)
@@ -363,19 +407,21 @@ void on_GLES2_Init(int view_w, int view_h)
     }
 
     // load landscape texture
-    pPixelBuffer                                                     = csrPixelBufferFromBitmapFile(LANDSCAPE_TEXTURE_FILE);
-    ((CSR_Model*)(pItem->m_pModel))->m_pMesh[0].m_Shader.m_TextureID = csrTextureFromPixelBuffer(pPixelBuffer);
+    pPixelBuffer       = csrPixelBufferFromBitmapFile(LANDSCAPE_TEXTURE_FILE);
+    g_ID[0].m_pKey     = &((CSR_Model*)(pItem->m_pModel))->m_pMesh[0].m_Skin.m_Texture;
+    g_ID[0].m_ID       = csrOpenGLTextureFromPixelBuffer(pPixelBuffer);
+    g_ID[0].m_UseCount = 1;
 
     // landscape texture will no longer be used
     csrPixelBufferRelease(pPixelBuffer);
 
     // load the skybox shader
-    g_pSkyboxShader = csrShaderLoadFromStr(&g_VSSkybox[0],
-                                            sizeof(g_VSSkybox),
-                                           &g_FSSkybox[0],
-                                            sizeof(g_FSSkybox),
-                                            0,
-                                            0);
+    g_pSkyboxShader = csrOpenGLShaderLoadFromStr(&g_VSSkybox[0],
+                                                  sizeof(g_VSSkybox),
+                                                 &g_FSSkybox[0],
+                                                  sizeof(g_FSSkybox),
+                                                  0,
+                                                  0);
 
     // succeeded?
     if (!g_pSkyboxShader)
@@ -404,7 +450,9 @@ void on_GLES2_Init(int view_w, int view_h)
     }
 
     // load the cubemap texture
-    g_pScene->m_pSkybox->m_Shader.m_CubeMapID = csrCubemapLoad(pCubemapFileNames);
+    g_ID[1].m_pKey     = &g_pScene->m_pSkybox->m_Skin.m_CubeMap;
+    g_ID[1].m_ID       = csrOpenGLCubemapLoad(pCubemapFileNames);
+    g_ID[1].m_UseCount = 1;
 
     csrSoundInitializeOpenAL(&g_pOpenALDevice, &g_pOpenALContext);
 
@@ -415,15 +463,15 @@ void on_GLES2_Init(int view_w, int view_h)
 void on_GLES2_Final()
 {
     // delete the scene
-    csrSceneRelease(g_pScene);
+    csrSceneRelease(g_pScene, OnDeleteTexture);
     g_pScene = 0;
 
     // delete scene shader
-    csrShaderRelease(g_pShader);
+    csrOpenGLShaderRelease(g_pShader);
     g_pShader = 0;
 
     // delete skybox shader
-    csrShaderRelease(g_pSkyboxShader);
+    csrOpenGLShaderRelease(g_pSkyboxShader);
     g_pSkyboxShader = 0;
 
     // stop running step sound, if needed
