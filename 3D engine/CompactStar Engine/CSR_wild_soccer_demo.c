@@ -1,5 +1,5 @@
 ﻿/*****************************************************************************
- * ==> Cross football game demo ---------------------------------------------*
+ * ==> Wild soccer game demo ------------------------------------------------*
  *****************************************************************************
  * Description : A cross football game demo. Swipe up or down to walk, and   *
  *               left or right to rotate. Tap to shoot the ball              *
