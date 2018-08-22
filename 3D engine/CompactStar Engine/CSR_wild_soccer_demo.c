@@ -45,7 +45,7 @@
 #include <ccr.h>
 
 // energy factor for the shoot
-#define M_ShootEnergyFactor 23.5f
+#define M_ShootEnergyFactor 23.0f
 
 #define YOU_WON_TEXTURE_FILE     "Resources/you_won.bmp"
 #define LANDSCAPE_TEXTURE_FILE   "Resources/soccer_grass.bmp"
