@@ -427,9 +427,75 @@ void csrAABBTreeNodeRelease(CSR_AABBNode* pNode)
     free(pNode);
 }
 //---------------------------------------------------------------------------
+// Sliding functions
+//---------------------------------------------------------------------------
+void csrSlidingPoint(const CSR_Plane*   pSlidingPlane,
+                     const CSR_Vector3* pPosition,
+                           float        radius,
+                           CSR_Vector3* pR)
+{
+    float        distanceToPlane;
+    CSR_Plane    plane;
+    CSR_Vector3  planeRatio;
+    CSR_Vector3  pointBeyondPlane;
+    CSR_Vector3  pointOnPlane;
+    CSR_Segment3 segment;
+    CSR_Figure3  segmentFigure;
+    CSR_Figure3  planeFigure;
+
+    plane = *pSlidingPlane;
+
+    // calculate the distance between the center of the sphere and the plane
+    csrPlaneDistanceTo(pPosition, &plane, &distanceToPlane);
+
+    // check if value is negative
+    if (distanceToPlane < 0.0f)
+    {
+        // invert the plane
+        plane.m_A = -plane.m_A;
+        plane.m_B = -plane.m_B;
+        plane.m_C = -plane.m_C;
+        plane.m_D = -plane.m_D;
+    }
+
+    // calculate the direction of the segment position - plane
+    planeRatio.m_X = radius * plane.m_A;
+    planeRatio.m_Y = radius * plane.m_B;
+    planeRatio.m_Z = radius * plane.m_C;
+
+    // calculate who the segment perpendicular to the plane, from the center
+    // of the sphere, cross the collision sphere. Normally this point is beyond
+    // the plane
+    pointBeyondPlane.m_X = pPosition->m_X - planeRatio.m_X;
+    pointBeyondPlane.m_Y = pPosition->m_Y - planeRatio.m_Y;
+    pointBeyondPlane.m_Z = pPosition->m_Z - planeRatio.m_Z;
+
+    // configure the segment to test
+    segment.m_Start = *pPosition;
+    segment.m_End   =  pointBeyondPlane;
+
+    // build a figure containing the segment
+    segmentFigure.m_Type    =  CSR_F3_Segment;
+    segmentFigure.m_pFigure = &segment;
+
+    // build a figure containing the plane
+    planeFigure.m_Type    = CSR_F3_Plane;
+    planeFigure.m_pFigure = pSlidingPlane;
+
+    // calculate the point where the segment "center of the sphere - point beyond
+    // the plane" cross the collision plane
+    csrIntersect3(&segmentFigure, &planeFigure, &pointOnPlane, 0, 0);
+
+    // from point calculated below, we add the radius of the sphere, and we
+    // returns the value
+    pR->m_X = pointOnPlane.m_X + planeRatio.m_X;
+    pR->m_Y = pointOnPlane.m_Y + planeRatio.m_Y;
+    pR->m_Z = pointOnPlane.m_Z + planeRatio.m_Z;
+}
+//---------------------------------------------------------------------------
 // Ground collision functions
 //---------------------------------------------------------------------------
-int csrCollisionGround(const CSR_Sphere*   pSphere,
+int csrGroundCollision(const CSR_Sphere*   pSphere,
                        const CSR_Polygon3* pPolygon,
                        const CSR_Vector3*  pGroundDir,
                              CSR_Vector3*  pR)
@@ -509,7 +575,7 @@ int csrGroundPosY(const CSR_Sphere*   pBoundingSphere,
     // iterate through polygons to check
     for (i = 0; i < polygonBuffer.m_Count; ++i)
         // check if a ground polygon was found, calculate the ground position if yes
-        if (csrCollisionGround(pBoundingSphere, &polygonBuffer.m_pPolygon[i], pGroundDir, &groundPos))
+        if (csrGroundCollision(pBoundingSphere, &polygonBuffer.m_pPolygon[i], pGroundDir, &groundPos))
         {
             // copy the ground polygon, if required
             if (pGroundPolygon)

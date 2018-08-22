@@ -27,6 +27,17 @@
 //---------------------------------------------------------------------------
 
 /**
+* 2D rectangle edges
+*/
+typedef enum
+{
+    CSR_R2_Left,
+    CSR_R2_Top,
+    CSR_R2_Right,
+    CSR_R2_Bottom
+} CSR_ERect2DEdge;
+
+/**
 * 2D geometric figure enumeration
 */
 typedef enum
@@ -775,6 +786,18 @@ typedef struct
         *                            x pP
         */
         void csrPolygon3ClosestPoint(const CSR_Vector3* pP, const CSR_Polygon3* pPo, CSR_Vector3* pR);
+
+        //-------------------------------------------------------------------
+        // Rectangle functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Gets on which edge of a rectangle a point is hitting
+        *@param pPoint - point to check
+        *@param pRect - rectangle to check against
+        *@param[out] pEdge - edge on which the point hit the rectangle
+        */
+        void csrRectEdge(const CSR_Vector2* pPoint, const CSR_Rect* pRect, CSR_ERect2DEdge* pEdge);
 
         //-------------------------------------------------------------------
         // Box functions

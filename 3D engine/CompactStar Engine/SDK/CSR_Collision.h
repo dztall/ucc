@@ -96,6 +96,22 @@ struct CSR_AABBNode
         void csrAABBTreeNodeRelease(CSR_AABBNode* pNode);
 
         //-------------------------------------------------------------------
+        // Sliding functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Gets the next position while sliding on a plane
+        *@param pSlidingPlane - sliding plane
+        *@param pPosition - current position
+        *@param radius - radius around the current position
+        *@param pR - resulting position
+        */
+        void csrSlidingPoint(const CSR_Plane*   pSlidingPlane,
+                             const CSR_Vector3* pPosition,
+                                   float        radius,
+                                   CSR_Vector3* pR);
+
+        //-------------------------------------------------------------------
         // Ground collision functions
         //-------------------------------------------------------------------
 
@@ -111,7 +127,7 @@ struct CSR_AABBNode
         *      means that any transformation should be applied to the sphere before calling this
         *      function
         */
-        int csrCollisionGround(const CSR_Sphere*   pSphere,
+        int csrGroundCollision(const CSR_Sphere*   pSphere,
                                const CSR_Polygon3* pPolygon,
                                const CSR_Vector3*  pGroundDir,
                                      CSR_Vector3*  pR);

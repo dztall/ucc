@@ -1208,6 +1208,45 @@ void csrPolygon3ClosestPoint(const CSR_Vector3* pP, const CSR_Polygon3* pPo, CSR
         *pR = rca;
 }
 //---------------------------------------------------------------------------
+// Rectangle functions
+//---------------------------------------------------------------------------
+void csrRectEdge(const CSR_Vector2* pPoint, const CSR_Rect* pRect, CSR_ERect2DEdge* pEdge)
+{
+    int ab;
+    int ad;
+
+    const float width  = pRect->m_Max.m_X - pRect->m_Min.m_X;
+    const float height = pRect->m_Max.m_Y - pRect->m_Min.m_Y;
+
+    // considering the following rect:
+    // |-------|
+    // |\     /|
+    // | \ a / |
+    // |  \ /  |
+    // | b x d |
+    // |  / \  |
+    // | / c \ |
+    // |/     \|
+    // |-------|
+
+    // check if the point is inside the area cutted by the rect / diagonal
+    ab = (pPoint->m_Y - pRect->m_Min.m_Y) * width > (pPoint->m_X - pRect->m_Min.m_X) * height;
+
+    // check if the point is inside the area cutted by the rect \ diagonal
+    ad = (pPoint->m_Y - pRect->m_Min.m_Y) * width > (pRect->m_Max.m_X - pPoint->m_X) * height;
+
+    if (ab && ad)
+        *pEdge = CSR_R2_Top;
+    else
+    if (ab && !ad)
+        *pEdge = CSR_R2_Left;
+    else
+    if (!ab && !ad)
+        *pEdge = CSR_R2_Bottom;
+    else
+        *pEdge = CSR_R2_Right;
+}
+//---------------------------------------------------------------------------
 // Box functions
 //---------------------------------------------------------------------------
 void csrBoxExtendToPolygon(const CSR_Polygon3* pPolygon,
