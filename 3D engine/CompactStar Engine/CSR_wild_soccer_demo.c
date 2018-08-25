@@ -1,8 +1,8 @@
 ﻿/*****************************************************************************
- * ==> Cross football game demo ---------------------------------------------*
+ * ==> Wild soccer game demo ------------------------------------------------*
  *****************************************************************************
- * Description : A cross football game demo. Swipe up or down to walk, and   *
- *               left or right to rotate. Tap to shoot the ball              *
+ * Description : A wild soccer game demo. Swipe up or down to walk, and left *
+ *               or right to rotate. Tap to shoot the ball                   *
  * Developer   : Jean-Milost Reymond                                         *
  * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
  *               free to copy or redistribute this file, modify it, or use   *
@@ -45,18 +45,21 @@
 #include <ccr.h>
 
 // energy factor for the shoot
-#define M_ShootEnergyFactor 23.5f
+#define M_ShootEnergyFactor 23.0f
 
-#define LANDSCAPE_TEXTURE_FILE "Resources/football_ground.bmp"
-#define BALL_TEXTURE_FILE      "Resources/soccer_ball.bmp"
-#define LANDSCAPE_DATA_FILE    "Resources/level.bmp"
-#define SKYBOX_LEFT            "Resources/skybox_left_small.bmp"
-#define SKYBOX_TOP             "Resources/skybox_top_small.bmp"
-#define SKYBOX_RIGHT           "Resources/skybox_right_small.bmp"
-#define SKYBOX_BOTTOM          "Resources/skybox_bottom_small.bmp"
-#define SKYBOX_FRONT           "Resources/skybox_front_small.bmp"
-#define SKYBOX_BACK            "Resources/skybox_back_small.bmp"
-#define PLAYER_STEP_SOUND_FILE "Resources/human_walk_grass_step.wav"
+#define YOU_WON_TEXTURE_FILE     "Resources/you_won.bmp"
+#define LANDSCAPE_TEXTURE_FILE   "Resources/soccer_grass.bmp"
+#define BALL_TEXTURE_FILE        "Resources/soccer_ball.bmp"
+#define SOCCER_GOAL_TEXTURE_FILE "Resources/soccer_goal.bmp"
+#define SOCCER_GOAL_MODEL        "Resources/soccer_goal.obj"
+#define LANDSCAPE_DATA_FILE      "Resources/level.bmp"
+#define SKYBOX_LEFT              "Resources/skybox_left_small.bmp"
+#define SKYBOX_TOP               "Resources/skybox_top_small.bmp"
+#define SKYBOX_RIGHT             "Resources/skybox_right_small.bmp"
+#define SKYBOX_BOTTOM            "Resources/skybox_bottom_small.bmp"
+#define SKYBOX_FRONT             "Resources/skybox_front_small.bmp"
+#define SKYBOX_BACK              "Resources/skybox_back_small.bmp"
+#define PLAYER_STEP_SOUND_FILE   "Resources/human_walk_grass_step.wav"
 
 //----------------------------------------------------------------------------
 const char* pCubemapFileNames[6] =
@@ -125,6 +128,13 @@ typedef struct
     CSR_Body    m_Body;
 } CSR_Ball;
 //------------------------------------------------------------------------------
+typedef struct 
+{
+    void*       m_pKey;
+    CSR_Matrix4 m_Matrix;
+    CSR_Rect    m_Bounds;
+} CSR_Goal;
+//------------------------------------------------------------------------------
 CSR_Scene*        g_pScene        = 0;
 CSR_OpenGLShader* g_pShader       = 0;
 CSR_OpenGLShader* g_pSkyboxShader = 0;
@@ -142,9 +152,11 @@ const float       g_PosVelocity   = 10.0f;
 const float       g_DirVelocity   = 30.0f;
 const float       g_ControlRadius = 40.0f;
 CSR_Ball          g_Ball;
+CSR_Goal          g_Goal;
 CSR_SceneContext  g_SceneContext;
 CSR_Sphere        g_ViewSphere;
 CSR_Matrix4       g_LandscapeMatrix;
+CSR_Matrix4       g_YouWonMatrix;
 CSR_Vector2       g_TouchOrigin;
 CSR_Vector2       g_TouchPosition;
 CSR_Vector3       g_FrictionForce;
@@ -152,7 +164,7 @@ CSR_Color         g_Color;
 ALCdevice*        g_pOpenALDevice  = 0;
 ALCcontext*       g_pOpenALContext = 0;
 CSR_Sound*        g_pSound         = 0;
-CSR_OpenGLID      g_ID[3];
+CSR_OpenGLID      g_ID[5];
 //---------------------------------------------------------------------------
 void* OnGetShader(const void* pModel, CSR_EModelType type)
 {
@@ -167,7 +179,7 @@ void* OnGetID(const void* pKey)
     size_t i;
 
     // iterate through resource ids
-    for (i = 0; i < 3; ++i)
+    for (i = 0; i < 5; ++i)
         // found the texture to get?
         if (pKey == g_ID[i].m_pKey)
             return &g_ID[i];
@@ -262,6 +274,127 @@ int LoadLandscapeFromBitmap(const char* fileName, CSR_fOnDeleteTexture fOnDelete
     return 1;
 }
 //---------------------------------------------------------------------------
+int CheckForGoal(CSR_Ball* pBall, const CSR_Vector3* pOldPos, const CSR_Vector3* pDir)
+{
+    if (!pBall || !pDir)
+        return 0;
+
+    if (!pDir->m_X && !pDir->m_Y && !pDir->m_Z)
+        return 0;
+
+    // is ball hitting the goal?
+    if (pBall->m_Geometry.m_Center.m_X >= g_Goal.m_Bounds.m_Min.m_X &&
+        pBall->m_Geometry.m_Center.m_X <= g_Goal.m_Bounds.m_Max.m_X &&
+        pBall->m_Geometry.m_Center.m_Z >= g_Goal.m_Bounds.m_Min.m_Y &&
+        pBall->m_Geometry.m_Center.m_Z <= g_Goal.m_Bounds.m_Max.m_Y)
+    {
+        // player hit the goal
+        // a       b
+        // |-------|
+        // |       |
+        // |       |
+        // |       |
+        // |       |
+        // |       |
+        // |       |
+        // |       |
+        // |-------|
+        // d       c
+        CSR_Segment3 ab;
+        CSR_Segment3 bc;
+        CSR_Segment3 cd;
+        CSR_Segment3 da;
+
+        // build the ab segment
+        ab.m_Start.m_X = g_Goal.m_Bounds.m_Min.m_X;
+        ab.m_Start.m_Y = 0.0f;
+        ab.m_Start.m_Z = g_Goal.m_Bounds.m_Min.m_Y;
+        ab.m_End.m_X   = g_Goal.m_Bounds.m_Max.m_X;
+        ab.m_End.m_Y   = 0.0f;
+        ab.m_End.m_Z   = g_Goal.m_Bounds.m_Min.m_Y;
+
+        // build the bc segment
+        bc.m_Start.m_X = g_Goal.m_Bounds.m_Max.m_X;
+        bc.m_Start.m_Y = 0.0f;
+        bc.m_Start.m_Z = g_Goal.m_Bounds.m_Min.m_Y;
+        bc.m_End.m_X   = g_Goal.m_Bounds.m_Max.m_X;
+        bc.m_End.m_Y   = 0.0f;
+        bc.m_End.m_Z   = g_Goal.m_Bounds.m_Max.m_Y;
+
+        // build the cd segment
+        cd.m_Start.m_X = g_Goal.m_Bounds.m_Max.m_X;
+        cd.m_Start.m_Y = 0.0f;
+        cd.m_Start.m_Z = g_Goal.m_Bounds.m_Max.m_Y;
+        cd.m_End.m_X   = g_Goal.m_Bounds.m_Min.m_X;
+        cd.m_End.m_Y   = 0.0f;
+        cd.m_End.m_Z   = g_Goal.m_Bounds.m_Max.m_Y;
+
+        // build the da segment
+        da.m_Start.m_X = g_Goal.m_Bounds.m_Min.m_X;
+        da.m_Start.m_Y = 0.0f;
+        da.m_Start.m_Z = g_Goal.m_Bounds.m_Max.m_Y;
+        da.m_End.m_X   = g_Goal.m_Bounds.m_Min.m_X;
+        da.m_End.m_Y   = 0.0f;
+        da.m_End.m_Z   = g_Goal.m_Bounds.m_Min.m_Y;
+
+        CSR_Vector3 ptAB;
+        CSR_Vector3 ptBC;
+        CSR_Vector3 ptCD;
+        CSR_Vector3 ptDA;
+
+        // calculate the closest point from previous position to each of the segments
+        csrSeg3ClosestPoint(&ab, pOldPos, &ptAB);
+        csrSeg3ClosestPoint(&bc, pOldPos, &ptBC);
+        csrSeg3ClosestPoint(&cd, pOldPos, &ptCD);
+        csrSeg3ClosestPoint(&da, pOldPos, &ptDA);
+
+        CSR_Vector3 PPtAB;
+        CSR_Vector3 PPtBC;
+        CSR_Vector3 PPtCD;
+        CSR_Vector3 PPtDA;
+
+        // calculate each distances between the previous point and each points found on segments
+        csrVec3Sub(&ptAB, pOldPos, &PPtAB);
+        csrVec3Sub(&ptBC, pOldPos, &PPtBC);
+        csrVec3Sub(&ptCD, pOldPos, &PPtCD);
+        csrVec3Sub(&ptDA, pOldPos, &PPtDA);
+
+        float lab;
+        float lbc;
+        float lcd;
+        float lda;
+
+        // calculate each lengths between the previous point and each points found on segments
+        csrVec3Length(&PPtAB, &lab);
+        csrVec3Length(&PPtBC, &lbc);
+        csrVec3Length(&PPtCD, &lcd);
+        csrVec3Length(&PPtDA, &lda);
+
+        // find on which side the player is hitting the goal
+        if (lab < lbc && lab < lcd && lab < lda)
+            pBall->m_Body.m_Velocity.m_Z = -pBall->m_Body.m_Velocity.m_Z;
+        else
+        if (lbc < lab && lbc < lcd && lbc < lda)
+            pBall->m_Body.m_Velocity.m_X = -pBall->m_Body.m_Velocity.m_X;
+        else
+        if (lcd < lab && lcd < lbc && lcd < lda)
+        {
+            pBall->m_Body.m_Velocity.m_Z = -pBall->m_Body.m_Velocity.m_Z;
+            return 1;
+        }
+        else
+        if (lda < lab && lda < lbc && lda < lcd)
+            pBall->m_Body.m_Velocity.m_X = -pBall->m_Body.m_Velocity.m_X;
+        else
+        {
+            pBall->m_Body.m_Velocity.m_X = -pBall->m_Body.m_Velocity.m_X;
+            pBall->m_Body.m_Velocity.m_Z = -pBall->m_Body.m_Velocity.m_Z;
+        }
+    }
+
+    return 0;
+}
+//---------------------------------------------------------------------------
 int ApplyGroundCollision(const CSR_Sphere*  pBoundingSphere,
                                float        dir,
                                CSR_Matrix4* pMatrix,
@@ -336,6 +469,8 @@ void ApplyPhysics(float elapsedTime)
     CSR_Vector3 planeNormal;
     CSR_Vector3 acceleration;
     CSR_Vector3 prevCenter;
+    CSR_Vector3 ballDir;
+    CSR_Vector3 ballDirN;
 
     // apply the ground collision on the current position and get the ground polygon
     ApplyGroundCollision(&g_Ball.m_Geometry, 0.0f, &g_Ball.m_Matrix, &groundPlane);
@@ -346,7 +481,7 @@ void ApplyPhysics(float elapsedTime)
     planeNormal.m_Z = groundPlane.m_C;
 
     // calculate the next ball roll position
-    csrPhysicsRoll(&planeNormal, g_Ball.m_Body.m_Mass, 0.0025f, elapsedTime, &g_Ball.m_Body.m_Velocity);
+    csrPhysicsRoll(&planeNormal, g_Ball.m_Body.m_Mass, 0.005f, elapsedTime, &g_Ball.m_Body.m_Velocity);
 
     // keep the previous ball position
     prevCenter = g_Ball.m_Geometry.m_Center;
@@ -431,6 +566,14 @@ void ApplyPhysics(float elapsedTime)
 
         g_Ball.m_Matrix = ballMatrix;
     }
+
+    // calculate the ball direction
+    csrVec3Sub(&g_Ball.m_Geometry.m_Center, &prevCenter, &ballDir);
+    csrVec3Normalize(&ballDir, &ballDirN);
+
+    // check if the goal was hit
+    if (CheckForGoal(&g_Ball, &prevCenter, &ballDirN))
+        g_YouWonMatrix.m_Table[3][1] = 1.375f;
 }
 //---------------------------------------------------------------------------
 void Shoot()
@@ -575,10 +718,10 @@ void on_GLES2_Init(int view_w, int view_h)
     }
 
     // get back the scene item containing the model
-    CSR_SceneItem* pItem = csrSceneGetItem(g_pScene, g_pLandscapeKey);
+    pSceneItem = csrSceneGetItem(g_pScene, g_pLandscapeKey);
 
     // found it?
-    if (!pItem)
+    if (!pSceneItem)
     {
         // show the error message to the user
         printf("The landscape was not found in the scene.\n");
@@ -587,7 +730,7 @@ void on_GLES2_Init(int view_w, int view_h)
 
     // load landscape texture
     pPixelBuffer       = csrPixelBufferFromBitmapFile(LANDSCAPE_TEXTURE_FILE);
-    g_ID[0].m_pKey     = &((CSR_Model*)(pItem->m_pModel))->m_pMesh[0].m_Skin.m_Texture;
+    g_ID[0].m_pKey     = &((CSR_Model*)(pSceneItem->m_pModel))->m_pMesh[0].m_Skin.m_Texture;
     g_ID[0].m_ID       = csrOpenGLTextureFromPixelBuffer(pPixelBuffer);
     g_ID[0].m_UseCount = 1;
 
@@ -628,6 +771,115 @@ void on_GLES2_Init(int view_w, int view_h)
     g_Ball.m_pKey        = pSceneItem->m_pModel;
     g_Ball.m_Body.m_Mass = 0.3f;
 
+    vertexFormat.m_HasNormal         = 0;
+    vertexFormat.m_HasPerVertexColor = 1;
+    vertexFormat.m_HasTexCoords      = 1;
+
+    material.m_Color       = 0xFFFFFFFF;
+    material.m_Transparent = 0;
+    material.m_Wireframe   = 0;
+
+    // create the goal
+    CSR_Model* pModel = csrWaveFrontOpen(SOCCER_GOAL_MODEL,
+                                        &vertexFormat,
+                                         0,
+                                        &material,
+                                         0,
+                                         0,
+                                         0);
+
+    CSR_Vector3 translation;
+    translation.m_X =  0.0f;
+    translation.m_Y =  1.375f;
+    translation.m_Z = -1.75f;
+
+    CSR_Matrix4 translationMatrix;
+
+    // apply translation to goal
+    csrMat4Translate(&translation, &translationMatrix);
+
+    CSR_Vector3 axis;
+    axis.m_X = 0.0f;
+    axis.m_Y = 1.0f;
+    axis.m_Z = 0.0f;
+
+    CSR_Matrix4 ryMatrix;
+
+    // apply rotation on y axis to goal
+    csrMat4Rotate(M_PI, &axis, &ryMatrix);
+
+    CSR_Vector3 factor;
+    factor.m_X = 0.0025f;
+    factor.m_Y = 0.0025f;
+    factor.m_Z = 0.0025f;
+
+    CSR_Matrix4 scaleMatrix;
+
+    // apply scaling to goal
+    csrMat4Scale(&factor, &scaleMatrix);
+
+    CSR_Matrix4 buildMatrix;
+
+    // build the goal model matrix
+    csrMat4Multiply(&ryMatrix, &scaleMatrix, &buildMatrix);
+    csrMat4Multiply(&buildMatrix, &translationMatrix, &g_Goal.m_Matrix);
+
+    // add the model to the scene
+    pSceneItem = csrSceneAddModel(g_pScene, pModel, 0, 1);
+    csrSceneAddModelMatrix(g_pScene, pModel, &g_Goal.m_Matrix);
+
+    // load goal texture
+    pPixelBuffer       = csrPixelBufferFromBitmapFile(SOCCER_GOAL_TEXTURE_FILE);
+    g_ID[2].m_pKey     = &pMesh->m_Skin.m_Texture;
+    g_ID[2].m_ID       = csrOpenGLTextureFromPixelBuffer(pPixelBuffer);
+    g_ID[2].m_UseCount = 1;
+
+    // goal texture will no longer be used
+    csrPixelBufferRelease(pPixelBuffer);
+
+    CSR_Box goalBox;
+
+    // transform the goal bounding box in his local system coordinates
+    csrMat4ApplyToVector(&g_Goal.m_Matrix, &pSceneItem->m_pAABBTree[0].m_pBox->m_Min, &goalBox.m_Min);
+    csrMat4ApplyToVector(&g_Goal.m_Matrix, &pSceneItem->m_pAABBTree[0].m_pBox->m_Max, &goalBox.m_Max);
+
+    // configure the goal
+    g_Goal.m_pKey = pSceneItem->m_pModel;
+    csrMathMin(goalBox.m_Min.m_X, goalBox.m_Max.m_X, &g_Goal.m_Bounds.m_Min.m_X);
+    csrMathMin(goalBox.m_Min.m_Z, goalBox.m_Max.m_Z, &g_Goal.m_Bounds.m_Min.m_Y);
+    csrMathMax(goalBox.m_Min.m_X, goalBox.m_Max.m_X, &g_Goal.m_Bounds.m_Max.m_X);
+    csrMathMax(goalBox.m_Min.m_Z, goalBox.m_Max.m_Z, &g_Goal.m_Bounds.m_Max.m_Y );
+
+    vertexFormat.m_HasNormal         = 0;
+    vertexFormat.m_HasPerVertexColor = 1;
+    vertexFormat.m_HasTexCoords      = 1;
+
+    material.m_Color       = 0xFFFFFFFF;
+    material.m_Transparent = 0;
+    material.m_Wireframe   = 0;
+
+    // create the You Won surface
+    pMesh = csrShapeCreateSurface(0.6f, 0.2f, &vertexFormat, 0, &material, 0);
+
+    // load the You Won texture
+    pPixelBuffer       = csrPixelBufferFromBitmapFile(YOU_WON_TEXTURE_FILE);
+    g_ID[3].m_pKey     = &pMesh->m_Skin.m_Texture;
+    g_ID[3].m_ID       = csrOpenGLTextureFromPixelBuffer(pPixelBuffer);
+    g_ID[3].m_UseCount = 1;
+
+    // goal texture will no longer be used
+    csrPixelBufferRelease(pPixelBuffer);
+
+    // initialize the You Won matrix
+    csrMat4Identity(&g_YouWonMatrix);
+    g_YouWonMatrix.m_Table[3][0] =  0.0f;
+    g_YouWonMatrix.m_Table[3][1] =  99999.0f;
+    g_YouWonMatrix.m_Table[3][2] = -1.65f;
+
+    // add the mesh to the scene
+    pSceneItem = csrSceneAddMesh(g_pScene, pMesh, 0, 1);
+    csrSceneAddModelMatrix(g_pScene, pMesh, &g_YouWonMatrix);
+
     // load the skybox shader
     g_pSkyboxShader = csrOpenGLShaderLoadFromStr(&g_VSSkybox[0],
                                                   sizeof(g_VSSkybox),
@@ -663,9 +915,9 @@ void on_GLES2_Init(int view_w, int view_h)
     }
 
     // load the cubemap texture
-    g_ID[2].m_pKey     = &g_pScene->m_pSkybox->m_Skin.m_CubeMap;
-    g_ID[2].m_ID       = csrOpenGLCubemapLoad(pCubemapFileNames);
-    g_ID[2].m_UseCount = 1;
+    g_ID[4].m_pKey     = &g_pScene->m_pSkybox->m_Skin.m_CubeMap;
+    g_ID[4].m_ID       = csrOpenGLCubemapLoad(pCubemapFileNames);
+    g_ID[4].m_UseCount = 1;
 
     csrSoundInitializeOpenAL(&g_pOpenALDevice, &g_pOpenALContext);
 
@@ -805,6 +1057,114 @@ void on_GLES2_Update(float timeStep_sec)
         if (fabs(groundAngle) < 0.5f)
             // revert the position
             g_ViewSphere.m_Center = prevSphere.m_Center;
+        else
+        if (g_ViewSphere.m_Center.m_X >= g_Goal.m_Bounds.m_Min.m_X && g_ViewSphere.m_Center.m_X <= g_Goal.m_Bounds.m_Max.m_X &&
+            g_ViewSphere.m_Center.m_Z >= g_Goal.m_Bounds.m_Min.m_Y && g_ViewSphere.m_Center.m_Z <= g_Goal.m_Bounds.m_Max.m_Y)
+        {
+            // player hit the goal
+            // a       b
+            // |-------|
+            // |       |
+            // |       |
+            // |       |
+            // |       |
+            // |       |
+            // |       |
+            // |       |
+            // |-------|
+            // d       c
+            CSR_Segment3 ab;
+            CSR_Segment3 bc;
+            CSR_Segment3 cd;
+            CSR_Segment3 da;
+
+            // build the ab segment
+            ab.m_Start.m_X = g_Goal.m_Bounds.m_Min.m_X;
+            ab.m_Start.m_Y = 0.0f;
+            ab.m_Start.m_Z = g_Goal.m_Bounds.m_Min.m_Y;
+            ab.m_End.m_X   = g_Goal.m_Bounds.m_Max.m_X;
+            ab.m_End.m_Y   = 0.0f;
+            ab.m_End.m_Z   = g_Goal.m_Bounds.m_Min.m_Y;
+
+            // build the bc segment
+            bc.m_Start.m_X = g_Goal.m_Bounds.m_Max.m_X;
+            bc.m_Start.m_Y = 0.0f;
+            bc.m_Start.m_Z = g_Goal.m_Bounds.m_Min.m_Y;
+            bc.m_End.m_X   = g_Goal.m_Bounds.m_Max.m_X;
+            bc.m_End.m_Y   = 0.0f;
+            bc.m_End.m_Z   = g_Goal.m_Bounds.m_Max.m_Y;
+
+            // build the cd segment
+            cd.m_Start.m_X = g_Goal.m_Bounds.m_Max.m_X;
+            cd.m_Start.m_Y = 0.0f;
+            cd.m_Start.m_Z = g_Goal.m_Bounds.m_Max.m_Y;
+            cd.m_End.m_X   = g_Goal.m_Bounds.m_Min.m_X;
+            cd.m_End.m_Y   = 0.0f;
+            cd.m_End.m_Z   = g_Goal.m_Bounds.m_Max.m_Y;
+
+            // build the da segment
+            da.m_Start.m_X = g_Goal.m_Bounds.m_Min.m_X;
+            da.m_Start.m_Y = 0.0f;
+            da.m_Start.m_Z = g_Goal.m_Bounds.m_Max.m_Y;
+            da.m_End.m_X   = g_Goal.m_Bounds.m_Min.m_X;
+            da.m_End.m_Y   = 0.0f;
+            da.m_End.m_Z   = g_Goal.m_Bounds.m_Min.m_Y;
+
+            CSR_Vector3 ptAB;
+            CSR_Vector3 ptBC;
+            CSR_Vector3 ptCD;
+            CSR_Vector3 ptDA;
+
+            // calculate the closest point from previous position to each of the segments
+            csrSeg3ClosestPoint(&ab, &prevSphere.m_Center, &ptAB);
+            csrSeg3ClosestPoint(&bc, &prevSphere.m_Center, &ptBC);
+            csrSeg3ClosestPoint(&cd, &prevSphere.m_Center, &ptCD);
+            csrSeg3ClosestPoint(&da, &prevSphere.m_Center, &ptDA);
+
+            CSR_Vector3 PPtAB;
+            CSR_Vector3 PPtBC;
+            CSR_Vector3 PPtCD;
+            CSR_Vector3 PPtDA;
+
+            // calculate each distances between the previous point and each points found on segments
+            csrVec3Sub(&ptAB, &prevSphere.m_Center, &PPtAB);
+            csrVec3Sub(&ptBC, &prevSphere.m_Center, &PPtBC);
+            csrVec3Sub(&ptCD, &prevSphere.m_Center, &PPtCD);
+            csrVec3Sub(&ptDA, &prevSphere.m_Center, &PPtDA);
+
+            float lab;
+            float lbc;
+            float lcd;
+            float lda;
+
+            // calculate each lengths between the previous point and each points found on segments
+            csrVec3Length(&PPtAB, &lab);
+            csrVec3Length(&PPtBC, &lbc);
+            csrVec3Length(&PPtCD, &lcd);
+            csrVec3Length(&PPtDA, &lda);
+
+            // find on which side the player is hitting the goal
+            if (lab < lbc && lab < lcd && lab < lda)
+                g_ViewSphere.m_Center.m_Z = prevSphere.m_Center.m_Z;
+            else
+            if (lbc < lab && lbc < lcd && lbc < lda)
+                g_ViewSphere.m_Center.m_X = prevSphere.m_Center.m_X;
+            else
+            if (lcd < lab && lcd < lbc && lcd < lda)
+                g_ViewSphere.m_Center.m_Z = prevSphere.m_Center.m_Z;
+            else
+            if (lda < lab && lda < lbc && lda < lcd)
+                g_ViewSphere.m_Center.m_X = prevSphere.m_Center.m_X;
+            else
+            {
+                g_ViewSphere.m_Center.m_X = prevSphere.m_Center.m_X;
+                g_ViewSphere.m_Center.m_Z = prevSphere.m_Center.m_Z;
+            }
+
+            // recalculate the ground value (this time the collision result isn't tested, because the
+            // previous position is always considered as valid)
+            ApplyGroundCollision(&g_ViewSphere, g_Angle, &g_pScene->m_ViewMatrix, &groundPlane);
+        }
     }
 
     // calculate next time where the step sound should be played
