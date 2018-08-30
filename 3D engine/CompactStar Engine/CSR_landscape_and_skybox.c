@@ -30,7 +30,7 @@
 #include <gles2.h>
 #include <gles2ext.h>
 
-// mini API
+// compactStar engine
 #include "SDK/CSR_Common.h"
 #include "SDK/CSR_Geometry.h"
 #include "SDK/CSR_Collision.h"

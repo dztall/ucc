@@ -29,7 +29,7 @@
 #include <gles2.h>
 #include <gles2ext.h>
 
-// mini API
+// compactStar engine
 #include "SDK/CSR_Common.h"
 #include "SDK/CSR_Geometry.h"
 #include "SDK/CSR_Collision.h"
@@ -145,7 +145,6 @@ float             g_Angle         = M_PI / -4.0f;
 float             g_RollAngle     = 0.0f;
 float             g_BallDirAngle  = 0.0f;
 float             g_BallOffset    = 0.0f;
-float             g_RotationSpeed = 0.02f;
 float             g_StepTime      = 0.0f;
 float             g_StepInterval  = 300.0f;
 const float       g_PosVelocity   = 10.0f;
@@ -462,12 +461,8 @@ int ApplyGroundCollision(const CSR_Sphere*  pBoundingSphere,
 //---------------------------------------------------------------------------
 void ApplyPhysics(float elapsedTime)
 {
-    float       gravity;
-    float       thetaX;
-    float       thetaZ;
     CSR_Plane   groundPlane;
     CSR_Vector3 planeNormal;
-    CSR_Vector3 acceleration;
     CSR_Vector3 prevCenter;
     CSR_Vector3 ballDir;
     CSR_Vector3 ballDirN;
@@ -512,11 +507,8 @@ void ApplyPhysics(float elapsedTime)
     else
     {
         float       distance;
-        float       ballDirAngle;
         CSR_Matrix4 rxMatrix;
         CSR_Matrix4 ryMatrix;
-        CSR_Matrix4 rzMatrix;
-        CSR_Matrix4 rMatrix;
         CSR_Matrix4 ballMatrix;
         CSR_Vector3 rollDistance;
         CSR_Vector3 rollDir;
