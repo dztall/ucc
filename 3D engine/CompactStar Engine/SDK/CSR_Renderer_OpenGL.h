@@ -28,6 +28,7 @@
     #include <gles2.h>
     #include <gles2ext.h>
 #elif defined(__APPLE__)
+    #define CSR_OPENGL_2_ONLY
     #include <OpenGLES/ES2/gl.h>
     #include <OpenGLES/ES2/glext.h>
 #elif defined(__CODEGEARC__) || defined(__GNUC__)
@@ -105,13 +106,6 @@ typedef struct
 //---------------------------------------------------------------------------
 // Callbacks
 //---------------------------------------------------------------------------
-
-/**
-* Called when an OpenGL identifier should be get from a key
-*@param pKey - key for which the OpenGL identifier should be get
-*@return identifier, 0 on error or if not found
-*/
-typedef void* (*CSR_fOnGetID)(const void* pKey);
 
 /**
 * Called when static vertex buffers may be linked to the shader
