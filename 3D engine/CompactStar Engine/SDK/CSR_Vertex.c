@@ -68,15 +68,27 @@ void csrVertexFormatCalculateStride(CSR_VertexFormat* pVertexFormat)
     if (!pVertexFormat)
         return;
 
-    pVertexFormat->m_Stride = 3;
-
+    #ifdef CSR_USE_METAL
+        pVertexFormat->m_Stride = 4;
+    #else
+        pVertexFormat->m_Stride = 3;
+    #endif
+ 
     // is a normal included in the vertex?
     if (pVertexFormat->m_HasNormal)
-        pVertexFormat->m_Stride += 3;
+        #ifdef CSR_USE_METAL
+            pVertexFormat->m_Stride += 4;
+        #else
+            pVertexFormat->m_Stride += 3;
+        #endif
 
     // are texture UV coordinates included in the vertex?
     if (pVertexFormat->m_HasTexCoords)
-        pVertexFormat->m_Stride += 2;
+        #ifdef CSR_USE_METAL
+            pVertexFormat->m_Stride += 4;
+        #else
+            pVertexFormat->m_Stride += 2;
+        #endif
 
     // is a per-vertex color included in the vertex?
     if (pVertexFormat->m_HasPerVertexColor)
@@ -190,8 +202,15 @@ int csrVertexBufferAdd(const CSR_Vector3*          pVertex,
         pVB->m_pData[offset + 2] = pVertex->m_Z;
     }
 
-    offset += 3;
+    #ifdef CSR_USE_METAL
+        // Metal vertex extra w coordinate (used here for memory alignment)
+        pVB->m_pData[offset + 3] = 1.0f;
 
+        offset += 4;
+    #else
+        offset += 3;
+    #endif
+ 
     // vertex has a normal?
     if (pVB->m_Format.m_HasNormal)
     {
@@ -211,7 +230,14 @@ int csrVertexBufferAdd(const CSR_Vector3*          pVertex,
             pVB->m_pData[offset + 2] = pNormal->m_Z;
         }
 
-        offset += 3;
+        #ifdef CSR_USE_METAL
+            // Metal vertex extra w coordinate (used here for memory alignment)
+            pVB->m_pData[offset + 3] = 1.0f;
+    
+            offset += 4;
+        #else
+            offset += 3;
+        #endif
     }
 
     // vertex has UV texture coordinates?
@@ -231,7 +257,15 @@ int csrVertexBufferAdd(const CSR_Vector3*          pVertex,
             pVB->m_pData[offset + 1] = pUV->m_Y;
         }
 
-        offset += 2;
+        #ifdef CSR_USE_METAL
+            // unused extra values to keep the memory alignment
+            pVB->m_pData[offset + 2] = 0.0f;
+            pVB->m_pData[offset + 3] = 0.0f;
+
+            offset += 4;
+        #else
+            offset += 2;
+        #endif
     }
 
     // vertex has color?

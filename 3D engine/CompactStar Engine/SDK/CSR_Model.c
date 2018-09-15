@@ -1377,13 +1377,27 @@ CSR_Mesh* csrShapeCreateSpiral(float                 centerX,
 CSR_Mesh* csrSkyboxCreate(float width, float height, float depth)
 {
     CSR_VertexCulling vc;
+    #ifdef CSR_USE_METAL
+        CSR_VertexFormat vf;
+    #endif
 
     // configure the vertex culling to use with the skybox
     vc.m_Type = CSR_CT_Back;
     vc.m_Face = CSR_CF_CW;
 
-    // create the skybox geometry
-    return csrShapeCreateBox(width, height, depth, 0, 0, &vc, 0, 0);
+    #ifdef CSR_USE_METAL
+        // configure the vertex format
+        csrVertexFormatInit(&vf);
+        vf.m_HasNormal         = 0;
+        vf.m_HasTexCoords      = 1;
+        vf.m_HasPerVertexColor = 1;
+    
+        // create the skybox geometry
+        return csrShapeCreateBox(width, height, depth, 0, &vf, &vc, 0, 0);
+    #else
+        // create the skybox geometry
+        return csrShapeCreateBox(width, height, depth, 0, 0, &vc, 0, 0);
+    #endif
 }
 //---------------------------------------------------------------------------
 // Model functions

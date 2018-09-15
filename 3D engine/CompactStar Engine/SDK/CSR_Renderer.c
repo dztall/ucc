@@ -20,6 +20,8 @@
 
 #ifdef CSR_USE_OPENGL
     #include "CSR_Renderer_OpenGL.h"
+#elif defined(CSR_USE_METAL)
+    #include "CSR_Renderer_Metal.h"
 #endif
 
 //---------------------------------------------------------------------------
@@ -29,6 +31,8 @@ void csrShaderEnable(const void* pShader)
 {
     #ifdef CSR_USE_OPENGL
         csrOpenGLShaderEnable((CSR_OpenGLShader*)pShader);
+    #elif defined(CSR_USE_METAL)
+        csrMetalShaderEnable(pShader);
     #else
         #warning "csrShaderEnable() isn't implemented and will not work on this platform"
     #endif
@@ -38,7 +42,9 @@ void csrShaderConnectProjectionMatrix(const void* pShader, const CSR_Matrix4* pM
 {
     #ifdef CSR_USE_OPENGL
         csrOpenGLShaderConnectProjectionMatrix((CSR_OpenGLShader*)pShader, pMatrix);
-    #else
+    #elif defined(CSR_USE_METAL)
+        csrMetalShaderConnectProjectionMatrix(pShader, pMatrix);
+   #else
         #warning "csrShaderConnectProjectionMatrix() isn't implemented and will not work on this platform"
     #endif
 }
@@ -47,6 +53,8 @@ void csrShaderConnectViewMatrix(const void* pShader, const CSR_Matrix4* pMatrix)
 {
     #ifdef CSR_USE_OPENGL
         csrOpenGLShaderConnectViewMatrix((CSR_OpenGLShader*)pShader, pMatrix);
+    #elif defined(CSR_USE_METAL)
+        csrMetalShaderConnectViewMatrix(pShader, pMatrix);
     #else
         #warning "csrShaderConnectViewMatrix() isn't implemented and will not work on this platform"
     #endif
@@ -58,6 +66,8 @@ void csrDrawBegin(const CSR_Color* pColor)
 {
     #ifdef CSR_USE_OPENGL
         csrOpenGLDrawBegin(pColor);
+    #elif defined(CSR_USE_METAL)
+        csrMetalDrawBegin(pColor);
     #else
         #warning "csrDrawBegin() isn't implemented and will not work on this platform"
     #endif
@@ -67,6 +77,8 @@ void csrDrawEnd(void)
 {
     #ifdef CSR_USE_OPENGL
         csrOpenGLDrawEnd();
+    #elif defined(CSR_USE_METAL)
+        csrMetalDrawEnd();
     #else
         #warning "csrDrawEnd() isn't implemented and will not work on this platform"
     #endif
@@ -76,6 +88,8 @@ void csrDrawLine(const CSR_Line* pLine, const void* pShader)
 {
     #ifdef CSR_USE_OPENGL
         csrOpenGLDrawLine(pLine, (CSR_OpenGLShader*)pShader);
+    #elif defined(CSR_USE_METAL)
+        csrMetalDrawLine(pLine, pShader);
     #else
         #warning "csrDrawLine() isn't implemented and will not work on this platform"
     #endif
@@ -87,6 +101,8 @@ void csrDrawVertexBuffer(const CSR_VertexBuffer* pVB,
 {
     #ifdef CSR_USE_OPENGL
         csrOpenGLDrawVertexBuffer(pVB, (CSR_OpenGLShader*)pShader, pMatrixArray);
+    #elif defined(CSR_USE_METAL)
+        csrMetalDrawVertexBuffer(pVB, pShader, pMatrixArray);
     #else
         #warning "csrDrawVertexBuffer() isn't implemented and will not work on this platform"
     #endif
@@ -99,6 +115,8 @@ void csrDrawMesh(const CSR_Mesh*    pMesh,
 {
     #ifdef CSR_USE_OPENGL
         csrOpenGLDrawMesh(pMesh, (CSR_OpenGLShader*)pShader, pMatrixArray, fOnGetID);
+    #elif defined(CSR_USE_METAL)
+        csrMetalDrawMesh(pMesh, pShader, pMatrixArray, fOnGetID);
     #else
         #warning "csrDrawMesh() isn't implemented and will not work on this platform"
     #endif
@@ -112,6 +130,8 @@ void csrDrawModel(const CSR_Model*   pModel,
 {
     #ifdef CSR_USE_OPENGL
         csrOpenGLDrawModel(pModel, index, (CSR_OpenGLShader*)pShader, pMatrixArray, fOnGetID);
+    #elif defined(CSR_USE_METAL)
+        csrMetalDrawModel(pModel, index, pShader, pMatrixArray, fOnGetID);
     #else
         #warning "csrDrawModel() isn't implemented and will not work on this platform"
     #endif
@@ -133,6 +153,14 @@ void csrDrawMDL(const CSR_MDL*     pMDL,
                          modelIndex,
                          meshIndex,
                          fOnGetID);
+    #elif defined(CSR_USE_METAL)
+        csrMetalDrawMDL(pMDL,
+                        pShader,
+                        pMatrixArray,
+                        skinIndex,
+                        modelIndex,
+                        meshIndex,
+                        fOnGetID);
     #else
         #warning "csrDrawMDL() isn't implemented and will not work on this platform"
     #endif
@@ -144,6 +172,8 @@ void csrStateEnableDepthMask(int value)
 {
     #ifdef CSR_USE_OPENGL
         csrOpenGLStateEnableDepthMask(value);
+    #elif defined(CSR_USE_METAL)
+        csrMetalStateEnableDepthMask(value);
     #else
         #warning "csrStateEnableDepthMask() isn't implemented and will not work on this platform"
     #endif
