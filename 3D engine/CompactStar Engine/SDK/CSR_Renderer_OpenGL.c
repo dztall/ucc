@@ -17,6 +17,7 @@
 
 // std
 #include <stdlib.h>
+#include <memory.h>
 
 //---------------------------------------------------------------------------
 // Texture functions
@@ -153,7 +154,7 @@ GLuint csrOpenGLCubemapLoad(const char** pFileNames)
             pPixels = (unsigned char*)pPixelBuffer->m_pData;
 
         // load the texture on the GPU
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+        glTexImage2D((GLenum)(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i),
                      0,
                      GL_RGB,
                      pPixelBuffer->m_Width,
@@ -437,7 +438,11 @@ int csrOpenGLShaderCompile(const CSR_Buffer* pSource, GLenum shaderType, CSR_Ope
         return 0;
 
     // compile the shader program
-    glShaderSource(shaderID, 1, (GLchar**)&pSource->m_pData, 0);
+    #ifdef __APPLE__
+        glShaderSource(shaderID, 1, (const GLchar* const*)&pSource->m_pData, 0);
+    #else
+        glShaderSource(shaderID, 1, (GLchar**)&pSource->m_pData, 0);
+    #endif
     glCompileShader(shaderID);
 
     // get compiler result
@@ -1116,13 +1121,13 @@ void csrOpenGLDrawLine(const CSR_Line* pLine, const CSR_OpenGLShader* pShader)
                           3,
                           GL_FLOAT,
                           GL_FALSE,
-                          stride * sizeof(float),
+                          (GLsizei)(stride * sizeof(float)),
                           &lineVertex[0]);
     glVertexAttribPointer(pShader->m_ColorSlot,
                           4,
                           GL_FLOAT,
                           GL_FALSE,
-                          stride * sizeof(float),
+                          (GLsizei)(stride * sizeof(float)),
                           &lineVertex[3]);
 
     // draw the line

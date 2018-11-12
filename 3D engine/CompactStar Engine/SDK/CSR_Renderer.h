@@ -29,8 +29,11 @@
     // several functions. For that reason, his usage is limited to OpenGL 2.0
     #define CSR_OPENGL_2_ONLY
 #elif defined(__APPLE__)
-    // OpenGL is (unfortunately) deprecated, from now Metal should be used instead
-    #define CSR_USE_OPENGL
+    // OpenGL is (unfortunately) deprecated, from now Metal should be used instead. To do that,
+    // please define CSR_USE_METAL in the global preprocessor macros and use the metal renderer
+    #ifndef CSR_USE_METAL
+        #define CSR_USE_OPENGL
+    #endif
 #elif defined(__CODEGEARC__) || defined(__GNUC__)
     #define CSR_USE_OPENGL
 #else

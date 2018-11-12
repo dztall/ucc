@@ -29,7 +29,7 @@
 // sdl
 #include <SDL.h>
 
-// mini API
+// compactStar engine
 #include "SDK/CSR_Common.h"
 #include "SDK/CSR_Vertex.h"
 #include "SDK/CSR_Model.h"
