@@ -47,19 +47,21 @@
 // energy factor for the shoot
 #define M_ShootEnergyFactor 23.0f
 
-#define YOU_WON_TEXTURE_FILE     "Resources/you_won.bmp"
-#define LANDSCAPE_TEXTURE_FILE   "Resources/soccer_grass.bmp"
-#define BALL_TEXTURE_FILE        "Resources/soccer_ball.bmp"
-#define SOCCER_GOAL_TEXTURE_FILE "Resources/soccer_goal.bmp"
-#define SOCCER_GOAL_MODEL        "Resources/soccer_goal.obj"
-#define LANDSCAPE_DATA_FILE      "Resources/level.bmp"
-#define SKYBOX_LEFT              "Resources/skybox_left_small.bmp"
-#define SKYBOX_TOP               "Resources/skybox_top_small.bmp"
-#define SKYBOX_RIGHT             "Resources/skybox_right_small.bmp"
-#define SKYBOX_BOTTOM            "Resources/skybox_bottom_small.bmp"
-#define SKYBOX_FRONT             "Resources/skybox_front_small.bmp"
-#define SKYBOX_BACK              "Resources/skybox_back_small.bmp"
-#define PLAYER_STEP_SOUND_FILE   "Resources/human_walk_grass_step.wav"
+#define YOU_WON_TEXTURE_FILE       "Resources/you_won.bmp"
+#define LANDSCAPE_TEXTURE_FILE     "Resources/soccer_grass.bmp"
+#define BALL_TEXTURE_FILE          "Resources/soccer_ball.bmp"
+#define SOCCER_GOAL_TEXTURE_FILE   "Resources/soccer_goal.bmp"
+#define SOCCER_GOAL_MODEL          "Resources/soccer_goal.obj"
+#define LANDSCAPE_DATA_FILE        "Resources/level.bmp"
+#define SKYBOX_LEFT                "Resources/skybox_left_small.bmp"
+#define SKYBOX_TOP                 "Resources/skybox_top_small.bmp"
+#define SKYBOX_RIGHT               "Resources/skybox_right_small.bmp"
+#define SKYBOX_BOTTOM              "Resources/skybox_bottom_small.bmp"
+#define SKYBOX_FRONT               "Resources/skybox_front_small.bmp"
+#define SKYBOX_BACK                "Resources/skybox_back_small.bmp"
+#define FOOT_STEP_LEFT_SOUND_FILE  "Resources/footstep_left.wav"
+#define FOOT_STEP_RIGHT_SOUND_FILE "Resources/footstep_right.wav"
+#define BALL_KICK_SOUND_FILE       "Resources/soccer_ball_kick.wav"
 
 //----------------------------------------------------------------------------
 const char* pCubemapFileNames[6] =
@@ -135,21 +137,20 @@ typedef struct
     CSR_Rect    m_Bounds;
 } CSR_Goal;
 //------------------------------------------------------------------------------
-CSR_Scene*        g_pScene        = 0;
-CSR_OpenGLShader* g_pShader       = 0;
-CSR_OpenGLShader* g_pSkyboxShader = 0;
-void*             g_pLandscapeKey = 0;
-float             g_MapHeight     = 3.0f;
-float             g_MapScale      = 0.2f;
-float             g_Angle         = M_PI / -4.0f;
-float             g_RollAngle     = 0.0f;
-float             g_BallDirAngle  = 0.0f;
-float             g_BallOffset    = 0.0f;
-float             g_StepTime      = 0.0f;
-float             g_StepInterval  = 300.0f;
-const float       g_PosVelocity   = 10.0f;
-const float       g_DirVelocity   = 30.0f;
-const float       g_ControlRadius = 40.0f;
+CSR_Scene*        g_pScene             = 0;
+CSR_OpenGLShader* g_pShader            = 0;
+CSR_OpenGLShader* g_pSkyboxShader      = 0;
+void*             g_pLandscapeKey      = 0;
+float             g_Angle              = M_PI / -4.0f;
+float             g_RollAngle          = 0.0f;
+float             g_BallDirAngle       = 0.0f;
+float             g_BallOffset         = 0.0f;
+float             g_StepTime           = 0.0f;
+float             g_StepInterval       = 300.0f;
+const float       g_PosVelocity        = 10.0f;
+const float       g_DirVelocity        = 30.0f;
+const float       g_ControlRadius      = 40.0f;
+int               g_AlternateStep      = 0;
 CSR_Ball          g_Ball;
 CSR_Goal          g_Goal;
 CSR_SceneContext  g_SceneContext;
@@ -158,11 +159,11 @@ CSR_Matrix4       g_LandscapeMatrix;
 CSR_Matrix4       g_YouWonMatrix;
 CSR_Vector2       g_TouchOrigin;
 CSR_Vector2       g_TouchPosition;
-CSR_Vector3       g_FrictionForce;
-CSR_Color         g_Color;
-ALCdevice*        g_pOpenALDevice  = 0;
-ALCcontext*       g_pOpenALContext = 0;
-CSR_Sound*        g_pSound         = 0;
+ALCdevice*        g_pOpenALDevice       = 0;
+ALCcontext*       g_pOpenALContext      = 0;
+CSR_Sound*        g_pFootStepLeftSound  = 0;
+CSR_Sound*        g_pFootStepRightSound = 0;
+CSR_Sound*        g_pBallKickSound      = 0;
 CSR_OpenGLID      g_ID[5];
 //---------------------------------------------------------------------------
 void* OnGetShader(const void* pModel, CSR_EModelType type)
@@ -602,6 +603,10 @@ void Shoot()
         g_Ball.m_Body.m_Velocity.m_X = M_ShootEnergyFactor * distance.m_X;
         g_Ball.m_Body.m_Velocity.m_Y = 0.0f;
         g_Ball.m_Body.m_Velocity.m_Z = M_ShootEnergyFactor * distance.m_Y;
+
+        // play the kick sound
+        csrSoundStop(g_pBallKickSound);
+        csrSoundPlay(g_pBallKickSound);
     }
 }
 //------------------------------------------------------------------------------
@@ -659,11 +664,6 @@ void on_GLES2_Init(int view_w, int view_h)
     g_Ball.m_Geometry.m_Center.m_Z = 0.0f;
     g_Ball.m_Geometry.m_Radius     = 0.025f;
     csrBodyInit(&g_Ball.m_Body);
-
-    // configure the friction force
-    g_FrictionForce.m_X = 0.1f;
-    g_FrictionForce.m_Y = 0.1f;
-    g_FrictionForce.m_Z = 0.1f;
 
     // configure the scene context
     csrSceneContextInit(&g_SceneContext);
@@ -913,8 +913,14 @@ void on_GLES2_Init(int view_w, int view_h)
 
     csrSoundInitializeOpenAL(&g_pOpenALDevice, &g_pOpenALContext);
 
-    // load step sound file
-    g_pSound = csrSoundOpenWavFile(g_pOpenALDevice, g_pOpenALContext, PLAYER_STEP_SOUND_FILE);
+    // load the sound files
+    g_pFootStepLeftSound  = csrSoundOpenWavFile(g_pOpenALDevice, g_pOpenALContext, FOOT_STEP_LEFT_SOUND_FILE);
+    g_pFootStepRightSound = csrSoundOpenWavFile(g_pOpenALDevice, g_pOpenALContext, FOOT_STEP_RIGHT_SOUND_FILE);
+    g_pBallKickSound      = csrSoundOpenWavFile(g_pOpenALDevice, g_pOpenALContext, BALL_KICK_SOUND_FILE);
+
+    // change the volume
+    csrSoundChangeVolume(g_pFootStepLeftSound,  0.2f);
+    csrSoundChangeVolume(g_pFootStepRightSound, 0.2f);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
@@ -931,11 +937,15 @@ void on_GLES2_Final()
     csrOpenGLShaderRelease(g_pSkyboxShader);
     g_pSkyboxShader = 0;
 
-    // stop running step sound, if needed
-    csrSoundStop(g_pSound);
+    // stop running sounds, if needed
+    csrSoundStop(g_pFootStepLeftSound);
+    csrSoundStop(g_pFootStepRightSound);
+    csrSoundStop(g_pBallKickSound);
 
     // release OpenAL interface
-    csrSoundRelease(g_pSound);
+    csrSoundRelease(g_pFootStepLeftSound);
+    csrSoundRelease(g_pFootStepRightSound);
+    csrSoundRelease(g_pBallKickSound);
     csrSoundReleaseOpenAL(g_pOpenALDevice, g_pOpenALContext);
 }
 //------------------------------------------------------------------------------
@@ -1165,9 +1175,22 @@ void on_GLES2_Update(float timeStep_sec)
     // count frames
     while (g_StepTime > g_StepInterval)
     {
-        csrSoundStop(g_pSound);
-        csrSoundPlay(g_pSound);
+        // do play the left or right footstep sound?
+        if (!(g_AlternateStep % 2))
+        {
+            csrSoundStop(g_pFootStepLeftSound);
+            csrSoundPlay(g_pFootStepLeftSound);
+        }
+        else
+        {
+            csrSoundStop(g_pFootStepRightSound);
+            csrSoundPlay(g_pFootStepRightSound);
+        }
+            
         g_StepTime = 0.0f;
+        
+        // next time the other footstep sound will be played
+        g_AlternateStep = (g_AlternateStep + 1) & 1;
     }
 }
 //------------------------------------------------------------------------------
