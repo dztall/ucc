@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides the geometric functions and types     *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2018, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -562,6 +562,14 @@ void csrMat4ScalingFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ)
 }
 //---------------------------------------------------------------------------
 // Quaternion functions
+//---------------------------------------------------------------------------
+void csrQuatIdentity(CSR_Quaternion* pQ)
+{
+    pQ->m_X = 0.0f;
+    pQ->m_Y = 0.0f;
+    pQ->m_Z = 0.0f;
+    pQ->m_W = 1.0f;
+}
 //---------------------------------------------------------------------------
 void csrQuatFromAxis(float angle, const CSR_Vector3* pAxis, CSR_Quaternion* pR)
 {

@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides an OpenGL renderer                    *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2018, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -446,6 +446,23 @@ typedef void (*CSR_fOnLinkStaticVB)(const CSR_OpenGLShader* pShader, const void*
                                     size_t            modelIndex,
                                     size_t            meshIndex,
                               const CSR_fOnGetID      fOnGetID);
+
+        /**
+        * Draws a X model in a scene
+        *@param pX - X model to draw
+        *@param pShader - shader to use to draw the model
+        *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
+        *                      matrix currently connected in the shader will be used
+        *@param animSetIndex - animation set index, ignored if model isn't animated
+        *@param frameIndex - frame index, ignored if model isn't animated
+        *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
+        */
+        void csrOpenGLDrawX(const CSR_X*            pX,
+                            const CSR_OpenGLShader* pShader,
+                            const CSR_Array*        pMatrixArray,
+                                  size_t            animSetIndex,
+                                  size_t            frameIndex,
+                            const CSR_fOnGetID      fOnGetID);
 
         //-------------------------------------------------------------------
         // State functions

@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides the vertex functions and types        *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2018, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -73,7 +73,7 @@ void csrVertexFormatCalculateStride(CSR_VertexFormat* pVertexFormat)
     #else
         pVertexFormat->m_Stride = 3;
     #endif
- 
+
     // is a normal included in the vertex?
     if (pVertexFormat->m_HasNormal)
         #ifdef CSR_USE_METAL
@@ -210,7 +210,7 @@ int csrVertexBufferAdd(const CSR_Vector3*          pVertex,
     #else
         offset += 3;
     #endif
- 
+
     // vertex has a normal?
     if (pVB->m_Format.m_HasNormal)
     {
@@ -233,7 +233,7 @@ int csrVertexBufferAdd(const CSR_Vector3*          pVertex,
         #ifdef CSR_USE_METAL
             // Metal vertex extra w coordinate (used here for memory alignment)
             pVB->m_pData[offset + 3] = 1.0f;
-    
+
             offset += 4;
         #else
             offset += 3;

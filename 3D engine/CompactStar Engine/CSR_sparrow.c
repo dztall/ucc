@@ -1,8 +1,7 @@
 ﻿/****************************************************************************
- * ==> Quake (MDL) model demo ----------------------------------------------*
+ * ==> DirectX model demo --------------------------------------------------*
  ****************************************************************************
- * Description : A Quake (MDL) model showing a wizard. Tap on the left or   *
- *               right to change the animation                              *
+ * Description : A DirectX model showing an animated sparrow                *
  * Developer   : Jean-Milost Reymond                                        *
  * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
@@ -37,11 +36,13 @@
 #include "SDK/CSR_Common.h"
 #include "SDK/CSR_Vertex.h"
 #include "SDK/CSR_Model.h"
+#include "SDK/CSR_Scene.h"
 #include "SDK/CSR_Renderer.h"
 #include "SDK/CSR_Renderer_OpenGL.h"
 
-// NOTE the mdl model was extracted from the Quake game package
-#define MDL_FILE "Resources/wizard.mdl"
+// NOTE the x model was get from the DirectX SDK samples
+//#define X_FILE "Resources/tiny_4anim.x"
+#define X_FILE "Resources/flying_sparrow.x"
 
 // libraries
 #include <ccr.h>
@@ -49,18 +50,19 @@
 //----------------------------------------------------------------------------
 const char g_VSTextured[] =
     "precision mediump float;"
-    "attribute vec4 csr_aVertices;"
+    "attribute vec3 csr_aVertices;"
     "attribute vec4 csr_aColor;"
     "attribute vec2 csr_aTexCoord;"
     "uniform   mat4 csr_uProjection;"
-    "uniform   mat4 csr_uModelview;"
+    "uniform   mat4 csr_uView;"
+    "uniform   mat4 csr_uModel;"
     "varying   vec4 csr_vColor;"
     "varying   vec2 csr_vTexCoord;"
     "void main(void)"
     "{"
     "    csr_vColor    = csr_aColor;"
     "    csr_vTexCoord = csr_aTexCoord;"
-    "    gl_Position   = csr_uProjection * csr_uModelview * csr_aVertices;"
+    "    gl_Position   = csr_uProjection * csr_uView * csr_uModel * vec4(csr_aVertices, 1.0);"
     "}";
 //----------------------------------------------------------------------------
 const char g_FSTextured[] =
@@ -74,20 +76,39 @@ const char g_FSTextured[] =
     "}";
 //------------------------------------------------------------------------------
 CSR_OpenGLShader* g_pShader         = 0;
-CSR_MDL*          g_pModel          = 0;
+CSR_Scene*        g_pScene          = 0;
+CSR_X*            g_pModel          = 0;
 float             g_ScreenWidth     = 0.0f;
-float             g_Time            = 0.0f;
-float             g_Interval        = 0.0f;
-double            g_TextureLastTime = 0.0;
-double            g_ModelLastTime   = 0.0;
-double            g_MeshLastTime    = 0.0;
-const unsigned    g_FPS             = 10;
-size_t            g_AnimIndex       = 0;
-size_t            g_TextureIndex    = 0;
-size_t            g_ModelIndex      = 0;
-size_t            g_MeshIndex       = 0;
-CSR_Color         g_Background;
+float             g_Angle           = 0.0f;
+float             g_ElapsedTime     = 0.0f;
+CSR_Matrix4       g_ModelMatrix;
+CSR_SceneContext  g_SceneContext;
 CSR_OpenGLID      g_ID[1];
+//---------------------------------------------------------------------------
+CSR_PixelBuffer* OnLoadTexture(const char* pTextureName)
+{
+    char* pFileName = (char*)malloc(10 + strlen(pTextureName));
+    strcpy(pFileName,      "Resources/\0");
+    strcpy(pFileName + 10, pTextureName);
+
+    return csrPixelBufferFromBitmapFile(pFileName);
+}
+//---------------------------------------------------------------------------
+void OnGetXIndex(const CSR_X* pX, size_t* pAnimSetIndex, size_t* pFrameIndex)
+{
+    *pAnimSetIndex = 0;
+    *pFrameIndex   = (*pFrameIndex + (size_t)(g_ElapsedTime * 10.0f)) % 11;
+}
+//---------------------------------------------------------------------------
+void OnSceneBegin(const CSR_Scene* pScene, const CSR_SceneContext* pContext)
+{
+    csrDrawBegin(&pScene->m_Color);
+}
+//---------------------------------------------------------------------------
+void OnSceneEnd(const CSR_Scene* pScene, const CSR_SceneContext* pContext)
+{
+    csrDrawEnd();
+}
 //---------------------------------------------------------------------------
 void OnApplySkin(size_t index, const CSR_Skin* pSkin, int* pCanRelease)
 {
@@ -100,6 +121,11 @@ void OnApplySkin(size_t index, const CSR_Skin* pSkin, int* pCanRelease)
     // from now the source texture will no longer be used
     if (pCanRelease)
         *pCanRelease = 1;
+}
+//---------------------------------------------------------------------------
+void* OnGetShader(const void* pModel, CSR_EModelType type)
+{
+    return g_pShader;
 }
 //---------------------------------------------------------------------------
 void* OnGetID(const void* pKey)
@@ -143,32 +169,50 @@ void OnDeleteTexture(const CSR_Texture* pTexture)
         }
 }
 //------------------------------------------------------------------------------
-void ApplyMatrix(float w, float h)
+void CreateViewport(float w, float h)
 {
     // calculate matrix items
-    const float zNear  = 1.0f;
+    const float zNear  = 0.01f;
     const float zFar   = 100.0f;
     const float fov    = 45.0f;
     const float aspect = w / h;
 
-    CSR_Matrix4 matrix;
-    csrMat4Perspective(fov, aspect, zNear, zFar, &matrix);
+    csrMat4Perspective(fov, aspect, zNear, zFar, &g_pScene->m_ProjectionMatrix);
+
+    csrShaderEnable(g_pShader);
 
     // connect projection matrix to shader
     GLint projectionUniform = glGetUniformLocation(g_pShader->m_ProgramID, "csr_uProjection");
-    glUniformMatrix4fv(projectionUniform, 1, 0, &matrix.m_Table[0][0]);
+    glUniformMatrix4fv(projectionUniform, 1, 0, &g_pScene->m_ProjectionMatrix.m_Table[0][0]);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
 {
-    CSR_VertexFormat vertexFormat;
-    CSR_Material     material;
+    CSR_VertexFormat  vf;
+    CSR_VertexCulling vc;
+    CSR_Material      material;
 
-    // initialize the scene background color
-    g_Background.m_R = 0.0f;
-    g_Background.m_G = 0.0f;
-    g_Background.m_B = 0.0f;
-    g_Background.m_A = 1.0f;
+    // create the default scene
+    g_pScene = csrSceneCreate();
+
+    // create the scene context
+    csrSceneContextInit(&g_SceneContext);
+    g_SceneContext.m_fOnSceneBegin = OnSceneBegin;
+    g_SceneContext.m_fOnSceneEnd   = OnSceneEnd;
+    g_SceneContext.m_fOnGetShader  = OnGetShader;
+    g_SceneContext.m_fOnGetID      = OnGetID;
+    g_SceneContext.m_fOnGetXIndex  = OnGetXIndex;
+
+    // configure the scene color background
+    g_pScene->m_Color.m_R = 0.08f;
+    g_pScene->m_Color.m_G = 0.12f;
+    g_pScene->m_Color.m_B = 0.17f;
+    g_pScene->m_Color.m_A = 1.0f;
+
+    // initialize the matrices
+    csrMat4Identity(&g_pScene->m_ProjectionMatrix);
+    csrMat4Identity(&g_pScene->m_ViewMatrix);
+    csrMat4Identity(&g_ModelMatrix);
 
     // get the screen width
     g_ScreenWidth = view_w;
@@ -180,13 +224,15 @@ void on_GLES2_Init(int view_w, int view_h)
                                             sizeof(g_FSTextured),
                                             0,
                                             0);
-    glUseProgram(g_pShader->m_ProgramID);
+    csrShaderEnable(g_pShader);
 
     // configure the shader slots
     g_pShader->m_VertexSlot   = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aVertices");
     g_pShader->m_ColorSlot    = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aColor");
     g_pShader->m_TexCoordSlot = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aTexCoord");
-    g_pShader->m_TextureSlot  = glGetAttribLocation(g_pShader->m_ProgramID, "csr_sColorMap");
+    g_pShader->m_TextureSlot  = glGetAttribLocation(g_pShader->m_ProgramID, "csr_sTexture");
+
+    CreateViewport(view_w, view_h);
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -195,22 +241,45 @@ void on_GLES2_Init(int view_w, int view_h)
     glDepthRangef(0.0f, 1.0f);
 
     // configure the vertex format
-    vertexFormat.m_HasNormal         = 0;
-    vertexFormat.m_HasTexCoords      = 1;
-    vertexFormat.m_HasPerVertexColor = 1;
+    vf.m_HasNormal         = 0;
+    vf.m_HasTexCoords      = 1;
+    vf.m_HasPerVertexColor = 1;
 
-    // load the MDL model
-    g_pModel = csrMDLOpen(MDL_FILE, 0, &vertexFormat, 0, 0, 0, OnApplySkin, OnDeleteTexture);
+    vc.m_Type = CSR_CT_Back;
+    vc.m_Face = CSR_CF_CCW;
 
-    // calculate frame interval
-    g_Interval = 1000.0f / g_FPS;
+    // load the X model
+    g_pModel = csrXOpen(X_FILE, &vf, &vc, 0, 0, 0, 0, OnLoadTexture, OnApplySkin, OnDeleteTexture);
+
+    // add it to the scene
+    csrSceneAddX(g_pScene, g_pModel, 0, 0);
+    csrSceneAddModelMatrix(g_pScene, g_pModel, &g_ModelMatrix);
+
+    CSR_Matrix4 rotMat;
+
+    CSR_Vector3 axis;
+    axis.m_X = 0.0f;
+    axis.m_Y = 0.0f;
+    axis.m_Z = 1.0f;
+
+    csrMat4Rotate(0.0f, &axis, &rotMat);
+
+    CSR_Matrix4 scaleMat;
+    csrMat4Identity(&scaleMat);
+    scaleMat.m_Table[0][0] = 0.1f;
+    scaleMat.m_Table[1][1] = 0.1f;
+    scaleMat.m_Table[2][2] = 0.1f;
+
+    csrMat4Multiply(&scaleMat, &rotMat, &g_ModelMatrix);
+
+    // initialize elapsed time
+    g_ElapsedTime = 0;
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Final()
 {
-    // delete the model
-    csrMDLRelease(g_pModel, OnDeleteTexture);
-    g_pModel = 0;
+    // release the scene
+    csrSceneRelease(g_pScene, OnDeleteTexture);
 
     // delete shader program
     csrOpenGLShaderRelease(g_pShader);
@@ -223,110 +292,35 @@ void on_GLES2_Size(int view_w, int view_h)
     g_ScreenWidth = view_w;
 
     glViewport(0, 0, view_w, view_h);
-    ApplyMatrix(view_w, view_h);
+    CreateViewport(view_w, view_h);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
 {
-    // calculate next model indexes to show
-    csrMDLUpdateIndex(g_pModel,
-                      g_FPS,
-                      g_AnimIndex,
-                     &g_TextureIndex,
-                     &g_ModelIndex,
-                     &g_MeshIndex,
-                     &g_TextureLastTime,
-                     &g_ModelLastTime,
-                     &g_MeshLastTime,
-                      timeStep_sec);
+    // create a point of view from an arcball
+    CSR_ArcBall arcball;
+    arcball.m_AngleX = 0.0f;
+    arcball.m_AngleY = g_Angle;
+    arcball.m_Radius = 80.0f;
+    csrSceneArcBallToMatrix(&arcball, &g_pScene->m_ViewMatrix);
+
+    // rotate the view around the model
+    g_Angle = fmod(g_Angle + timeStep_sec, M_PI * 2);
+
+    g_ElapsedTime += timeStep_sec;
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Render()
 {
-    CSR_Vector3 t;
-    CSR_Vector3 axis;
-    CSR_Vector3 factor;
-    CSR_Matrix4 translateMatrix;
-    CSR_Matrix4 rotateMatrixX;
-    CSR_Matrix4 rotateMatrixY;
-    CSR_Matrix4 scaleMatrix;
-    CSR_Matrix4 combinedRotMatrix;
-    CSR_Matrix4 combinedRotTransMatrix;
-    CSR_Matrix4 modelViewMatrix;
-    float       angle;
-    GLint       modelviewUniform;
-
-    csrDrawBegin(&g_Background);
-
-    // set translation
-    t.m_X =  0.0f;
-    t.m_Y =  0.0f;
-    t.m_Z = -150.0f;
-
-    csrMat4Translate(&t, &translateMatrix);
-
-    // set rotation axis
-    axis.m_X = 1.0f;
-    axis.m_Y = 0.0f;
-    axis.m_Z = 0.0f;
-
-    // set rotation angle
-    angle = -M_PI * 0.5;
-
-    csrMat4Rotate(angle, &axis, &rotateMatrixX);
-
-    // set rotation axis
-    axis.m_X = 0.0f;
-    axis.m_Y = 1.0f;
-    axis.m_Z = 0.0f;
-
-    // set rotation angle
-    angle = -M_PI * 0.25;
-
-    csrMat4Rotate(angle, &axis, &rotateMatrixY);
-
-    // set scale factor
-    factor.m_X = 0.02f;
-    factor.m_Y = 0.02f;
-    factor.m_Z = 0.02f;
-
-    csrMat4Scale(&factor, &scaleMatrix);
-
-    // calculate model view matrix
-    csrMat4Multiply(&rotateMatrixX,          &rotateMatrixY,   &combinedRotMatrix);
-    csrMat4Multiply(&combinedRotMatrix,      &translateMatrix, &combinedRotTransMatrix);
-    csrMat4Multiply(&combinedRotTransMatrix, &scaleMatrix,     &modelViewMatrix);
-
-    // connect model view matrix to shader
-    modelviewUniform = glGetUniformLocation(g_pShader->m_ProgramID, "csr_uModelview");
-    glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
-
-    // draw the model
-    csrDrawMDL(g_pModel, g_pShader, 0, g_TextureIndex, g_ModelIndex, g_MeshIndex, OnGetID);
-
-    csrDrawEnd();
+    // draw the scene
+    csrSceneDraw(g_pScene, &g_SceneContext);
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchBegin(float x, float y)
 {}
 //------------------------------------------------------------------------------
 void on_GLES2_TouchEnd(float x, float y)
-{
-    if (x > g_ScreenWidth * 0.5f)
-    {
-        ++g_AnimIndex;
-
-        if (g_AnimIndex >= g_pModel->m_AnimationCount)
-            g_AnimIndex = 0;
-    }
-    else
-    {
-        if (g_AnimIndex == 0)
-            g_AnimIndex = g_pModel->m_AnimationCount;
-
-        --g_AnimIndex;
-    }
-}
+{}
 //------------------------------------------------------------------------------
 void on_GLES2_TouchMove(float prev_x, float prev_y, float x, float y)
 {}

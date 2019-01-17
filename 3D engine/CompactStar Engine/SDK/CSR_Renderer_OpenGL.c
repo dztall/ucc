@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides an OpenGL renderer                    *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2018, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -1463,6 +1463,179 @@ void csrOpenGLDrawMDL(const CSR_MDL*          pMDL,
 
     // draw the model mesh
     csrOpenGLDrawMesh(pMesh, pShader, pMatrixArray, fOnGetID);
+}
+//---------------------------------------------------------------------------
+void csrOpenGLDrawX(const CSR_X*            pX,
+                    const CSR_OpenGLShader* pShader,
+                    const CSR_Array*        pMatrixArray,
+                          size_t            animSetIndex,
+                          size_t            frameIndex,
+                    const CSR_fOnGetID      fOnGetID)
+{
+    size_t i;
+    size_t j;
+    size_t k;
+    size_t l;
+
+    // no model to draw?
+    if (!pX || !pX->m_MeshCount)
+        return;
+
+    // do draw only the mesh and ignore all other data like bones?
+    if (pX->m_MeshOnly)
+    {
+        // iterate through the meshes to draw
+        for (i = 0; i < pX->m_MeshCount; ++i)
+            // draw the model mesh
+            csrOpenGLDrawMesh(&pX->m_pMesh[i], pShader, pMatrixArray, fOnGetID);
+
+        return;
+    }
+
+    // iterate through the meshes to draw
+    for (i = 0; i < pX->m_MeshCount; ++i)
+    {
+        int               useLocalMatrixArray;
+        CSR_Mesh*         pMesh;
+        CSR_VertexBuffer* pSrcBuffer;
+        CSR_Array*        pLocalMatrixArray;
+
+        // if mesh has no skeletton, perform a simple draw
+        if (!pX->m_pSkeleton)
+        {
+            // draw the model mesh
+            csrOpenGLDrawMesh(&pX->m_pMesh[i], pShader, pMatrixArray, fOnGetID);
+            return;
+        }
+
+        // get the current model mesh to draw
+        pMesh = &pX->m_pMesh[i];
+
+        // found it?
+        if (!pMesh)
+            continue;
+
+        // normally each mesh should contain only one vertex buffer
+        if (pMesh->m_Count != 1)
+            // unsupported if not (because cannot know which texture should be binded. If a such model
+            // exists, a custom version of this function should also be written for it)
+            continue;
+
+        // mesh contains skin weights?
+        if (pX->m_pMeshWeights[i].m_pSkinWeights)
+        {
+            // clear the previous print vertices (needs to be cleared to properly apply the weights)
+            for (j = 0; j < pMesh->m_pVB->m_Count; j += pMesh->m_pVB->m_Format.m_Stride)
+            {
+                pX->m_pPrint[i].m_pData[j]     = 0.0f;
+                pX->m_pPrint[i].m_pData[j + 1] = 0.0f;
+                pX->m_pPrint[i].m_pData[j + 2] = 0.0f;
+            }
+
+            // iterate through mesh skin weights
+            for (j = 0; j < pX->m_pMeshWeights[i].m_Count; ++j)
+            {
+                CSR_Matrix4 boneMatrix;
+                CSR_Matrix4 finalMatrix;
+
+                // get the bone matrix
+                if (pX->m_PoseOnly)
+                    csrBoneGetMatrix(pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pBone, 0, &boneMatrix);
+                else
+                    csrBoneGetAnimMatrix(pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pBone,
+                                        &pX->m_pAnimationSet[animSetIndex],
+                                         frameIndex,
+                                         0,
+                                        &boneMatrix);
+
+                // get the final matrix after bones transform
+                csrMat4Multiply(&pX->m_pMeshWeights[i].m_pSkinWeights[j].m_Matrix,
+                                &boneMatrix,
+                                &finalMatrix);
+
+                // apply the bone and his skin weights to each vertices
+                for (k = 0; k < pX->m_pMeshWeights[i].m_pSkinWeights[j].m_IndexTableCount; ++k)
+                    for (l = 0; l < pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pIndexTable[k].m_Count; ++l)
+                    {
+                        size_t      iX;
+                        size_t      iY;
+                        size_t      iZ;
+                        CSR_Vector3 inputVertex;
+                        CSR_Vector3 outputVertex;
+
+                        // get the next vertex to which the next skin weight should be applied
+                        iX = pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pIndexTable[k].m_pData[l];
+                        iY = pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pIndexTable[k].m_pData[l] + 1;
+                        iZ = pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pIndexTable[k].m_pData[l] + 2;
+
+                        // get input vertex
+                        inputVertex.m_X = pMesh->m_pVB->m_pData[iX];
+                        inputVertex.m_Y = pMesh->m_pVB->m_pData[iY];
+                        inputVertex.m_Z = pMesh->m_pVB->m_pData[iZ];
+
+                        // apply bone transformation to vertex
+                        csrMat4Transform(&finalMatrix, &inputVertex, &outputVertex);
+
+                        // apply the skin weights and calculate the final output vertex
+                        pX->m_pPrint[i].m_pData[iX] += (outputVertex.m_X * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+                        pX->m_pPrint[i].m_pData[iY] += (outputVertex.m_Y * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+                        pX->m_pPrint[i].m_pData[iZ] += (outputVertex.m_Z * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+                    }
+            }
+        }
+
+        // use the model print as final vertex buffer
+        pSrcBuffer   = pMesh->m_pVB;
+        pMesh->m_pVB = &pX->m_pPrint[i];
+
+        useLocalMatrixArray = 0;
+
+        // has matrix array to transform, and model contain mesh bones?
+        if (pMatrixArray && pMatrixArray->m_Count && pX->m_pMeshToBoneDict[i].m_pBone)
+        {
+            // create a new local matrix array
+            pLocalMatrixArray = (CSR_Array*)malloc(sizeof(CSR_Array));
+            csrArrayInit(pLocalMatrixArray);
+            useLocalMatrixArray = 1;
+
+            // create as array item as in the source matrix list
+            pLocalMatrixArray->m_pItem =
+                    (CSR_ArrayItem*)malloc(sizeof(CSR_ArrayItem) * pMatrixArray->m_Count);
+
+            // succeeded?
+            if (pLocalMatrixArray->m_pItem)
+            {
+                // update array count
+                pLocalMatrixArray->m_Count = pMatrixArray->m_Count;
+
+                // iterate through source model matrices
+                for (j = 0; j < pMatrixArray->m_Count; ++j)
+                {
+                    // initialize the local matrix array item
+                    pLocalMatrixArray->m_pItem[j].m_AutoFree = 1;
+                    pLocalMatrixArray->m_pItem[j].m_pData    = malloc(sizeof(CSR_Matrix4));
+
+                    // get the final matrix after bones transform
+                    csrBoneGetMatrix(pX->m_pMeshToBoneDict[i].m_pBone,
+                                     (CSR_Matrix4*)pMatrixArray->m_pItem[j].m_pData,
+                                     (CSR_Matrix4*)pLocalMatrixArray->m_pItem[j].m_pData);
+                }
+            }
+        }
+        else
+            // no matrix array or no bone, keep the original array
+            pLocalMatrixArray = (CSR_Array*)pMatrixArray;
+
+        // draw the model mesh
+        csrOpenGLDrawMesh(pMesh, pShader, pLocalMatrixArray, fOnGetID);
+
+        // restore the correct mesh vertex buffer
+        pMesh->m_pVB = pSrcBuffer;
+
+        // release the transformed matrix list
+        if (useLocalMatrixArray)
+            csrArrayRelease(pLocalMatrixArray);
+    }
 }
 //---------------------------------------------------------------------------
 // State functions
