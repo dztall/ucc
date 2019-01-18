@@ -1,0 +1,59 @@
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_bot/MAPI_bot.cbproj.local
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_bot/MAPI_bot.twfd
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_bot/MAPI_bot.twopts
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_bot/Win32/Debug/MAPI_bot.#00
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_bot/Win32/Debug/MAPI_bot.ilc
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_bot/Win32/Debug/MAPI_bot.ild
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_bot/Win32/Debug/MAPI_bot.ilf
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_bot/Win32/Debug/MAPI_bot.ils
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_bot/Win32/Debug/MAPI_bot.map
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_bot/Win32/Debug/MAPI_bot.pdi
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_bot/Win32/Debug/MAPI_bot.tds
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_bot/twfiles.@@@
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_bump_mapping/MAPI_bump_mapping.cbproj.local
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_plasma/MAPI_plasma.cbproj.local
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_shader_viewer/MAPI_shader_viewer.cbproj.local
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_shader_viewer/MAPI_shader_viewer.twfd
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_shader_viewer/MAPI_shader_viewer.twopts
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_shader_viewer/Win32/Debug/MAPI_shader_viewer.#00
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_shader_viewer/Win32/Debug/MAPI_shader_viewer.ilc
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_shader_viewer/Win32/Debug/MAPI_shader_viewer.ild
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_shader_viewer/Win32/Debug/MAPI_shader_viewer.ilf
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_shader_viewer/Win32/Debug/MAPI_shader_viewer.ils
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_shader_viewer/Win32/Debug/MAPI_shader_viewer.map
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_shader_viewer/Win32/Debug/MAPI_shader_viewer.pdi
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_shader_viewer/Win32/Debug/MAPI_shader_viewer.tds
+/MiniAPI/All compilers/Demos/Embarcadero/MAPI_shader_viewer/twfiles.@@@
+/.gitignore
