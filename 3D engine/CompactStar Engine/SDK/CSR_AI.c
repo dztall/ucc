@@ -1,9 +1,9 @@
-/*****************************************************************************
- * ==> CSR_AI ---------------------------------------------------------------*
- *****************************************************************************
- * Description : This module provides the foundations to implement a task    *
- *               based Artificial Intelligence system                        *
- * Developer   : Jean-Milost Reymond                                         *
+/****************************************************************************
+ * ==> CSR_AI --------------------------------------------------------------*
+ ****************************************************************************
+ * Description : This module provides the foundations to implement a task   *
+ *               based Artificial Intelligence system                       *
+ * Developer   : Jean-Milost Reymond                                        *
  * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
@@ -12,16 +12,16 @@
  *               ANY KIND, ANY LOSS OF DATA, OR ANY LOSS OF PRODUCTIVITY    *
  *               TIME THAT MAY RESULT FROM THE USAGE OF THIS SOURCE CODE,   *
  *               DIRECTLY OR NOT.                                           *
- *****************************************************************************/
+ ****************************************************************************/
 
 #include "CSR_AI.h"
 
 // std
 #include <stdlib.h>
 
-//----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 // Task functions
-//----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 CSR_Task* csrTaskCreate(void)
 {
     // create a new task
@@ -36,7 +36,7 @@ CSR_Task* csrTaskCreate(void)
 
     return pTask;
 }
-//----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 void csrTaskContentRelease(CSR_Task* pTask)
 {
     // no task to release?
@@ -51,7 +51,7 @@ void csrTaskContentRelease(CSR_Task* pTask)
     if (pTask->m_pData)
         free(pTask->m_pData);
 }
-//----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 void csrTaskInit(CSR_Task* pTask)
 {
     // no task to initialize?
@@ -63,9 +63,9 @@ void csrTaskInit(CSR_Task* pTask)
     pTask->m_AutoFree = 0;
     pTask->m_pData    = 0;
 }
-//----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 // Task manager functions
-//----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 CSR_TaskManager* csrTaskManagerCreate(void)
 {
     // create a new task manager
@@ -80,7 +80,7 @@ CSR_TaskManager* csrTaskManagerCreate(void)
 
     return pTaskManager;
 }
-//----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 void csrTaskManagerRelease(CSR_TaskManager* pTM)
 {
     // no task manager to release?
@@ -103,7 +103,7 @@ void csrTaskManagerRelease(CSR_TaskManager* pTM)
     // free the task manager
     free(pTM);
 }
-//----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 void csrTaskManagerInit(CSR_TaskManager* pTM)
 {
     // no task manager to initialize?
@@ -114,7 +114,7 @@ void csrTaskManagerInit(CSR_TaskManager* pTM)
     pTM->m_pTask = 0;
     pTM->m_Count = 0;
 }
-//----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 void csrTaskManagerExecute(const CSR_TaskManager* pTaskManager,
                            const CSR_TaskContext* pContext,
                                  double           elapsedTime)
@@ -139,4 +139,4 @@ void csrTaskManagerExecute(const CSR_TaskManager* pTaskManager,
             pContext->m_fOnTaskChange(&pTaskManager->m_pTask[i], elapsedTime);
     }
 }
-//----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
