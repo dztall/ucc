@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides the geometric functions and types     *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2018, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -556,6 +556,12 @@ typedef struct
         //-------------------------------------------------------------------
         // Quaternion functions
         //-------------------------------------------------------------------
+
+        /**
+        * Initializes a quaternion to his identity value
+        *@param pQ - quaternion to initialize, initialized quaternion on function ends
+        */
+        void csrQuatIdentity(CSR_Quaternion* pQ);
 
         /**
         * Gets a quaternion from an angle and a vector representing a rotation axis

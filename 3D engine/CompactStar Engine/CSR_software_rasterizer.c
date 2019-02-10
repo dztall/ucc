@@ -1,14 +1,18 @@
-﻿/*****************************************************************************
- * ==> Software rasterizer --------------------------------------------------*
- *****************************************************************************
- * Description : A Quake (MDL) model showing a wizard, the model is drawn    *
- *               entirely with a software rasterizer. OpenGL isn't used.     *
- * Developer   : Jean-Milost Reymond                                         *
- * Copyright   : 2015 - 2018, this file is part of the Minimal API. You are  *
- *               free to copy or redistribute this file, modify it, or use   *
- *               it for your own projects, commercial or not. This file is   *
- *               provided "as is", without ANY WARRANTY OF ANY KIND          *
- *****************************************************************************/
+﻿/****************************************************************************
+ * ==> Software rasterizer -------------------------------------------------*
+ ****************************************************************************
+ * Description : A Quake (MDL) model showing a wizard, the model is drawn   *
+ *               entirely with a software rasterizer. OpenGL isn't used.    *
+ * Developer   : Jean-Milost Reymond                                        *
+ * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
+ *               You are free to copy or redistribute this file, modify it, *
+ *               or use it for your own projects, commercial or not. This   *
+ *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
+ *               KIND. THE DEVELOPER IS NOT RESPONSIBLE FOR ANY DAMAGE OF   *
+ *               ANY KIND, ANY LOSS OF DATA, OR ANY LOSS OF PRODUCTIVITY    *
+ *               TIME THAT MAY RESULT FROM THE USAGE OF THIS SOURCE CODE,   *
+ *               DIRECTLY OR NOT.                                           *
+ ****************************************************************************/
 
 // supported platforms check. NOTE iOS only, but may works on other platforms
 #if !defined(_OS_IOS_) && !defined(_OS_ANDROID_) && !defined(_OS_WINDOWS_)

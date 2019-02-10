@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides a base to write a Metal renderer      *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2018, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -37,13 +37,13 @@
         //-------------------------------------------------------------------
         // Shader functions
         //-------------------------------------------------------------------
-        
+
         /**
         * Enables a shader (i.e. notify that from now this shader will be used)
         *@param pShader - shader to enable, disable any previously enabled shader if 0
         */
         void csrMetalShaderEnable(const void* _Nullable pShader);
-        
+
         /**
         * Connects a projection matrix to a shader
         *@param pShader - shader to which the matrix should be connected
@@ -51,7 +51,7 @@
         */
         void csrMetalShaderConnectProjectionMatrix(const void*        _Nullable pShader,
                                                    const CSR_Matrix4* _Nullable pMatrix);
-        
+
         /**
         * Connects a view matrix to a shader
         *@param pShader - shader to which the matrix should be connected
@@ -59,29 +59,29 @@
         */
         void csrMetalShaderConnectViewMatrix(const void*        _Nullable pShader,
                                              const CSR_Matrix4* _Nullable pMatrix);
-        
+
         //-------------------------------------------------------------------
         // Draw functions
         //-------------------------------------------------------------------
-        
+
         /**
         * Begins to draw
         *@param pColor - scene background color
         */
         void csrMetalDrawBegin(const CSR_Color* _Nullable pColor);
-        
+
         /**
         * Ends to draw
         */
         void csrMetalDrawEnd(void);
-        
+
         /**
         * Draws a line
         *@param pLine - line to draw
         *@param pShader - shader that will be used to draw the line
         */
         void csrMetalDrawLine(const CSR_Line* _Nullable pLine, const void* _Nullable pShader);
-        
+
         /**
         * Draws a vertex buffer in a scene
         *@param pVB - vertex buffer to draw
@@ -93,7 +93,7 @@
         void csrMetalDrawVertexBuffer(const CSR_VertexBuffer* _Nullable pVB,
                                       const void*             _Nullable pShader,
                                       const CSR_Array*        _Nullable pMatrixArray);
-        
+
         /**
         * Draws a mesh in a scene
         *@param pMesh - mesh to draw
@@ -106,7 +106,7 @@
                               const void*        _Nullable pShader,
                               const CSR_Array*   _Nullable pMatrixArray,
                               const CSR_fOnGetID _Nullable fOnGetID);
-        
+
         /**
         * Draws a model in a scene
         *@param pModel - model to draw
@@ -121,7 +121,7 @@
                                const void*        _Nullable pShader,
                                const CSR_Array*   _Nullable pMatrixArray,
                                const CSR_fOnGetID _Nullable fOnGetID);
-        
+
         /**
         * Draws a MDL model in a scene
         *@param pMDL - MDL model to draw
@@ -140,11 +140,28 @@
                                    size_t                 modelIndex,
                                    size_t                 meshIndex,
                              const CSR_fOnGetID _Nullable fOnGetID);
-        
+
+        /**
+         * Draws a X model in a scene
+         *@param pX - X model to draw
+         *@param pShader - shader to use to draw the model
+         *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
+         *                      matrix currently connected in the shader will be used
+         *@param animSetIndex - animation set index, ignored if model isn't animated
+         *@param frameIndex - frame index, ignored if model isn't animated
+         *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
+         */
+        void csrMetalDrawX(const CSR_X*       _Nullable pX,
+                           const void*        _Nullable pShader,
+                           const CSR_Array*   _Nullable pMatrixArray,
+                                 size_t                 animSetIndex,
+                                 size_t                 frameIndex,
+                           const CSR_fOnGetID _Nullable fOnGetID);
+
         //-------------------------------------------------------------------
         // State functions
         //-------------------------------------------------------------------
-        
+
         /**
         * Enables or disables the depth mask (i.e. the depth buffer writing)
         *@param value - if 0 the depth mask is disabled, otherwise enabled
@@ -324,10 +341,33 @@
                              :(const CSR_fOnGetID _Nullable)fOnGetID;
 
     /**
+    * Draws a X model in a scene
+    *@param pX - X model to draw
+    *@param pShader - shader to use to draw the model
+    *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
+    *                      matrix currently connected in the shader will be used
+    *@param animSetIndex - animation set index, ignored if model isn't animated
+    *@param frameIndex - frame index, ignored if model isn't animated
+    *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
+    */
+    - (void) csrMetalDrawX :(const CSR_X*  _Nullable)pX
+                           :(const void* _Nullable)pShader
+                           :(const CSR_Array* _Nullable)pMatrixArray
+                           :(size_t)animSetIndex
+                           :(size_t)frameIndex
+                           :(const CSR_fOnGetID _Nullable)fOnGetID;
+
+    /**
     * Enables or disables the depth mask (i.e. the depth buffer writing)
     *@param value - if 0 the depth mask is disabled, otherwise enabled
     */
     - (void) csrMetalStateEnableDepthMask :(int)value;
+
+    /**
+    * Creates a metal buffer for a MDL model
+    *@param pX - X model for which the metal buffer should be created
+    */
+    - (void) CreateBufferFromX :(const CSR_X* _Nullable)pX;
 
     /**
     * Creates a metal buffer for a MDL model
@@ -338,20 +378,23 @@
     /**
     * Creates a metal buffer for a model
     *@param pModel - model for which the metal buffer should be created
+    *@param shared - if true, the model will be shared between the GPU and CPU
     */
-    - (void) CreateBufferFromModel :(const CSR_Model* _Nullable)pModel;
+    - (void) CreateBufferFromModel :(const CSR_Model* _Nullable)pModel :(bool)shared;
 
     /**
     * Creates a metal buffer for a mesh
     *@param pMesh - mesh for which the metal buffer should be created
+    *@param shared - if true, the mesh will be shared between the GPU and CPU
     */
-    - (void) CreateBufferFromMesh :(const CSR_Mesh* _Nullable)pMesh;
+    - (void) CreateBufferFromMesh :(const CSR_Mesh* _Nullable)pMesh :(bool)shared;
 
     /**
     * Creates a metal buffer for a vertex buffer
     *@param pVB - vertex buffer for which the metal buffer should be created
+    *@param shared - if true, the vertex buffer will be shared between the GPU and CPU
     */
-    - (void) CreateBufferFromVB :(const CSR_VertexBuffer* _Nullable)pVB;
+    - (void) CreateBufferFromVB :(const CSR_VertexBuffer* _Nullable)pVB :(bool)shared;
 
     /**
     * Creates a Metal texture
