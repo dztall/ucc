@@ -190,15 +190,17 @@ void csrSceneContextInit(CSR_SceneContext* pContext)
         return;
 
     // initialize the context
-    pContext->m_Handle           = 0;
-    pContext->m_fOnSceneBegin    = 0;
-    pContext->m_fOnSceneEnd      = 0;
-    pContext->m_fOnGetModelIndex = 0;
-    pContext->m_fOnGetMDLIndex   = 0;
-    pContext->m_fOnGetXIndex     = 0;
-    pContext->m_fOnGetShader     = 0;
-    pContext->m_fOnGetID         = 0;
-    pContext->m_fOnDeleteTexture = 0;
+    pContext->m_Handle                    = 0;
+    pContext->m_fOnSceneBegin             = 0;
+    pContext->m_fOnSceneEnd               = 0;
+    pContext->m_fOnPrepareDraw            = 0;
+    pContext->m_fOnPrepareTransparentDraw = 0;
+    pContext->m_fOnGetModelIndex          = 0;
+    pContext->m_fOnGetMDLIndex            = 0;
+    pContext->m_fOnGetXIndex              = 0;
+    pContext->m_fOnGetShader              = 0;
+    pContext->m_fOnGetID                  = 0;
+    pContext->m_fOnDeleteTexture          = 0;
 }
 //---------------------------------------------------------------------------
 // Scene item private functions
@@ -1487,11 +1489,19 @@ void csrSceneDraw(const CSR_Scene* pScene, const CSR_SceneContext* pContext)
         }
     }
 
+    // prepare the scene to draw common models
+    if (pContext->m_fOnPrepareDraw)
+        pContext->m_fOnPrepareDraw(pScene, pContext);
+
     // first draw the standard models
     for (i = 0; i < pScene->m_ItemCount; ++i)
         csrSceneItemDraw(pScene,
                          pContext,
                         &pScene->m_pItem[i]);
+
+    // prepare the scene to draw transparent models
+    if (pContext->m_fOnPrepareTransparentDraw)
+        pContext->m_fOnPrepareTransparentDraw(pScene, pContext);
 
     // then draw the transparent models
     for (i = 0; i < pScene->m_TransparentItemCount; ++i)

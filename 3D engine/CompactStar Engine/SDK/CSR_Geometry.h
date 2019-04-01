@@ -118,6 +118,16 @@ typedef struct
 } CSR_Plane;
 
 /**
+* 2D Line
+*/
+typedef struct
+{
+    CSR_Vector2 m_Pos;
+    CSR_Vector2 m_Dir;
+    CSR_Vector2 m_InvDir;
+} CSR_Line2;
+
+/**
 * 2D Ray
 */
 typedef struct
@@ -723,6 +733,18 @@ typedef struct
         *@param[out] pR - distance between the point and the plane
         */
         void csrPlaneDistanceTo(const CSR_Vector3* pP, const CSR_Plane* pPl, float* pR);
+
+        //-------------------------------------------------------------------
+        // 2D ray functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Calculates a ray from a point and a direction
+        *@param pP - point
+        *@param pD - direction
+        *@param[out] pR - ray
+        */
+        void csrRay2FromPointDir(const CSR_Vector2* pP, const CSR_Vector2* pD, CSR_Ray2* pR);
 
         //-------------------------------------------------------------------
         // 3D ray functions

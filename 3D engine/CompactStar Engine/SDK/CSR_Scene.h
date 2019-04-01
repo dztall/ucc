@@ -190,6 +190,20 @@ typedef void (*CSR_fOnSceneBegin)(const CSR_Scene* pScene, const CSR_SceneContex
 typedef void (*CSR_fOnSceneEnd)(const CSR_Scene* pScene, const CSR_SceneContext* pContext);
 
 /**
+* Called before normal models are drawn in scene
+*@param pScene - scene in which objects will be drawn
+*@param pContext - scene context
+*/
+typedef void (*CSR_fOnPrepareDraw)(const CSR_Scene* pScene, const CSR_SceneContext* pContext);
+
+/**
+* Called before transparent models are drawn in scene
+*@param pScene - scene in which objects will be drawn
+*@param pContext - scene context
+*/
+typedef void (*CSR_fOnPrepareTransparentDraw)(const CSR_Scene* pScene, const CSR_SceneContext* pContext);
+
+/**
 * Called when a shader should be get for a model
 *@param pModel - model for which the shader should be get
 *@param type - model type
@@ -252,15 +266,17 @@ typedef int (*CSR_fOnCustomDetectCollision)(const CSR_Scene*           pScene,
 */
 struct CSR_SceneContext
 {
-    size_t               m_Handle;
-    CSR_fOnSceneBegin    m_fOnSceneBegin;
-    CSR_fOnSceneEnd      m_fOnSceneEnd;
-    CSR_fOnGetModelIndex m_fOnGetModelIndex;
-    CSR_fOnGetMDLIndex   m_fOnGetMDLIndex;
-    CSR_fOnGetXIndex     m_fOnGetXIndex;
-    CSR_fOnGetShader     m_fOnGetShader;
-    CSR_fOnGetID         m_fOnGetID;
-    CSR_fOnDeleteTexture m_fOnDeleteTexture;
+    size_t                        m_Handle;
+    CSR_fOnSceneBegin             m_fOnSceneBegin;
+    CSR_fOnSceneEnd               m_fOnSceneEnd;
+    CSR_fOnPrepareDraw            m_fOnPrepareDraw;
+    CSR_fOnPrepareTransparentDraw m_fOnPrepareTransparentDraw;
+    CSR_fOnGetModelIndex          m_fOnGetModelIndex;
+    CSR_fOnGetMDLIndex            m_fOnGetMDLIndex;
+    CSR_fOnGetXIndex              m_fOnGetXIndex;
+    CSR_fOnGetShader              m_fOnGetShader;
+    CSR_fOnGetID                  m_fOnGetID;
+    CSR_fOnDeleteTexture          m_fOnDeleteTexture;
 };
 
 #ifdef __cplusplus

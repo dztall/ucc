@@ -956,6 +956,28 @@ void csrPlaneDistanceTo(const CSR_Vector3* pP, const CSR_Plane* pPl, float* pR)
     *pR = dist + pPl->m_D;
 }
 //---------------------------------------------------------------------------
+// 2D ray functions
+//---------------------------------------------------------------------------
+void csrRay2FromPointDir(const CSR_Vector2* pP, const CSR_Vector2* pD, CSR_Ray2* pR)
+{
+    // get infinite value (NOTE this is the only case where a division by 0 is allowed)
+    const float inf = 1.0f / 0.0f;
+
+    pR->m_Pos = *pP;
+    pR->m_Dir = *pD;
+
+    // recompute the ray inverted direction
+    if (!pD->m_X)
+        pR->m_InvDir.m_X = inf;
+    else
+        pR->m_InvDir.m_X = 1.0f / pD->m_X;
+
+    if (!pD->m_Y)
+        pR->m_InvDir.m_Y = inf;
+    else
+        pR->m_InvDir.m_Y = 1.0f / pD->m_Y;
+}
+//---------------------------------------------------------------------------
 // 3D ray functions
 //---------------------------------------------------------------------------
 void csrRay3FromPointDir(const CSR_Vector3* pP, const CSR_Vector3* pD, CSR_Ray3* pR)
@@ -1643,6 +1665,134 @@ int csrIntersect2(const CSR_Figure2* pFigure1,
     // calculate the intersection
     switch (intersectionType)
     {
+        // line-circle intersection
+        case 5:
+        {
+            float       a;
+            float       b;
+            float       c;
+            float       c1;
+            float       discriminant;
+            CSR_Vector2 d;
+
+            // get the figures to check
+            const CSR_Line2*  pLine   = (CSR_Line2*)pFirst;
+            const CSR_Circle* pCircle = (CSR_Circle*)pSecond;
+
+            // calculate geometry required to find intersection points
+            csrVec2Sub(&pLine->m_Pos, &pCircle->m_Center, &d);
+            csrVec2Dot(&pLine->m_Dir, &pLine->m_Dir,      &a);
+            csrVec2Dot(&d,            &pLine->m_Dir,      &b);
+            csrVec2Dot(&d,            &d,                 &c1);
+
+            // calculate discriminant
+            c            = c1 - (pCircle->m_Radius * pCircle->m_Radius);
+            discriminant = (b * b) - (a * c);
+
+            // found a collision?
+            if (discriminant < 0.0f)
+                return 0;
+
+            // do compute intersection point?
+            if (pP1 || pP2)
+            {
+                float sqrtDisc;
+                float invA;
+                float t1;
+                float t2;
+
+                sqrtDisc = sqrt(discriminant);
+                invA     = 1.0f / a;
+
+                // calculate the parametric values at intersection points (i.e. the length from the line
+                // start point to the intersection)
+                t1 = (-b - sqrtDisc) * invA;
+                t2 = (-b + sqrtDisc) * invA;
+
+                // calculate the first intersection point
+                if (pP1)
+                {
+                    pP1->m_X = (pLine->m_Pos.m_X + (pLine->m_Dir.m_X * t1));
+                    pP1->m_Y = (pLine->m_Pos.m_Y + (pLine->m_Dir.m_Y * t1));
+                }
+
+                // calculate the second intersection point
+                if (pP2)
+                {
+                    pP2->m_X = (pLine->m_Pos.m_X + (pLine->m_Dir.m_X * t2));
+                    pP2->m_Y = (pLine->m_Pos.m_Y + (pLine->m_Dir.m_Y * t2));
+                }
+            }
+
+            return 1;
+        }
+
+        // ray-circle intersection
+        case 10:
+        {
+            CSR_Vector2 p1;
+            CSR_Vector2 p2;
+            CSR_Line2   line;
+            CSR_Figure2 figure1;
+            CSR_Figure2 figure2;
+
+            // get the figures to check
+            const CSR_Ray2*   pRay    = (CSR_Ray2*)pFirst;
+            const CSR_Circle* pCircle = (CSR_Circle*)pSecond;
+
+            // build a line from the ray
+            line.m_Pos    = pRay->m_Pos;
+            line.m_Dir    = pRay->m_Dir;
+            line.m_InvDir = pRay->m_InvDir;
+
+            // build a new line figure
+            figure1.m_Type    = CSR_F2_Line;
+            figure1.m_pFigure = &line;
+
+            // build a new circle figure
+            figure2.m_Type    = CSR_F2_Circle;
+            figure2.m_pFigure = pCircle;
+
+            // detect collision between line and circle
+            if (csrIntersect2(&figure1, &figure2, &p1, &p2))
+            {
+                int xIntersects = 0;
+                int yIntersects = 0;
+
+                // get first intersection point (if any)
+                if (pP1)
+                    *pP1 = p1;
+
+                // get second intersection point (if any)
+                if (pP2)
+                    *pP2 = p2;
+
+                // at least 1 intersection point is located on the ray (x axis)?
+                if (pRay->m_Dir.m_X >= 0.0f)
+                {
+                    if (p1.m_X >= pRay->m_Pos.m_X || p2.m_X >= pRay->m_Pos.m_X)
+                        xIntersects = 1;
+                }
+                else
+                if (p1.m_X <= pRay->m_Pos.m_X || p2.m_X <= pRay->m_Pos.m_X)
+                    xIntersects = 1;
+
+                // at least 1 intersection point is located on the ray (y axis)?
+                if (pRay->m_Dir.m_Y >= 0.0f)
+                {
+                    if (p1.m_Y >= pRay->m_Pos.m_Y || p2.m_Y >= pRay->m_Pos.m_Y)
+                        yIntersects = 1;
+                }
+                else
+                if (p1.m_Y <= pRay->m_Pos.m_Y || p2.m_Y <= pRay->m_Pos.m_Y)
+                    yIntersects = 1;
+
+                return (xIntersects && yIntersects);
+            }
+
+            return 0;
+        }
+
         // rect-rect intersection
         case 18:
         {
