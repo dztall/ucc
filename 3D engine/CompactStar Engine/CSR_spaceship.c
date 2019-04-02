@@ -426,10 +426,23 @@ void OnCalculateMeteoreMotion(const CSR_Particles* pParticles,
     // hit by a laser?
     if (g_LaserVisible && CheckLaserCollision(&g_MeteoreBoundingCircle, &g_LaserRay))
     {
-        pParticle->m_pMatrix->m_Table[3][0] = g_StarBox.m_Min.m_X + (((float)(rand() % (int)400.0f)) * 0.01f * g_Aspect);
-        pParticle->m_pMatrix->m_Table[3][1] = g_StarBox.m_Min.m_Y;
+    	// sort new positions
+        float newPosX = (((float)(rand() % (int)200.0f)) * 0.01f);
+        float newPosY = (((float)(rand() % (int)200.0f)) * 0.01f);
+
+        // recalculate a new position out of the screen, on the left or on the right
+        if (newPosX >= 1.0f)
+            pParticle->m_pMatrix->m_Table[3][0] = g_StarBox.m_Max.m_X - (newPosX - 1.0f);
+        else
+            pParticle->m_pMatrix->m_Table[3][0] = g_StarBox.m_Min.m_X + newPosX;
+
+        // recalculate a new position out of the screen, on the top or on the bottom
+        if (newPosY >= 1.0f)
+            pParticle->m_pMatrix->m_Table[3][1] = g_StarBox.m_Max.m_Y - (newPosY - 1.0f);
+        else
+            pParticle->m_pMatrix->m_Table[3][1] = g_StarBox.m_Min.m_Y + newPosY;
+
         pParticle->m_pMatrix->m_Table[3][2] = g_Meteores[index].m_StartPos.m_Z;
-        return;
     }
 
     // hitting the spaceship?
@@ -820,76 +833,80 @@ void on_GLES2_Init(int view_w, int view_h)
     // star texture will no longer be used
     csrPixelBufferRelease(pPixelBuffer);
 
-    material.m_Transparent = 0;
-
-    // IMPORTANT this will map the model with the correct texture resource
-    g_TextureIndex = 1;
-
-    // create the meteore
-    g_pMeteore = csrMDLOpen(METEORE_MODEL,
-                            0,
-                           &vertexFormat,
-                            0,
-                           &material,
-                            0,
-                            OnApplySkin,
-                            OnDeleteTexture);
-
-    // add the model to the scene
-    pSceneItem = csrSceneAddMDL(g_pScene, g_pMeteore, 0, 0);
-
-    g_pMeteores = csrParticlesCreate();
-    g_pMeteores->m_fOnCalculateMotion = OnCalculateMeteoreMotion;
-
-    // iterate through the particles to create
-    for (i = 0; i < METEORE_COUNT; ++i)
+    // scene should contain meteores?
+    if (METEORE_COUNT)
     {
-        float rotationAngle;
+        material.m_Transparent = 0;
 
-        // add a new particle, ignore the mass
-        CSR_Particle* pParticle    = csrParticlesAdd(g_pMeteores);
-        pParticle->m_pBody->m_Mass = i; // NOTE here use the mass as particle index
+        // IMPORTANT this will map the model with the correct texture resource
+        g_TextureIndex = 1;
 
-        // calculate the particle start position
-        const float x =  g_StarBox.m_Min.m_X + (((float)(rand() % (int)400.0f)) * 0.01f * g_Aspect);
-        const float y =  g_StarBox.m_Min.m_Y + (((float)(rand() % (int)400.0f)) * 0.01f);
-        const float z = -0.1f;
+        // create the meteore
+        g_pMeteore = csrMDLOpen(METEORE_MODEL,
+                                0,
+                               &vertexFormat,
+                                0,
+                               &material,
+                                0,
+                                OnApplySkin,
+                                OnDeleteTexture);
 
-        // calculate the particle initial force
-        pParticle->m_pBody->m_Velocity.m_X =  0.0f;
-        pParticle->m_pBody->m_Velocity.m_Y = -0.5f;
-        pParticle->m_pBody->m_Velocity.m_Z =  0.0f;
+        // add the model to the scene
+        pSceneItem = csrSceneAddMDL(g_pScene, g_pMeteore, 0, 0);
 
-        // configure the particle matrix (was set to identity while the particle was created)
-        pParticle->m_pMatrix->m_Table[3][0] = x;
-        pParticle->m_pMatrix->m_Table[3][1] = y;
-        pParticle->m_pMatrix->m_Table[3][2] = z;
+        g_pMeteores = csrParticlesCreate();
+        g_pMeteores->m_fOnCalculateMotion = OnCalculateMeteoreMotion;
 
-        // keep the meteore start position
-        g_Meteores[i].m_StartPos.m_X = x;
-        g_Meteores[i].m_StartPos.m_Y = g_StarBox.m_Min.m_Y;
-        g_Meteores[i].m_StartPos.m_Z = z;
+        // iterate through the particles to create
+        for (i = 0; i < METEORE_COUNT; ++i)
+        {
+            float rotationAngle;
 
-        // set meteore rotation and scaling
-        rotationAngle                        = ((float)(rand() % (int)628.0f)) * 0.01f;
-        g_Meteores[i].m_Rotation.m_X         = sinf(rotationAngle);
-        g_Meteores[i].m_Rotation.m_Y         = cosf(rotationAngle);
-        g_Meteores[i].m_Rotation.m_Z         = cosf(rotationAngle);
-        g_Meteores[i].m_RotationVelocity.m_X = ((float)(rand() % (int)100.0f)) * 0.01f;
-        g_Meteores[i].m_RotationVelocity.m_Y = ((float)(rand() % (int)100.0f)) * 0.01f;
-        g_Meteores[i].m_RotationVelocity.m_Z = ((float)(rand() % (int)100.0f)) * 0.01f;
-        g_Meteores[i].m_Scaling.m_X          = 0.1f;
-        g_Meteores[i].m_Scaling.m_Y          = 0.1f;
-        g_Meteores[i].m_Scaling.m_Z          = 0.1f;
+            // add a new particle, ignore the mass
+            CSR_Particle* pParticle    = csrParticlesAdd(g_pMeteores);
+            pParticle->m_pBody->m_Mass = i; // NOTE here use the mass as particle index
 
-        // add it to the scene
-        pSceneItem = csrSceneAddModelMatrix(g_pScene, g_pMeteore, pParticle->m_pMatrix);
+            // calculate the particle start position
+            const float x =  g_StarBox.m_Min.m_X + (((float)(rand() % (int)400.0f)) * 0.01f * g_Aspect);
+            const float y =  g_StarBox.m_Min.m_Y + (((float)(rand() % (int)400.0f)) * 0.01f);
+            const float z = -0.1f;
 
-        // keep the particle model key
-        pParticle->m_pKey = pSceneItem->m_pModel;
+            // calculate the particle initial force
+            pParticle->m_pBody->m_Velocity.m_X =  0.0f;
+            pParticle->m_pBody->m_Velocity.m_Y = -0.5f;
+            pParticle->m_pBody->m_Velocity.m_Z =  0.0f;
+
+            // configure the particle matrix (was set to identity while the particle was created)
+            pParticle->m_pMatrix->m_Table[3][0] = x;
+            pParticle->m_pMatrix->m_Table[3][1] = y;
+            pParticle->m_pMatrix->m_Table[3][2] = z;
+
+            // keep the meteore start position
+            g_Meteores[i].m_StartPos.m_X = x;
+            g_Meteores[i].m_StartPos.m_Y = g_StarBox.m_Min.m_Y;
+            g_Meteores[i].m_StartPos.m_Z = z;
+
+            // set meteore rotation and scaling
+            rotationAngle                        = ((float)(rand() % (int)628.0f)) * 0.01f;
+            g_Meteores[i].m_Rotation.m_X         = sinf(rotationAngle);
+            g_Meteores[i].m_Rotation.m_Y         = cosf(rotationAngle);
+            g_Meteores[i].m_Rotation.m_Z         = cosf(rotationAngle);
+            g_Meteores[i].m_RotationVelocity.m_X = ((float)(rand() % (int)100.0f)) * 0.01f;
+            g_Meteores[i].m_RotationVelocity.m_Y = ((float)(rand() % (int)100.0f)) * 0.01f;
+            g_Meteores[i].m_RotationVelocity.m_Z = ((float)(rand() % (int)100.0f)) * 0.01f;
+            g_Meteores[i].m_Scaling.m_X          = 0.1f;
+            g_Meteores[i].m_Scaling.m_Y          = 0.1f;
+            g_Meteores[i].m_Scaling.m_Z          = 0.1f;
+
+            // add it to the scene
+            pSceneItem = csrSceneAddModelMatrix(g_pScene, g_pMeteore, pParticle->m_pMatrix);
+
+            // keep the particle model key
+            pParticle->m_pKey = pSceneItem->m_pModel;
+        }
+
+        g_MeteoreBoundingCircle.m_Radius = 0.125f;
     }
-
-    g_MeteoreBoundingCircle.m_Radius = 0.125f;
 
     csrSoundInitializeOpenAL(&g_pOpenALDevice, &g_pOpenALContext);
 
