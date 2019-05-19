@@ -48,9 +48,6 @@
 
 #include <ccr.h>
 
-// energy factor for the shoot
-#define M_ShootEnergyFactor 23.0f
-
 #define YOU_WON_TEXTURE_FILE       "Resources/you_won.bmp"
 #define LANDSCAPE_TEXTURE_FILE     "Resources/soccer_grass.bmp"
 #define BALL_TEXTURE_FILE          "Resources/soccer_ball.bmp"
@@ -66,6 +63,11 @@
 #define FOOT_STEP_LEFT_SOUND_FILE  "Resources/footstep_left.wav"
 #define FOOT_STEP_RIGHT_SOUND_FILE "Resources/footstep_right.wav"
 #define BALL_KICK_SOUND_FILE       "Resources/soccer_ball_kick.wav"
+
+// energy factor for the shoot
+#define M_ShootEnergyFactor 23.0f
+
+#define TEXTURE_COUNT 5
 
 //----------------------------------------------------------------------------
 const char* pCubemapFileNames[6] =
@@ -168,7 +170,7 @@ ALCcontext*       g_pOpenALContext      = 0;
 CSR_Sound*        g_pFootStepLeftSound  = 0;
 CSR_Sound*        g_pFootStepRightSound = 0;
 CSR_Sound*        g_pBallKickSound      = 0;
-CSR_OpenGLID      g_ID[5];
+CSR_OpenGLID      g_ID[TEXTURE_COUNT];
 //---------------------------------------------------------------------------
 void* OnGetShader(const void* pModel, CSR_EModelType type)
 {
@@ -183,7 +185,7 @@ void* OnGetID(const void* pKey)
     size_t i;
 
     // iterate through resource ids
-    for (i = 0; i < 5; ++i)
+    for (i = 0; i < TEXTURE_COUNT; ++i)
         // found the texture to get?
         if (pKey == g_ID[i].m_pKey)
             return &g_ID[i];
@@ -196,7 +198,7 @@ void OnDeleteTexture(const CSR_Texture* pTexture)
     size_t i;
 
     // iterate through resource ids
-    for (i = 0; i < 3; ++i)
+    for (i = 0; i < TEXTURE_COUNT; ++i)
         // found the texture to delete?
         if (pTexture == g_ID[i].m_pKey)
         {
@@ -863,7 +865,7 @@ void on_GLES2_Init(int view_w, int view_h)
     g_ID[3].m_ID       = csrOpenGLTextureFromPixelBuffer(pPixelBuffer);
     g_ID[3].m_UseCount = 1;
 
-    // goal texture will no longer be used
+    // the You Won texture will no longer be used
     csrPixelBufferRelease(pPixelBuffer);
 
     // initialize the You Won matrix

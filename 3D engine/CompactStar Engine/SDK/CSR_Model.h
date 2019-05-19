@@ -671,7 +671,8 @@ typedef void (*CSR_fOnApplySkin)(size_t index, const CSR_Skin* pSkin, int* pCanR
 
         /**
         * Creates a cylinder
-        *@param radius - cylinder radius
+        *@param minRadius - minimum cylinder radius
+        *@param maxRadius - maximum cylinder radius
         *@param height - cylinder height
         *@param faces - number of faces composing the cylinder
         *@param pVertFormat - mesh vertex format, if 0 the default format will be used
@@ -681,7 +682,8 @@ typedef void (*CSR_fOnApplySkin)(size_t index, const CSR_Skin* pSkin, int* pCanR
         *@return mesh containing the cylinder, 0 on error
         *@note The mesh must be released when no longer used, see csrMeshRelease()
         */
-        CSR_Mesh* csrShapeCreateCylinder(float                 radius,
+        CSR_Mesh* csrShapeCreateCylinder(float                 minRadius,
+                                         float                 maxRadius,
                                          float                 height,
                                          int                   faces,
                                    const CSR_VertexFormat*     pVertFormat,

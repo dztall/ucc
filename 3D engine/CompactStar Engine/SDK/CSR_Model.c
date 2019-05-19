@@ -770,7 +770,8 @@ CSR_Mesh* csrShapeCreateSphere(float                 radius,
     return pMesh;
 }
 //---------------------------------------------------------------------------
-CSR_Mesh* csrShapeCreateCylinder(float                 radius,
+CSR_Mesh* csrShapeCreateCylinder(float                 minRadius,
+                                 float                 maxRadius,
                                  float                 height,
                                  int                   faces,
                            const CSR_VertexFormat*     pVertFormat,
@@ -833,9 +834,9 @@ CSR_Mesh* csrShapeCreateCylinder(float                 radius,
         angle = step * i;
 
         // set vertex data
-        vertex.m_X =   radius * cosf(angle);
-        vertex.m_Y = -(height / 2.0f);
-        vertex.m_Z =   radius * sinf(angle);
+        vertex.m_X =   minRadius * cosf(angle);
+        vertex.m_Y = -(height    / 2.0f);
+        vertex.m_Z =   minRadius * sinf(angle);
 
         // vertex has a normal?
         if (pMesh->m_pVB->m_Format.m_HasNormal)
@@ -868,9 +869,9 @@ CSR_Mesh* csrShapeCreateCylinder(float                 radius,
         csrVertexBufferAdd(&vertex, &normal, &uv, i * 2, fOnGetVertexColor, pMesh->m_pVB);
 
         // set vertex data
-        vertex.m_X =  radius * cosf(angle);
-        vertex.m_Y = (height / 2.0f);
-        vertex.m_Z =  radius * sinf(angle);
+        vertex.m_X =  maxRadius * cosf(angle);
+        vertex.m_Y = (height    / 2.0f);
+        vertex.m_Z =  maxRadius * sinf(angle);
 
         // vertex has a normal?
         if (pMesh->m_pVB->m_Format.m_HasNormal)

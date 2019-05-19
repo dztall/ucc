@@ -22,7 +22,7 @@
 //---------------------------------------------------------------------------
 // Global defines
 //---------------------------------------------------------------------------
-#define M_CSR_Version        0.1
+#define M_CSR_Version        1.04
 #define M_CSR_Error_Code     0xFFFFFFFF // yes this is a 32 bit error code, but enough for this engine
 #define M_CSR_Unknown_Index -1
 #define M_CSR_Epsilon        1.0E-3     // epsilon value used for tolerance
