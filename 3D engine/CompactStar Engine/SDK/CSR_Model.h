@@ -121,29 +121,21 @@ typedef enum
 } CSR_EAnimKeyType;
 
 //---------------------------------------------------------------------------
-// Prototypes
-//---------------------------------------------------------------------------
-
-typedef struct CSR_Bone         CSR_Bone;
-typedef struct CSR_Skin_Weights CSR_Skin_Weights;
-typedef struct CSR_Item_X       CSR_Item_X;
-
-//---------------------------------------------------------------------------
 // Structures
 //---------------------------------------------------------------------------
 
 /**
 * Bone, it's a hierarchical local transformation to apply to a mesh
 */
-struct CSR_Bone
+typedef struct CSR_tagBone
 {
-    char*       m_pName;         // bone name
-    CSR_Matrix4 m_Matrix;        // matrix containing the bone transformation to apply
-    CSR_Bone*   m_pParent;       // bone parent, root bone if 0
-    CSR_Bone*   m_pChildren;     // bone children
-    size_t      m_ChildrenCount; // bone children count
-    void*       m_pCustomData;   // additional custom data. Be careful, this data isn't released internally
-};
+           char*        m_pName;         // bone name
+           CSR_Matrix4  m_Matrix;        // matrix containing the bone transformation to apply
+    struct CSR_tagBone* m_pParent;       // bone parent, root bone if 0
+    struct CSR_tagBone* m_pChildren;     // bone children
+           size_t       m_ChildrenCount; // bone children count
+           void*        m_pCustomData;   // additional custom data. Be careful, this data isn't released internally
+} CSR_Bone;
 
 /**
 * Skin weights index table
@@ -157,7 +149,7 @@ typedef struct
 /**
 * Skin weights, it's a group of vertices influenced by a bone
 */
-struct CSR_Skin_Weights
+typedef struct
 {
     char*                        m_pBoneName;       // linked bone name
     CSR_Bone*                    m_pBone;           // linked bone
@@ -167,7 +159,7 @@ struct CSR_Skin_Weights
     size_t                       m_IndexTableCount; // mesh indices count
     float*                       m_pWeights;        // weights indicating the bone influence on vertices, between 0.0f and 1.0f
     size_t                       m_WeightCount;     // weight count
-};
+} CSR_Skin_Weights;
 
 /**
 * Animation key, may be a rotation, a translation, a scale, a matrix, ...
@@ -571,16 +563,16 @@ typedef struct
 /**
 * X item
 */
-struct CSR_Item_X
+typedef struct CSR_tagItemX
 {
-    CSR_EDataStructID_X m_ID;
-    CSR_Item_X*         m_pParent;
-    CSR_Item_X*         m_pChildren;
-    size_t              m_ChildrenCount;
-    void*               m_pData;
-    int                 m_Opened;
-    int                 m_ContentRead;
-};
+           CSR_EDataStructID_X m_ID;
+    struct CSR_tagItemX*       m_pParent;
+    struct CSR_tagItemX*       m_pChildren;
+           size_t              m_ChildrenCount;
+           void*               m_pData;
+           int                 m_Opened;
+           int                 m_ContentRead;
+} CSR_Item_X;
 
 //---------------------------------------------------------------------------
 // Callbacks

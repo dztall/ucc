@@ -22,27 +22,20 @@
 #include "CSR_Vertex.h"
 
 //---------------------------------------------------------------------------
-// Prototypes
-//---------------------------------------------------------------------------
-
-// Aligned-axis bounding box tree node prototype
-typedef struct CSR_AABBNode CSR_AABBNode;
-
-//---------------------------------------------------------------------------
 // Structures
 //---------------------------------------------------------------------------
 
 /**
 * Aligned-axis bounding box tree node
 */
-struct CSR_AABBNode
+typedef struct CSR_tagAABBNode
 {
-    CSR_AABBNode*             m_pParent;
-    CSR_AABBNode*             m_pLeft;
-    CSR_AABBNode*             m_pRight;
-    CSR_Box*                  m_pBox;
-    CSR_IndexedPolygonBuffer* m_pPolygonBuffer;
-};
+    struct CSR_tagAABBNode*          m_pParent;
+    struct CSR_tagAABBNode*          m_pLeft;
+    struct CSR_tagAABBNode*          m_pRight;
+           CSR_Box*                  m_pBox;
+           CSR_IndexedPolygonBuffer* m_pPolygonBuffer;
+} CSR_AABBNode;
 
 #ifdef __cplusplus
     extern "C"
