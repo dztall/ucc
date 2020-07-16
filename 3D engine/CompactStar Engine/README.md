@@ -14,6 +14,7 @@ The CompactStar engine is a tiny game engine I'm using for my own purposes. On t
 - Collision detection (partially, ground and mouse collision)
 - Particles system (early stage, see the Weather demo and Spaceship game demo)
 - Physics (early stage, see the Wild Soccer demo)
+- Artificial intelligence (early stage, see the Bot demo)
 - Sound and music
 - Cross-platform SDK written in C
 - Objective-C Metal renderer for OSX/iOS (experimental)
