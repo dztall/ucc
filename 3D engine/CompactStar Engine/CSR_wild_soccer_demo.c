@@ -64,8 +64,8 @@
 #define FOOT_STEP_RIGHT_SOUND_FILE "Resources/footstep_right.wav"
 #define BALL_KICK_SOUND_FILE       "Resources/soccer_ball_kick.wav"
 
-// energy factor for the shoot
-#define M_ShootEnergyFactor 23.0f
+// energy factor for the shoot. NOTE should be 23.0 for iPhone 6s and 26.0 for iPhone 11
+#define M_ShootEnergyFactor 26.0f
 
 #define TEXTURE_COUNT 5
 

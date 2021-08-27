@@ -111,18 +111,26 @@ int csrMathBetween(float value, float rangeStart, float rangeEnd, float toleranc
 void csrMathRound(float value, float* pR)
 {
     if (value < 0.0f)
-        *pR = ceil(value - 0.5f);
+        #ifdef __CODEGEARC__
+            *pR = ceil(value - 0.5f);
+        #else
+            *pR = ceilf(value - 0.5f);
+        #endif
     else
-        *pR = floor(value + 0.5f);
+        #ifdef __CODEGEARC__
+            *pR = floor(value + 0.5f);
+        #else
+            *pR = floorf(value + 0.5f);
+        #endif
 }
 //----------------------------------------------------------------------------
 void csrMathRoundToExp(float value, unsigned exp, float* pR)
 {
-    const float power = value * pow(10.0f, exp);
+    const float power = value * powf(10.0f, (float)exp);
 
     csrMathRound(power, pR);
 
-    *pR *= pow(0.1f, exp);
+    *pR *= powf(0.1f, (float)exp);
 }
 //---------------------------------------------------------------------------
 // Color functions
@@ -195,7 +203,7 @@ void csrArrayRelease(CSR_Array* pArray)
     {
         size_t i;
 
-        // iterate through each item and free his content
+        // iterate through each item and free its content
         for (i = 0; i < pArray->m_Count; ++i)
             // do free the item content?
             if (pArray->m_pItem[i].m_AutoFree)
@@ -500,7 +508,11 @@ size_t csrFileSize(const char* pFileName)
     size_t fileSize;
 
     // open the file
-    pFile = fopen(pFileName, "rb");
+    #ifdef _MSC_VER
+        fopen_s(&pFile, pFileName, "rb");
+    #else
+        pFile = fopen(pFileName, "rb");
+    #endif
 
     // succeeded?
     if (!pFile)
@@ -531,7 +543,11 @@ CSR_Buffer* csrFileOpen(const char* pFileName)
         return 0;
 
     // open the file
-    pFile = fopen(pFileName, "rb");
+    #ifdef _MSC_VER
+        fopen_s(&pFile, pFileName, "rb");
+    #else
+        pFile = fopen(pFileName, "rb");
+    #endif
 
     // succeeded?
     if (!pFile)
@@ -595,7 +611,11 @@ int csrFileSave(const char* pFileName, const CSR_Buffer* pBuffer)
         return 0;
 
     // open the file
-    pFile = fopen(pFileName, "wb");
+    #ifdef _MSC_VER
+        fopen_s(&pFile, pFileName, "wb");
+    #else
+        pFile = fopen(pFileName, "wb");
+    #endif
 
     // succeeded?
     if (!pFile)

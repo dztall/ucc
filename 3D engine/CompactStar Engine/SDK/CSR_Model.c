@@ -20,6 +20,12 @@
 #include <math.h>
 #include <string.h>
 
+// visual studio specific code
+#ifdef _MSC_VER
+    #define _USE_MATH_DEFINES
+    #include <math.h>
+#endif
+
 // this code is EXPERIMENTAL and should be STRONGLY TESTED on big endian machines before be activated
 #define CONVERT_ENDIANNESS
 
@@ -291,12 +297,21 @@ CSR_Mesh* csrShapeCreateSurface(float                 width,
                           const CSR_Material*         pMaterial,
                           const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
-    int         i;
-    int         index;
-    CSR_Mesh*   pMesh;
-    CSR_Vector3 vertex;
-    CSR_Vector3 normal;
-    CSR_Vector2 uv;
+    #ifdef _MSC_VER
+        int         i;
+        int         index;
+        CSR_Mesh*   pMesh  = {0};
+        CSR_Vector3 vertex = {0};
+        CSR_Vector3 normal = {0};
+        CSR_Vector2 uv     = {0};
+    #else
+        int         i;
+        int         index;
+        CSR_Mesh*   pMesh;
+        CSR_Vector3 vertex;
+        CSR_Vector3 normal;
+        CSR_Vector2 uv;
+    #endif
 
     // create a buffer template: 0 for negative values, 1 for positive
     const int bufferTemplate[] =
@@ -409,16 +424,24 @@ CSR_Mesh* csrShapeCreateBox(float                 width,
                       const CSR_Material*         pMaterial,
                       const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
-    size_t      i;
-    CSR_Vector3 vertices[8];
-    CSR_Vector3 normals[6];
-    CSR_Vector2 texCoords[24];
-    CSR_Mesh*   pMesh;
+    #ifdef _MSC_VER
+        size_t      i;
+        CSR_Vector3 vertices[8]   = {0};
+        CSR_Vector3 normals[6]    = {0};
+        CSR_Vector2 texCoords[24] = {0};
+        CSR_Mesh*   pMesh;
+    #else
+        size_t      i;
+        CSR_Vector3 vertices[8];
+        CSR_Vector3 normals[6];
+        CSR_Vector2 texCoords[24];
+        CSR_Mesh*   pMesh;
+    #endif
 
     // calculate half values
-    const float halfX = width  / 2.0;
-    const float halfY = height / 2.0;
-    const float halfZ = depth  / 2.0;
+    const float halfX = width  / 2.0f;
+    const float halfY = height / 2.0f;
+    const float halfZ = depth  / 2.0f;
 
     // create a new mesh for the box
     pMesh = csrMeshCreate();
@@ -533,7 +556,7 @@ CSR_Mesh* csrShapeCreateBox(float                 width,
     else
     {
         // calculate texture offset
-        const float texOffset = 1.0 / 3.0;
+        const float texOffset = 1.0f / 3.0f;
 
         // calculate texture positions. They are distributed as follow:
         // -------------------
@@ -549,30 +572,30 @@ CSR_Mesh* csrShapeCreateBox(float                 width,
         // |  area is not    |
         // |  used           |
         // -------------------
-        texCoords[0].m_X  = 0.0;             texCoords[0].m_Y  = texOffset;
-        texCoords[1].m_X  = 0.0;             texCoords[1].m_Y  = 0.0;
-        texCoords[2].m_X  = texOffset;       texCoords[2].m_Y  = texOffset;
-        texCoords[3].m_X  = texOffset;       texCoords[3].m_Y  = 0.0;
-        texCoords[4].m_X  = texOffset;       texCoords[4].m_Y  = texOffset;
-        texCoords[5].m_X  = texOffset;       texCoords[5].m_Y  = 0.0;
-        texCoords[6].m_X  = texOffset * 2.0; texCoords[6].m_Y  = texOffset;
-        texCoords[7].m_X  = texOffset * 2.0; texCoords[7].m_Y  = 0.0;
-        texCoords[8].m_X  = texOffset * 2.0; texCoords[8].m_Y  = texOffset;
-        texCoords[9].m_X  = texOffset * 2.0; texCoords[9].m_Y  = 0.0;
-        texCoords[10].m_X = 1.0;             texCoords[10].m_Y = texOffset;
-        texCoords[11].m_X = 1.0;             texCoords[11].m_Y = 0.0;
-        texCoords[12].m_X = 0.0;             texCoords[12].m_Y = texOffset * 2.0;
-        texCoords[13].m_X = 0.0;             texCoords[13].m_Y = texOffset;
-        texCoords[14].m_X = texOffset;       texCoords[14].m_Y = texOffset * 2.0;
-        texCoords[15].m_X = texOffset;       texCoords[15].m_Y = texOffset;
-        texCoords[16].m_X = texOffset;       texCoords[16].m_Y = texOffset * 2.0;
-        texCoords[17].m_X = texOffset;       texCoords[17].m_Y = texOffset;
-        texCoords[18].m_X = texOffset * 2.0; texCoords[18].m_Y = texOffset * 2.0;
-        texCoords[19].m_X = texOffset * 2.0; texCoords[19].m_Y = texOffset;
-        texCoords[20].m_X = texOffset * 2.0; texCoords[20].m_Y = texOffset * 2.0;
-        texCoords[21].m_X = texOffset * 2.0; texCoords[21].m_Y = texOffset;
-        texCoords[22].m_X = 1.0;             texCoords[22].m_Y = texOffset * 2.0;
-        texCoords[23].m_X = 1.0;             texCoords[23].m_Y = texOffset;
+        texCoords[0].m_X  = 0.0f;             texCoords[0].m_Y  = texOffset;
+        texCoords[1].m_X  = 0.0f;             texCoords[1].m_Y  = 0.0f;
+        texCoords[2].m_X  = texOffset;        texCoords[2].m_Y  = texOffset;
+        texCoords[3].m_X  = texOffset;        texCoords[3].m_Y  = 0.0f;
+        texCoords[4].m_X  = texOffset;        texCoords[4].m_Y  = texOffset;
+        texCoords[5].m_X  = texOffset;        texCoords[5].m_Y  = 0.0f;
+        texCoords[6].m_X  = texOffset * 2.0f; texCoords[6].m_Y  = texOffset;
+        texCoords[7].m_X  = texOffset * 2.0f; texCoords[7].m_Y  = 0.0f;
+        texCoords[8].m_X  = texOffset * 2.0f; texCoords[8].m_Y  = texOffset;
+        texCoords[9].m_X  = texOffset * 2.0f; texCoords[9].m_Y  = 0.0f;
+        texCoords[10].m_X = 1.0f;             texCoords[10].m_Y = texOffset;
+        texCoords[11].m_X = 1.0f;             texCoords[11].m_Y = 0.0f;
+        texCoords[12].m_X = 0.0f;             texCoords[12].m_Y = texOffset * 2.0f;
+        texCoords[13].m_X = 0.0f;             texCoords[13].m_Y = texOffset;
+        texCoords[14].m_X = texOffset;        texCoords[14].m_Y = texOffset * 2.0f;
+        texCoords[15].m_X = texOffset;        texCoords[15].m_Y = texOffset;
+        texCoords[16].m_X = texOffset;        texCoords[16].m_Y = texOffset * 2.0f;
+        texCoords[17].m_X = texOffset;        texCoords[17].m_Y = texOffset;
+        texCoords[18].m_X = texOffset * 2.0f; texCoords[18].m_Y = texOffset * 2.0f;
+        texCoords[19].m_X = texOffset * 2.0f; texCoords[19].m_Y = texOffset;
+        texCoords[20].m_X = texOffset * 2.0f; texCoords[20].m_Y = texOffset * 2.0f;
+        texCoords[21].m_X = texOffset * 2.0f; texCoords[21].m_Y = texOffset;
+        texCoords[22].m_X = 1.0f;             texCoords[22].m_Y = texOffset * 2.0f;
+        texCoords[23].m_X = 1.0f;             texCoords[23].m_Y = texOffset;
     }
 
     // create box edge 1
@@ -622,25 +645,47 @@ CSR_Mesh* csrShapeCreateSphere(float                 radius,
                          const CSR_Material*         pMaterial,
                          const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
-    int               i;
-    int               j;
-    float             majorStep;
-    float             minorStep;
-    float             a;
-    float             b;
-    float             r0;
-    float             r1;
-    float             z0;
-    float             z1;
-    float             c;
-    float             x;
-    float             y;
-    size_t            index;
-    CSR_Mesh*         pMesh;
-    CSR_VertexBuffer* pVB;
-    CSR_Vector3       vertex;
-    CSR_Vector3       normal;
-    CSR_Vector2       uv;
+    #ifdef _MSC_VER
+        int               i;
+        int               j;
+        float             majorStep;
+        float             minorStep;
+        float             a;
+        float             b;
+        float             r0;
+        float             r1;
+        float             z0;
+        float             z1;
+        float             c;
+        float             x;
+        float             y;
+        size_t            index;
+        CSR_Mesh*         pMesh;
+        CSR_VertexBuffer* pVB;
+        CSR_Vector3       vertex = {0};
+        CSR_Vector3       normal = {0};
+        CSR_Vector2       uv     = {0};
+    #else
+        int               i;
+        int               j;
+        float             majorStep;
+        float             minorStep;
+        float             a;
+        float             b;
+        float             r0;
+        float             r1;
+        float             z0;
+        float             z1;
+        float             c;
+        float             x;
+        float             y;
+        size_t            index;
+        CSR_Mesh*         pMesh;
+        CSR_VertexBuffer* pVB;
+        CSR_Vector3       vertex;
+        CSR_Vector3       normal;
+        CSR_Vector2       uv;
+    #endif
 
     // create a mesh to contain the shape
     pMesh = csrMeshCreate();
@@ -650,8 +695,8 @@ CSR_Mesh* csrShapeCreateSphere(float                 radius,
         return 0;
 
     // initialize global values
-    majorStep = (M_PI          / slices);
-    minorStep = ((2.0f * M_PI) / stacks);
+    majorStep = ((float)M_PI         / slices);
+    minorStep = ((float)(2.0 * M_PI) / stacks);
 
     // iterate through vertex slices
     for (i = 0; i < slices; ++i)
@@ -779,13 +824,23 @@ CSR_Mesh* csrShapeCreateCylinder(float                 minRadius,
                            const CSR_Material*         pMaterial,
                            const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
-    int         i;
-    float       angle;
-    float       step;
-    CSR_Vector3 vertex;
-    CSR_Vector3 normal;
-    CSR_Vector2 uv;
-    CSR_Mesh*   pMesh;
+    #ifdef _MSC_VER
+        int         i;
+        float       angle;
+        float       step;
+        CSR_Vector3 vertex = {0};
+        CSR_Vector3 normal = {0};
+        CSR_Vector2 uv     = {0};
+        CSR_Mesh*   pMesh  = {0};
+    #else
+        int         i;
+        float       angle;
+        float       step;
+        CSR_Vector3 vertex;
+        CSR_Vector3 normal;
+        CSR_Vector2 uv;
+        CSR_Mesh*   pMesh;
+    #endif
 
     // create a mesh to contain the shape
     pMesh = csrMeshCreate();
@@ -825,7 +880,7 @@ CSR_Mesh* csrShapeCreateCylinder(float                 minRadius,
     csrVertexFormatCalculateStride(&pMesh->m_pVB->m_Format);
 
     // calculate step to apply between faces
-    step = (2.0f * M_PI) / (float)faces;
+    step = (float)(2.0 * M_PI) / (float)faces;
 
     // iterate through vertices to create
     for (i = 0; i < faces + 1; ++i)
@@ -916,15 +971,27 @@ CSR_Mesh* csrShapeCreateDisk(float                 centerX,
                        const CSR_Material*         pMaterial,
                        const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
-    unsigned    i;
-    float       x;
-    float       y;
-    float       step;
-    float       angle;
-    CSR_Vector3 vertex;
-    CSR_Vector3 normal;
-    CSR_Vector2 uv;
-    CSR_Mesh*   pMesh;
+    #ifdef _MSC_VER
+        unsigned    i;
+        float       x;
+        float       y;
+        float       step;
+        float       angle;
+        CSR_Vector3 vertex = {0};
+        CSR_Vector3 normal = {0};
+        CSR_Vector2 uv     = {0};
+        CSR_Mesh*   pMesh;
+    #else
+        unsigned    i;
+        float       x;
+        float       y;
+        float       step;
+        float       angle;
+        CSR_Vector3 vertex;
+        CSR_Vector3 normal;
+        CSR_Vector2 uv;
+        CSR_Mesh*   pMesh;
+    #endif
 
     // create a mesh to contain the shape
     pMesh = csrMeshCreate();
@@ -970,7 +1037,7 @@ CSR_Mesh* csrShapeCreateDisk(float                 centerX,
     csrVertexFormatCalculateStride(&pMesh->m_pVB->m_Format);
 
     // calculate the slice step
-    step = (2.0f * M_PI) / (float)slices;
+    step = (float)(2.0 * M_PI) / (float)slices;
 
     // iterate through disk slices to create
     for (i = 0; i <= slices + 1; ++i)
@@ -990,8 +1057,8 @@ CSR_Mesh* csrShapeCreateDisk(float                 centerX,
             angle = step * (float)(i - 1);
 
             // calculate the slice point
-            x = centerX + radius * cos(angle);
-            y = centerY + radius * sin(angle);
+            x = centerX + radius * cosf(angle);
+            y = centerY + radius * sinf(angle);
         }
 
         // add min point in buffer
@@ -1018,8 +1085,8 @@ CSR_Mesh* csrShapeCreateDisk(float                 centerX,
             }
             else
             {
-                uv.m_X = 0.5f + (cos(angle) * 0.5f);
-                uv.m_Y = 0.5f + (sin(angle) * 0.5f);
+                uv.m_X = 0.5f + (cosf(angle) * 0.5f);
+                uv.m_Y = 0.5f + (sinf(angle) * 0.5f);
             }
 
         // add the vertex to the buffer
@@ -1039,18 +1106,33 @@ CSR_Mesh* csrShapeCreateRing(float                 centerX,
                        const CSR_Material*         pMaterial,
                        const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
-    unsigned    i;
-    float       xA;
-    float       yA;
-    float       xB;
-    float       yB;
-    float       step;
-    float       angle;
-    float       texU;
-    CSR_Vector3 vertex;
-    CSR_Vector3 normal;
-    CSR_Vector2 uv;
-    CSR_Mesh*   pMesh;
+    #ifdef _MSC_VER
+        unsigned    i;
+        float       xA;
+        float       yA;
+        float       xB;
+        float       yB;
+        float       step;
+        float       angle;
+        float       texU;
+        CSR_Vector3 vertex = {0};
+        CSR_Vector3 normal = {0};
+        CSR_Vector2 uv     = {0};
+        CSR_Mesh*   pMesh;
+    #else
+        unsigned    i;
+        float       xA;
+        float       yA;
+        float       xB;
+        float       yB;
+        float       step;
+        float       angle;
+        float       texU;
+        CSR_Vector3 vertex;
+        CSR_Vector3 normal;
+        CSR_Vector2 uv;
+        CSR_Mesh*   pMesh;
+    #endif
 
     // create a mesh to contain the shape
     pMesh = csrMeshCreate();
@@ -1096,7 +1178,7 @@ CSR_Mesh* csrShapeCreateRing(float                 centerX,
     csrVertexFormatCalculateStride(&pMesh->m_pVB->m_Format);
 
     // calculate the slice step
-    step = (2.0f * M_PI) / (float)slices;
+    step = (float)(2.0 * M_PI) / (float)slices;
 
     // iterate through ring slices to create
     for (i = 0; i <= slices; ++i)
@@ -1105,12 +1187,12 @@ CSR_Mesh* csrShapeCreateRing(float                 centerX,
         angle = step * (float)i;
 
         // calculate the slice min point
-        xA = centerX + minRadius * cos(angle);
-        yA = centerY - minRadius * sin(angle);
+        xA = centerX + minRadius * cosf(angle);
+        yA = centerY - minRadius * sinf(angle);
 
         // calculate the slice max point
-        xB = centerX + maxRadius * cos(angle);
-        yB = centerY - maxRadius * sin(angle);
+        xB = centerX + maxRadius * cosf(angle);
+        yB = centerY - maxRadius * sinf(angle);
 
         // calculate texture u coordinate
         if (!i)
@@ -1189,22 +1271,41 @@ CSR_Mesh* csrShapeCreateSpiral(float                 centerX,
                          const CSR_Material*         pMaterial,
                          const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
-    unsigned          i;
-    unsigned          j;
-    float             xA;
-    float             yA;
-    float             xB;
-    float             yB;
-    float             step;
-    float             angle;
-    float             z;
-    float             texU;
-    size_t            index;
-    CSR_Vector3       vertex;
-    CSR_Vector3       normal;
-    CSR_Vector2       uv;
-    CSR_Mesh*         pMesh;
-    CSR_VertexBuffer* pVB;
+    #ifdef _MSC_VER
+        unsigned          i;
+        unsigned          j;
+        float             xA;
+        float             yA;
+        float             xB;
+        float             yB;
+        float             step;
+        float             angle;
+        float             z;
+        float             texU;
+        size_t            index;
+        CSR_Vector3       vertex = {0};
+        CSR_Vector3       normal = {0};
+        CSR_Vector2       uv     = {0};
+        CSR_Mesh*         pMesh;
+        CSR_VertexBuffer* pVB;
+    #else
+        unsigned          i;
+        unsigned          j;
+        float             xA;
+        float             yA;
+        float             xB;
+        float             yB;
+        float             step;
+        float             angle;
+        float             z;
+        float             texU;
+        size_t            index;
+        CSR_Vector3       vertex;
+        CSR_Vector3       normal;
+        CSR_Vector2       uv;
+        CSR_Mesh*         pMesh;
+        CSR_VertexBuffer* pVB;
+    #endif
 
     // create a mesh to contain the shape
     pMesh = csrMeshCreate();
@@ -1214,7 +1315,7 @@ CSR_Mesh* csrShapeCreateSpiral(float                 centerX,
         return 0;
 
     // calculate the slice step
-    step = (2.0f * M_PI) / (float)slices;
+    step = (float)(2.0 * M_PI) / (float)slices;
     z    =  0.0f;
 
     // iterate through spiral stacks to create
@@ -1273,12 +1374,12 @@ CSR_Mesh* csrShapeCreateSpiral(float                 centerX,
             angle = step * (float)j;
 
             // calculate the slice min point
-            xA = centerX + minRadius * cos(angle);
-            yA = centerY + minRadius * sin(angle);
+            xA = centerX + minRadius * cosf(angle);
+            yA = centerY + minRadius * sinf(angle);
 
             // calculate the slice max point
-            xB = centerX + maxRadius * cos(angle);
-            yB = centerY + maxRadius * sin(angle);
+            xB = centerX + maxRadius * cosf(angle);
+            yB = centerY + maxRadius * sinf(angle);
 
             // calculate the spiral curve
             minRadius += deltaMin;
@@ -1370,7 +1471,11 @@ CSR_Mesh* csrShapeCreateSpiral(float                 centerX,
 //---------------------------------------------------------------------------
 CSR_Mesh* csrSkyboxCreate(float width, float height, float depth)
 {
-    CSR_VertexCulling vc;
+    #ifdef _MSC_VER
+        CSR_VertexCulling vc = {0};
+    #else
+        CSR_VertexCulling vc;
+    #endif
     #ifdef CSR_USE_METAL
         CSR_VertexFormat vf;
     #endif
@@ -1818,28 +1923,53 @@ int csrAnimationGetMatrix(const CSR_AnimationSet* pAnimSet,
     // iterate through animations
     for (i = 0; i < pAnimSet->m_Count; ++i)
     {
-        size_t         rotFrame;
-        size_t         nextRotFrame;
-        size_t         posFrame;
-        size_t         nextPosFrame;
-        size_t         scaleFrame;
-        size_t         nextScaleFrame;
-        float          frameDelta;
-        float          frameLength;
-        float          interpolation;
-        CSR_Quaternion rotation;
-        CSR_Quaternion nextRotation;
-        CSR_Quaternion finalRotation;
-        CSR_Vector3    position;
-        CSR_Vector3    nextPosition;
-        CSR_Vector3    finalPosition;
-        CSR_Vector3    scaling;
-        CSR_Vector3    nextScaling;
-        CSR_Vector3    finalScaling;
-        CSR_Matrix4    scaleMatrix;
-        CSR_Matrix4    rotateMatrix;
-        CSR_Matrix4    translateMatrix;
-        CSR_Matrix4    buildMatrix;
+        #ifdef _MSC_VER
+            size_t         rotFrame;
+            size_t         nextRotFrame;
+            size_t         posFrame;
+            size_t         nextPosFrame;
+            size_t         scaleFrame;
+            size_t         nextScaleFrame;
+            float          frameDelta;
+            float          frameLength;
+            float          interpolation;
+            CSR_Quaternion rotation        = {0};
+            CSR_Quaternion nextRotation    = {0};
+            CSR_Quaternion finalRotation   = {0};
+            CSR_Vector3    position        = {0};
+            CSR_Vector3    nextPosition    = {0};
+            CSR_Vector3    finalPosition   = {0};
+            CSR_Vector3    scaling         = {0};
+            CSR_Vector3    nextScaling     = {0};
+            CSR_Vector3    finalScaling    = {0};
+            CSR_Matrix4    scaleMatrix     = {0};
+            CSR_Matrix4    rotateMatrix    = {0};
+            CSR_Matrix4    translateMatrix = {0};
+            CSR_Matrix4    buildMatrix     = {0};
+        #else
+            size_t         rotFrame;
+            size_t         nextRotFrame;
+            size_t         posFrame;
+            size_t         nextPosFrame;
+            size_t         scaleFrame;
+            size_t         nextScaleFrame;
+            float          frameDelta;
+            float          frameLength;
+            float          interpolation;
+            CSR_Quaternion rotation;
+            CSR_Quaternion nextRotation;
+            CSR_Quaternion finalRotation;
+            CSR_Vector3    position;
+            CSR_Vector3    nextPosition;
+            CSR_Vector3    finalPosition;
+            CSR_Vector3    scaling;
+            CSR_Vector3    nextScaling;
+            CSR_Vector3    finalScaling;
+            CSR_Matrix4    scaleMatrix;
+            CSR_Matrix4    rotateMatrix;
+            CSR_Matrix4    translateMatrix;
+            CSR_Matrix4    buildMatrix;
+        #endif
 
         // found the animation matching with the bone for which the matrix should be get?
         if (pAnimSet->m_pAnimation[i].m_pBone != pBone)
@@ -1971,17 +2101,17 @@ int csrAnimationGetMatrix(const CSR_AnimationSet* pAnimSet,
         }
 
         // calculate the frame delta, the frame length and the interpolation for the rotation
-        frameDelta    = frame        - rotFrame;
-        frameLength   = nextRotFrame - rotFrame;
-        interpolation = frameDelta   / frameLength;
+        frameDelta    = (float)(frame        - rotFrame);
+        frameLength   = (float)(nextRotFrame - rotFrame);
+        interpolation = frameDelta / frameLength;
 
         // interpolate the rotation
         csrQuatSlerp(&rotation, &nextRotation, interpolation, &finalRotation);
 
         // calculate the frame delta, the frame length and the interpolation for the scaling
-        frameDelta    = frame          - scaleFrame;
-        frameLength   = nextScaleFrame - scaleFrame;
-        interpolation = frameDelta     / frameLength;
+        frameDelta    = (float)(frame          - scaleFrame);
+        frameLength   = (float)(nextScaleFrame - scaleFrame);
+        interpolation = frameDelta / frameLength;
 
         // interpolate the scaling
         finalScaling.m_X = scaling.m_X + ((nextScaling.m_X - scaling.m_X) * interpolation);
@@ -1989,9 +2119,9 @@ int csrAnimationGetMatrix(const CSR_AnimationSet* pAnimSet,
         finalScaling.m_Z = scaling.m_Z + ((nextScaling.m_Z - scaling.m_Z) * interpolation);
 
         // calculate the frame delta, the frame length and the interpolation for the rotation
-        frameDelta    = frame        - posFrame;
-        frameLength   = nextPosFrame - posFrame;
-        interpolation = frameDelta   / frameLength;
+        frameDelta    = (float)(frame        - posFrame);
+        frameLength   = (float)(nextPosFrame - posFrame);
+        interpolation = frameDelta / frameLength;
 
         // interpolate the position
         finalPosition.m_X = position.m_X + ((nextPosition.m_X - position.m_X) * interpolation);
@@ -2361,7 +2491,7 @@ CSR_MDL* csrMDLCreate(const CSR_Buffer*           pBuffer,
             if (fOnApplySkin)
                 fOnApplySkin(i, &pMDL->m_pSkin[i], &canRelease);
 
-            // can release the skin content? (NOTE the skin texture, bumpmap and cubemap members can
+            // can release the skin content? (NOTE the skin texture, bump map and cubemap members can
             // still be used as keys even after their content is released)
             if (canRelease)
             {
@@ -2401,9 +2531,30 @@ CSR_MDL* csrMDLCreate(const CSR_Buffer*           pBuffer,
         // the frame group contains at least 1 sub-frame?
         if (pFrameGroup[i].m_Count > 0)
         {
-            // get the skin name
             memset(skinName, 0x0, skinNameLength);
-            strcpy(skinName, pFrameGroup[i].m_pFrame[0].m_Name);
+
+            // get the skin name
+            #ifdef _MSC_VER
+                if (skinName)
+                    strcpy_s(skinName, skinNameLength, pFrameGroup[i].m_pFrame[0].m_Name);
+
+                // reset the array content to 0x0 after the string end mark (required to find the animation group below)
+                for (j = 0; j < skinNameLength; ++j)
+                {
+                    // calculate the skin name index
+                    skinNameIndex = (unsigned)((skinNameLength - 1) - j);
+
+                    if (skinName[skinNameIndex] != 0x0)
+                    {
+                        skinName[skinNameIndex] = 0x0;
+                        continue;
+                    }
+
+                    break;
+                }
+            #else
+                strcpy(skinName, pFrameGroup[i].m_pFrame[0].m_Name);
+            #endif
 
             // revert iterate through the skin name and remove all the trailing numbers
             for (j = 0; j < skinNameLength; ++j)
@@ -3143,8 +3294,13 @@ void csrMDLUncompressVertex(const CSR_MDLHeader* pHeader,
                             const CSR_MDLVertex* pVertex,
                                   CSR_Vector3*   pResult)
 {
-    unsigned i;
-    float    vertex[3];
+    #ifdef _MSC_VER
+        unsigned i;
+        float    vertex[3] = {0};
+    #else
+        unsigned i;
+        float    vertex[3];
+    #endif
 
     // iterate through vertex coordinates
     for (i = 0; i < 3; ++i)
@@ -3167,14 +3323,25 @@ void csrMDLPopulateModel(const CSR_MDLHeader*        pHeader,
                          const CSR_fOnGetVertexColor fOnGetVertexColor,
                                CSR_Model*            pModel)
 {
-    int            i;
-    size_t         j;
-    size_t         k;
-    CSR_Vector3    vertex;
-    CSR_Vector3    normal;
-    CSR_Vector2    uv;
-    CSR_MDLVertex* pSrcVertex;
-    double         lastKnownTime = 0.0;
+    #ifdef _MSC_VER
+        int            i;
+        size_t         j;
+        size_t         k;
+        CSR_Vector3    vertex        = {0};
+        CSR_Vector3    normal        = {0};
+        CSR_Vector2    uv            = {0};
+        CSR_MDLVertex* pSrcVertex;
+        double         lastKnownTime = 0.0;
+    #else
+        int            i;
+        size_t         j;
+        size_t         k;
+        CSR_Vector3    vertex;
+        CSR_Vector3    normal;
+        CSR_Vector2    uv;
+        CSR_MDLVertex* pSrcVertex;
+        double         lastKnownTime = 0.0;
+    #endif
 
     // any MDL source is missing?
     if (!pHeader || !pFrameGroup || !pPolygon || !pTexCoord)
@@ -3265,8 +3432,8 @@ void csrMDLPopulateModel(const CSR_MDLHeader*        pHeader,
                 normal.m_Z  = g_NormalTable[pSrcVertex->m_NormalIndex + 2];
 
                 // get vertex texture coordinates
-                uv.m_X = pTexCoord[pPolygon[j].m_VertexIndex[k]].m_U;
-                uv.m_Y = pTexCoord[pPolygon[j].m_VertexIndex[k]].m_V;
+                uv.m_X = (float)pTexCoord[pPolygon[j].m_VertexIndex[k]].m_U;
+                uv.m_Y = (float)pTexCoord[pPolygon[j].m_VertexIndex[k]].m_V;
 
                 // is texture coordinate on the back face?
                 if (!pPolygon[j].m_FacesFront && pTexCoord[pPolygon[j].m_VertexIndex[k]].m_OnSeam)
@@ -3274,8 +3441,8 @@ void csrMDLPopulateModel(const CSR_MDLHeader*        pHeader,
                     uv.m_X += pHeader->m_SkinWidth * 0.5f;
 
                 // scale s and t to range from 0.0 to 1.0
-                uv.m_X = (uv.m_X + 0.5) / pHeader->m_SkinWidth;
-                uv.m_Y = (uv.m_Y + 0.5) / pHeader->m_SkinHeight;
+                uv.m_X = (uv.m_X + 0.5f) / pHeader->m_SkinWidth;
+                uv.m_Y = (uv.m_Y + 0.5f) / pHeader->m_SkinHeight;
 
                 // add vertex to frame buffer
                 if (!csrVertexBufferAdd(&vertex,
@@ -3551,14 +3718,6 @@ void csrWaveFrontReadComment(const CSR_Buffer* pBuffer, char* pChar, size_t* pIn
         // go to next char
         ++(*pIndex);
         *pChar = ((char*)pBuffer->m_pData)[*pIndex];
-
-        // skip all following separators
-        while (*pChar == ' ' && *pChar == '\r' && *pChar == '\n' && *pIndex < pBuffer->m_Length)
-        {
-            // go to next char
-            ++(*pIndex);
-            *pChar = ((char*)pBuffer->m_pData)[*pIndex];
-        }
     }
 }
 //---------------------------------------------------------------------------
@@ -3567,9 +3726,15 @@ void csrWaveFrontReadVertex(const CSR_Buffer*          pBuffer,
                                   size_t*              pIndex,
                                   CSR_WavefrontVertex* pVertex)
 {
-    char   line[256];
-    size_t lineIndex;
-    int    doExit;
+    #ifdef _MSC_VER
+        char   line[256] = {0};
+        size_t lineIndex;
+        int    doExit;
+    #else
+        char   line[256];
+        size_t lineIndex;
+        int    doExit;
+    #endif
 
     lineIndex = 0;
     doExit    = 0;
@@ -3585,15 +3750,7 @@ void csrWaveFrontReadVertex(const CSR_Buffer*          pBuffer,
                 doExit = 1;
 
             case ' ':
-                // skip all following separators
-                while (*pChar == ' ' && *pChar == '\r' && *pChar == '\n' && *pIndex < pBuffer->m_Length)
-                {
-                    // go to next char
-                    ++(*pIndex);
-                    *pChar = ((char*)pBuffer->m_pData)[*pIndex];
-                }
-
-                // somehing to parse?
+                // something to parse?
                 if (lineIndex)
                     csrWaveFrontConvertFloat(line, &pVertex->m_pData, &pVertex->m_Count);
 
@@ -3627,9 +3784,15 @@ void csrWaveFrontReadNormal(const CSR_Buffer*          pBuffer,
                                   size_t*              pIndex,
                                   CSR_WavefrontNormal* pNormal)
 {
-    char   line[256];
-    size_t lineIndex;
-    int    doExit;
+    #ifdef _MSC_VER
+        char   line[256] = {0};
+        size_t lineIndex;
+        int    doExit;
+    #else
+        char   line[256];
+        size_t lineIndex;
+        int    doExit;
+    #endif
 
     lineIndex = 0;
     doExit    = 0;
@@ -3645,15 +3808,7 @@ void csrWaveFrontReadNormal(const CSR_Buffer*          pBuffer,
                 doExit = 1;
 
             case ' ':
-                // skip all following separators
-                while (*pChar == ' ' && *pChar == '\r' && *pChar == '\n' && *pIndex < pBuffer->m_Length)
-                {
-                    // go to next char
-                    ++(*pIndex);
-                    *pChar = ((char*)pBuffer->m_pData)[*pIndex];
-                }
-
-                // somehing to parse?
+                // something to parse?
                 if (lineIndex)
                     csrWaveFrontConvertFloat(line, &pNormal->m_pData, &pNormal->m_Count);
 
@@ -3687,9 +3842,15 @@ void csrWaveFrontReadTextureCoordinate(const CSR_Buffer*            pBuffer,
                                              size_t*                pIndex,
                                              CSR_WavefrontTexCoord* pTexCoord)
 {
-    char   line[256];
-    size_t lineIndex;
-    int    doExit;
+    #ifdef _MSC_VER
+        char   line[256] = {0};
+        size_t lineIndex;
+        int    doExit;
+    #else
+        char   line[256];
+        size_t lineIndex;
+        int    doExit;
+    #endif
 
     lineIndex = 0;
     doExit    = 0;
@@ -3705,15 +3866,7 @@ void csrWaveFrontReadTextureCoordinate(const CSR_Buffer*            pBuffer,
                 doExit = 1;
 
             case ' ':
-                // skip all following separators
-                while (*pChar == ' ' && *pChar == '\r' && *pChar == '\n' && *pIndex < pBuffer->m_Length)
-                {
-                    // go to next char
-                    ++(*pIndex);
-                    *pChar = ((char*)pBuffer->m_pData)[*pIndex];
-                }
-
-                // somehing to parse?
+                // something to parse?
                 if (lineIndex)
                     csrWaveFrontConvertFloat(line, &pTexCoord->m_pData, &pTexCoord->m_Count);
 
@@ -3747,9 +3900,15 @@ void csrWaveFrontReadFace(const CSR_Buffer*        pBuffer,
                                 size_t*            pIndex,
                                 CSR_WavefrontFace* pFace)
 {
-    char   line[256];
-    size_t lineIndex;
-    int    doExit;
+    #ifdef _MSC_VER
+        char   line[256] = {0};
+        size_t lineIndex;
+        int    doExit;
+    #else
+        char   line[256];
+        size_t lineIndex;
+        int    doExit;
+    #endif
 
     lineIndex = 0;
     doExit    = 0;
@@ -3766,15 +3925,7 @@ void csrWaveFrontReadFace(const CSR_Buffer*        pBuffer,
 
             case ' ':
             case '/':
-                // skip all following separators
-                while (*pChar == ' ' && *pChar == '\r' && *pChar == '\n' && *pIndex < pBuffer->m_Length)
-                {
-                    // go to next char
-                    ++(*pIndex);
-                    *pChar = ((char*)pBuffer->m_pData)[*pIndex];
-                }
-
-                // somehing to parse?
+                // something to parse?
                 if (lineIndex)
                     csrWaveFrontConvertInt(line, &pFace->m_pData, &pFace->m_Count);
 
@@ -3811,14 +3962,6 @@ void csrWaveFrontReadUnknown(const CSR_Buffer* pBuffer, char* pChar, size_t* pIn
         // go to next char
         ++(*pIndex);
         *pChar = ((char*)pBuffer->m_pData)[*pIndex];
-
-        // skip all following separators
-        while (*pChar == ' ' && *pChar == '\r' && *pChar == '\n' && *pIndex < pBuffer->m_Length)
-        {
-            // go to next char
-            ++(*pIndex);
-            *pChar = ((char*)pBuffer->m_pData)[*pIndex];
-        }
     }
 }
 //---------------------------------------------------------------------------
@@ -3841,7 +3984,7 @@ void csrWaveFrontConvertFloat(const char* pBuffer, float** pArray, size_t* pCoun
     ++(*pCount);
 
     // convert string to float and add it to array
-    (*pArray)[index] = atof(pBuffer);
+    (*pArray)[index] = (float)atof(pBuffer);
 }
 //---------------------------------------------------------------------------
 void csrWaveFrontConvertInt(const char* pBuffer, int** pArray, size_t* pCount)
@@ -4029,9 +4172,15 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
     // iterate through remaining indices
     for (i = 1; i <= (pFace->m_Count / faceStride) - 2; ++i)
     {
-        CSR_Vector3 vertex;
-        CSR_Vector3 normal;
-        CSR_Vector2 uv;
+        #ifdef _MSC_VER
+            CSR_Vector3 vertex = {0};
+            CSR_Vector3 normal = {0};
+            CSR_Vector2 uv     = {0};
+        #else
+            CSR_Vector3 vertex;
+            CSR_Vector3 normal;
+            CSR_Vector2 uv;
+        #endif
 
         // build polygon vertex 1
         int vertexIndex =                                baseVertexIndex;
@@ -4156,7 +4305,7 @@ int csrLandscapeGenerateVertices(const CSR_PixelBuffer* pPixelBuffer,
     if (!pPixelBuffer || height <= 0.0f || scale == 0.0f || !pVertices)
         return 0;
 
-    // calculate lansdcape data size and reserve memory for landscape mesh
+    // calculate landscape data size and reserve memory for landscape mesh
     pVertices->m_Length = pPixelBuffer->m_Width * pPixelBuffer->m_Height;
     pVertices->m_pData  = malloc(pVertices->m_Length * sizeof(CSR_Vector3));
 
@@ -4164,7 +4313,7 @@ int csrLandscapeGenerateVertices(const CSR_PixelBuffer* pPixelBuffer,
     scaleX = -(((pPixelBuffer->m_Width  - 1) * scale) / 2.0f);
     scaleZ =  (((pPixelBuffer->m_Height - 1) * scale) / 2.0f);
 
-    // loop through heightfield points and calculate coordinates for each point
+    // loop through height field points and calculate coordinates for each point
     for (z = 0; z < pPixelBuffer->m_Height; ++z)
         for (x = 0; x < pPixelBuffer->m_Width; ++x)
         {
@@ -4189,22 +4338,41 @@ CSR_Mesh* csrLandscapeCreate(const CSR_PixelBuffer*      pPixelBuffer,
                              const CSR_Material*         pMaterial,
                              const CSR_fOnGetVertexColor fOnGetVertexColor)
 {
-    CSR_Mesh*   pMesh;
-    CSR_Buffer  vertices;
-    unsigned    x;
-    unsigned    z;
-    CSR_Vector3 v1;
-    CSR_Vector3 v2;
-    CSR_Vector3 v3;
-    CSR_Vector3 v4;
-    CSR_Vector3 n1;
-    CSR_Vector3 n2;
-    CSR_Vector2 uv1;
-    CSR_Vector2 uv2;
-    CSR_Vector2 uv3;
-    CSR_Vector2 uv4;
-    CSR_Plane   p1;
-    CSR_Plane   p2;
+    #ifdef _MSC_VER
+        CSR_Mesh*   pMesh;
+        CSR_Buffer  vertices;
+        unsigned    x;
+        unsigned    z;
+        CSR_Vector3 v1  = {0};
+        CSR_Vector3 v2  = {0};
+        CSR_Vector3 v3  = {0};
+        CSR_Vector3 v4  = {0};
+        CSR_Vector3 n1  = {0};
+        CSR_Vector3 n2  = {0};
+        CSR_Vector2 uv1 = {0};
+        CSR_Vector2 uv2 = {0};
+        CSR_Vector2 uv3 = {0};
+        CSR_Vector2 uv4 = {0};
+        CSR_Plane   p1  = {0};
+        CSR_Plane   p2  = {0};
+    #else
+        CSR_Mesh*   pMesh;
+        CSR_Buffer  vertices;
+        unsigned    x;
+        unsigned    z;
+        CSR_Vector3 v1;
+        CSR_Vector3 v2;
+        CSR_Vector3 v3;
+        CSR_Vector3 v4;
+        CSR_Vector3 n1;
+        CSR_Vector3 n2;
+        CSR_Vector2 uv1;
+        CSR_Vector2 uv2;
+        CSR_Vector2 uv3;
+        CSR_Vector2 uv4;
+        CSR_Plane   p1;
+        CSR_Plane   p2;
+    #endif
 
     // validate the inputs
     if (!pPixelBuffer || height <= 0.0f || scale == 0.0f)
@@ -5144,17 +5312,29 @@ int csrXBuildVertex(const CSR_Item_X*                 pItem,
                     const CSR_Dataset_MaterialList_X* pMatListDataset,
                     const CSR_fOnGetVertexColor       fOnGetVertexColor)
 {
-    size_t       i;
-    size_t       j;
-    size_t       vbIndex;
-    size_t       weightIndex;
-    CSR_Vector3  vertex;
-    CSR_Vector3  normal;
-    CSR_Vector2  uv;
-    CSR_Vector3* pNormal = 0;
-    CSR_Vector2* pUV     = 0;
+    #ifdef _MSC_VER
+        size_t       i;
+        size_t       j;
+        size_t       vbIndex;
+        size_t       weightIndex;
+        CSR_Vector3  vertex  = {0};
+        CSR_Vector3  normal  = {0};
+        CSR_Vector2  uv      = {0};
+        CSR_Vector3* pNormal = 0;
+        CSR_Vector2* pUV     = 0;
+    #else
+        size_t       i;
+        size_t       j;
+        size_t       vbIndex;
+        size_t       weightIndex;
+        CSR_Vector3  vertex;
+        CSR_Vector3  normal;
+        CSR_Vector2  uv;
+        CSR_Vector3* pNormal = 0;
+        CSR_Vector2* pUV     = 0;
+    #endif
 
-    // calculate the vertex index from the indice table
+    // calculate the vertex index from the indices table
     const size_t indiceIndex = pMeshDataset->m_pIndices[vertexIndex] * 3;
 
     // is index out of bounds?
@@ -5169,7 +5349,7 @@ int csrXBuildVertex(const CSR_Item_X*                 pItem,
     // mesh contains normals?
     if (pMesh->m_pVB->m_Format.m_HasNormal && pNormalsDataset)
     {
-        // calculate the normal index from the indice table
+        // calculate the normal index from the indices table
         const size_t nIndiceIndex = pNormalsDataset->m_pIndices[vertexIndex] * 3;
 
         // is index out of bounds?
@@ -5195,9 +5375,14 @@ int csrXBuildVertex(const CSR_Item_X*                 pItem,
             return 0;
 
         // build the texture coordinate. NOTE several files contain negative values, force them to
-        // be positive (assume that the user will correct his texture in this case)
-        uv.m_X = fabs(pUVDataset->m_pUV[uvIndex]);
-        uv.m_Y = fabs(pUVDataset->m_pUV[uvIndex + 1]);
+        // be positive (assume that the user will correct its texture in this case)
+        #ifdef __CODEGEARC__
+            uv.m_X = fabs(pUVDataset->m_pUV[uvIndex]);
+            uv.m_Y = fabs(pUVDataset->m_pUV[uvIndex + 1]);
+        #else
+            uv.m_X = fabsf(pUVDataset->m_pUV[uvIndex]);
+            uv.m_Y = fabsf(pUVDataset->m_pUV[uvIndex + 1]);
+        #endif
 
         pUV = &uv;
     }
@@ -5431,7 +5616,7 @@ int csrXBuildMesh(const CSR_Item_X*           pItem,
                 // found the material list, get it
                 pMatListItem = &pItem->m_pChildren[i];
 
-                // and get his dataset
+                // and get its dataset
                 pMatListDataset = (CSR_Dataset_MaterialList_X*)pMatListItem->m_pData;
 
                 // succeeded?
@@ -5489,9 +5674,16 @@ int csrXBuildMesh(const CSR_Item_X*           pItem,
                     if (pX->m_pMeshWeights[meshWeightsIndex].m_pSkinWeights[weightIndex].m_pBoneName)
                     {
                         // get the bone name to link to
-                        strcpy(pX->m_pMeshWeights[meshWeightsIndex].m_pSkinWeights[weightIndex].m_pBoneName,
-                               pSkinWeightsDataset->m_pBoneName);
-                        pX->m_pMeshWeights[meshWeightsIndex].m_pSkinWeights[weightIndex].m_pBoneName[length] = '\0';
+                        #ifdef _MSC_VER
+                            if (pX->m_pMeshWeights[meshWeightsIndex].m_pSkinWeights[weightIndex].m_pBoneName)
+                                strcpy_s(pX->m_pMeshWeights[meshWeightsIndex].m_pSkinWeights[weightIndex].m_pBoneName,
+                                         length,
+                                         pSkinWeightsDataset->m_pBoneName);
+                        #else
+                            strcpy(pX->m_pMeshWeights[meshWeightsIndex].m_pSkinWeights[weightIndex].m_pBoneName,
+                                   pSkinWeightsDataset->m_pBoneName);
+                            pX->m_pMeshWeights[meshWeightsIndex].m_pSkinWeights[weightIndex].m_pBoneName[length] = '\0';
+                        #endif
                     }
                 }
                 else
@@ -5655,8 +5847,13 @@ int csrXBuildMesh(const CSR_Item_X*           pItem,
                         return 0;
 
                     // get the file name
-                    strcpy(pX->m_pMesh[index].m_Skin.m_Texture.m_pFileName, pTextureDataset->m_pFileName);
-                    pX->m_pMesh[index].m_Skin.m_Texture.m_pFileName[length] = '\0';
+                    #ifdef _MSC_VER
+                        if (pX->m_pMesh[index].m_Skin.m_Texture.m_pFileName)
+                            strcpy_s(pX->m_pMesh[index].m_Skin.m_Texture.m_pFileName, length, pTextureDataset->m_pFileName);
+                    #else
+                        strcpy(pX->m_pMesh[index].m_Skin.m_Texture.m_pFileName, pTextureDataset->m_pFileName);
+                        pX->m_pMesh[index].m_Skin.m_Texture.m_pFileName[length] = '\0';
+                    #endif
 
                     // load the texture
                     if (fOnLoadTexture)
@@ -5802,10 +5999,15 @@ int csrXBuildAnimationSet(const CSR_Item_X* pItem, CSR_X* pX)
                 // get the bone name to link with
                 if (pData->m_pName)
                 {
-                    nameLength                                                             = strlen(pData->m_pName) + 1;
-                    pX->m_pAnimationSet[index].m_pAnimation[i].m_pBoneName                 = (char*)malloc(nameLength);
-                    strcpy(pX->m_pAnimationSet[index].m_pAnimation[i].m_pBoneName, pData->m_pName);
-                    pX->m_pAnimationSet[index].m_pAnimation[i].m_pBoneName[nameLength - 1] = '\0';
+                    nameLength                                             = strlen(pData->m_pName) + 1;
+                    pX->m_pAnimationSet[index].m_pAnimation[i].m_pBoneName = (char*)malloc(nameLength);
+                    #ifdef _MSC_VER
+                        if (pX->m_pAnimationSet[index].m_pAnimation[i].m_pBoneName)
+                            strcpy_s(pX->m_pAnimationSet[index].m_pAnimation[i].m_pBoneName, nameLength, pData->m_pName);
+                    #else
+                        strcpy(pX->m_pAnimationSet[index].m_pAnimation[i].m_pBoneName, pData->m_pName);
+                        pX->m_pAnimationSet[index].m_pAnimation[i].m_pBoneName[nameLength - 1] = '\0';
+                    #endif
                 }
 
                 continue;
@@ -6999,7 +7201,7 @@ int csrXParseWord(const CSR_Buffer* pBuffer, size_t startOffset, size_t endOffse
                                 return 0;
 
                             // convert value
-                            pData->m_Matrix.m_Table[pData->m_ReadValCount / 4][pData->m_ReadValCount % 4] = atof(pValue);
+                            pData->m_Matrix.m_Table[pData->m_ReadValCount / 4][pData->m_ReadValCount % 4] = (float)atof(pValue);
 
                             free(pValue);
 
@@ -7038,7 +7240,7 @@ int csrXParseWord(const CSR_Buffer* pBuffer, size_t startOffset, size_t endOffse
                                 return 0;
 
                             // convert value
-                            pVertices[pData->m_VerticeCount] = atof(pValue);
+                            pVertices[pData->m_VerticeCount] = (float)atof(pValue);
 
                             free(pValue);
 
@@ -7077,7 +7279,7 @@ int csrXParseWord(const CSR_Buffer* pBuffer, size_t startOffset, size_t endOffse
                                 return 0;
 
                             // convert value
-                            pUV[pData->m_UVCount] = atof(pValue);
+                            pUV[pData->m_UVCount] = (float)atof(pValue);
 
                             free(pValue);
 
@@ -7109,17 +7311,17 @@ int csrXParseWord(const CSR_Buffer* pBuffer, size_t startOffset, size_t endOffse
                         // convert the next value
                         switch (pData->m_ReadValCount)
                         {
-                            case 0:  pData->m_Color.m_R         = atof(pValue); break;
-                            case 1:  pData->m_Color.m_G         = atof(pValue); break;
-                            case 2:  pData->m_Color.m_B         = atof(pValue); break;
-                            case 3:  pData->m_Color.m_A         = atof(pValue); break;
-                            case 4:  pData->m_SpecularExp       = atof(pValue); break;
-                            case 5:  pData->m_SpecularColor.m_R = atof(pValue); break;
-                            case 6:  pData->m_SpecularColor.m_G = atof(pValue); break;
-                            case 7:  pData->m_SpecularColor.m_B = atof(pValue); break;
-                            case 8:  pData->m_EmisiveColor.m_R  = atof(pValue); break;
-                            case 9:  pData->m_EmisiveColor.m_G  = atof(pValue); break;
-                            case 10: pData->m_EmisiveColor.m_B  = atof(pValue); break;
+                            case 0:  pData->m_Color.m_R         = (float)atof(pValue); break;
+                            case 1:  pData->m_Color.m_G         = (float)atof(pValue); break;
+                            case 2:  pData->m_Color.m_B         = (float)atof(pValue); break;
+                            case 3:  pData->m_Color.m_A         = (float)atof(pValue); break;
+                            case 4:  pData->m_SpecularExp       = (float)atof(pValue); break;
+                            case 5:  pData->m_SpecularColor.m_R = (float)atof(pValue); break;
+                            case 6:  pData->m_SpecularColor.m_G = (float)atof(pValue); break;
+                            case 7:  pData->m_SpecularColor.m_B = (float)atof(pValue); break;
+                            case 8:  pData->m_EmisiveColor.m_R  = (float)atof(pValue); break;
+                            case 9:  pData->m_EmisiveColor.m_G  = (float)atof(pValue); break;
+                            case 10: pData->m_EmisiveColor.m_B  = (float)atof(pValue); break;
                         }
 
                         free(pValue);
@@ -7158,7 +7360,7 @@ int csrXParseWord(const CSR_Buffer* pBuffer, size_t startOffset, size_t endOffse
                                 return 0;
 
                             // convert value
-                            pWeights[pData->m_WeightCount] = atof(pValue);
+                            pWeights[pData->m_WeightCount] = (float)atof(pValue);
 
                             free(pValue);
 
@@ -7176,7 +7378,7 @@ int csrXParseWord(const CSR_Buffer* pBuffer, size_t startOffset, size_t endOffse
                                 return 0;
 
                             // convert value
-                            pData->m_Matrix.m_Table[pData->m_ReadValCount / 4][pData->m_ReadValCount % 4] = atof(pValue);
+                            pData->m_Matrix.m_Table[pData->m_ReadValCount / 4][pData->m_ReadValCount % 4] = (float)atof(pValue);
 
                             free(pValue);
 
@@ -7213,7 +7415,7 @@ int csrXParseWord(const CSR_Buffer* pBuffer, size_t startOffset, size_t endOffse
                             return 0;
 
                         // convert value
-                        pValues[pData->m_pKeys[pData->m_KeyIndex].m_Count] = atof(pValue);
+                        pValues[pData->m_pKeys[pData->m_KeyIndex].m_Count] = (float)atof(pValue);
 
                         free(pValue);
 
@@ -7693,10 +7895,16 @@ int csrXItemToModel(const CSR_Item_X*           pItem,
             // get the bone name
             if (pData->m_pName)
             {
-                const size_t length       = strlen(pData->m_pName);
-                pCurrent->m_pName         = (char*)malloc(length + 1);
-                strcpy(pCurrent->m_pName, pData->m_pName);
-                pCurrent->m_pName[length] = '\0';
+                const size_t length = strlen(pData->m_pName);
+                pCurrent->m_pName   = (char*)malloc(length + 1);
+
+                #ifdef _MSC_VER
+                if (pCurrent->m_pName)
+                    strcpy_s(pCurrent->m_pName, length, pData->m_pName);
+                #else
+                    strcpy(pCurrent->m_pName, pData->m_pName);
+                    pCurrent->m_pName[length] = '\0';
+                #endif
             }
 
             break;
@@ -7786,7 +7994,7 @@ void csrXReleaseItems(CSR_Item_X* pItem, int contentOnly)
             // succeeded?
             if (pData)
             {
-                // release his content
+                // release its content
                 if (pData->m_pName)
                     free(pData->m_pName);
 
@@ -7804,7 +8012,7 @@ void csrXReleaseItems(CSR_Item_X* pItem, int contentOnly)
             // succeeded?
             if (pData)
             {
-                // release his content
+                // release its content
                 if (pData->m_pName)
                     free(pData->m_pName);
 
@@ -7822,7 +8030,7 @@ void csrXReleaseItems(CSR_Item_X* pItem, int contentOnly)
             // succeeded?
             if (pData)
             {
-                // release his content
+                // release its content
                 if (pData->m_pName)
                     free(pData->m_pName);
 
@@ -7841,7 +8049,7 @@ void csrXReleaseItems(CSR_Item_X* pItem, int contentOnly)
             // succeeded?
             if (pData)
             {
-                // release his content
+                // release its content
                 if (pData->m_pName)
                     free(pData->m_pName);
 
@@ -7865,7 +8073,7 @@ void csrXReleaseItems(CSR_Item_X* pItem, int contentOnly)
             // succeeded?
             if (pData)
             {
-                // release his content
+                // release its content
                 if (pData->m_pName)
                     free(pData->m_pName);
 
@@ -7886,7 +8094,7 @@ void csrXReleaseItems(CSR_Item_X* pItem, int contentOnly)
             // succeeded?
             if (pData)
             {
-                // release his content
+                // release its content
                 if (pData->m_pName)
                     free(pData->m_pName);
 
@@ -7907,7 +8115,7 @@ void csrXReleaseItems(CSR_Item_X* pItem, int contentOnly)
             // succeeded?
             if (pData)
             {
-                // release his content
+                // release its content
                 if (pData->m_pName)
                     free(pData->m_pName);
 
@@ -7925,7 +8133,7 @@ void csrXReleaseItems(CSR_Item_X* pItem, int contentOnly)
             // succeeded?
             if (pData)
             {
-                // release his content
+                // release its content
                 if (pData->m_pName)
                     free(pData->m_pName);
 
@@ -7943,7 +8151,7 @@ void csrXReleaseItems(CSR_Item_X* pItem, int contentOnly)
             // succeeded?
             if (pData)
             {
-                // release his content
+                // release its content
                 if (pData->m_pName)
                     free(pData->m_pName);
 
@@ -7970,7 +8178,7 @@ void csrXReleaseItems(CSR_Item_X* pItem, int contentOnly)
             // succeeded?
             if (pData)
             {
-                // release his content
+                // release its content
                 if (pData->m_pName)
                     free(pData->m_pName);
 
@@ -7991,7 +8199,7 @@ void csrXReleaseItems(CSR_Item_X* pItem, int contentOnly)
             // succeeded?
             if (pData)
             {
-                // release his content
+                // release its content
                 if (pData->m_pName)
                     free(pData->m_pName);
 

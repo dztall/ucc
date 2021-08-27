@@ -172,7 +172,7 @@ void OnDeleteTexture(const CSR_Texture* pTexture)
 void CreateViewport(float w, float h)
 {
     // calculate matrix items
-    const float zNear  = 0.01f;
+    const float zNear  = 1.0f;
     const float zFar   = 100.0f;
     const float fov    = 45.0f;
     const float aspect = w / h;
@@ -190,7 +190,6 @@ void on_GLES2_Init(int view_w, int view_h)
 {
     CSR_VertexFormat  vf;
     CSR_VertexCulling vc;
-    CSR_Material      material;
 
     // create the default scene
     g_pScene = csrSceneCreate();

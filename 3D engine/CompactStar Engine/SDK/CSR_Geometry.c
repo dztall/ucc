@@ -18,6 +18,13 @@
 // std
 #include <math.h>
 
+// visual studio specific code
+#ifdef _MSC_VER
+    // std
+    #define _USE_MATH_DEFINES
+    #include <math.h>
+#endif
+
 //---------------------------------------------------------------------------
 // 2D vector functions
 //---------------------------------------------------------------------------
@@ -35,7 +42,7 @@ void csrVec2Sub(const CSR_Vector2* pV1, const CSR_Vector2* pV2, CSR_Vector2* pR)
 //---------------------------------------------------------------------------
 void csrVec2Length(const CSR_Vector2* pV, float* pR)
 {
-    *pR = sqrt((pV->m_X * pV->m_X) + (pV->m_Y * pV->m_Y));
+    *pR = sqrtf((pV->m_X * pV->m_X) + (pV->m_Y * pV->m_Y));
 }
 //---------------------------------------------------------------------------
 void csrVec2Normalize(const CSR_Vector2* pV, CSR_Vector2* pR)
@@ -102,7 +109,7 @@ void csrVec3Sub(const CSR_Vector3* pV1, const CSR_Vector3* pV2, CSR_Vector3* pR)
 //---------------------------------------------------------------------------
 void csrVec3Length(const CSR_Vector3* pV, float* pR)
 {
-    *pR = sqrt((pV->m_X * pV->m_X) + (pV->m_Y * pV->m_Y) + (pV->m_Z * pV->m_Z));
+    *pR = sqrtf((pV->m_X * pV->m_X) + (pV->m_Y * pV->m_Y) + (pV->m_Z * pV->m_Z));
 }
 //---------------------------------------------------------------------------
 void csrVec3Normalize(const CSR_Vector3* pV, CSR_Vector3* pR)
@@ -220,8 +227,8 @@ void csrMat4Frustum(float left, float right, float bottom, float top, float zNea
 //---------------------------------------------------------------------------
 void csrMat4Perspective(float fovyDeg, float aspect, float zNear, float zFar, CSR_Matrix4* pR)
 {
-    const float maxY    =  zNear *  tanf(fovyDeg * M_PI / 360.0f);
-    const float maxX    =  maxY   * aspect;
+    const float maxY    =  zNear * tanf((float)(fovyDeg * M_PI) / 360.0f);
+    const float maxX    =  maxY  * aspect;
     const float negMaxY = -maxY;
     const float negMaxX = -maxX;
 
@@ -351,11 +358,19 @@ void csrMat4Transpose(const CSR_Matrix4* pM, CSR_Matrix4* pR)
 //---------------------------------------------------------------------------
 void csrMat4Inverse(const CSR_Matrix4* pM, CSR_Matrix4* pR, float* pDeterminant)
 {
-    float invDet;
-    float t[3];
-    float v[16];
-    int   i;
-    int   j;
+    #ifdef _MSC_VER
+        float invDet;
+        float t[3]  = {0};
+        float v[16] = {0};
+        int   i;
+        int   j;
+    #else
+        float invDet;
+        float t[3];
+        float v[16];
+        int   i;
+        int   j;
+    #endif
 
     t[0] = pM->m_Table[2][2] * pM->m_Table[3][3] - pM->m_Table[2][3] * pM->m_Table[3][2];
     t[1] = pM->m_Table[1][2] * pM->m_Table[3][3] - pM->m_Table[1][3] * pM->m_Table[3][2];
@@ -422,7 +437,7 @@ void csrMat4Inverse(const CSR_Matrix4* pM, CSR_Matrix4* pR, float* pDeterminant)
             pM->m_Table[1][0] * (pM->m_Table[0][1] * pM->m_Table[2][2] - pM->m_Table[0][2] * pM->m_Table[2][1]) +
             pM->m_Table[2][0] * (pM->m_Table[0][1] * pM->m_Table[1][2] - pM->m_Table[0][2] * pM->m_Table[1][1]);
 
-    invDet = 1.0 / *pDeterminant;
+    invDet = 1.0f / *pDeterminant;
 
     for (i = 0; i < 4; ++i)
         for (j = 0; j < 4; ++j)
@@ -505,21 +520,30 @@ void csrMat4RotationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ)
     float c;
 
     // calculate the y angle
-    *pY = asin(pM->m_Table[2][0]);
-     c  = cos(*pY);
+    #ifdef __CODEGEARC__
+        *pY = asin(pM->m_Table[2][0]);
+         c  = cosf(*pY);
+    #else
+        *pY = asinf(pM->m_Table[2][0]);
+         c  = cosf(*pY);
+    #endif
 
-    // gimbal lock?
-    if (fabs(c) > 0.0005f)
+    // gimball lock?
+    #ifdef __CODEGEARC__
+        if (fabs(c) > 0.0005f)
+    #else
+        if (fabsf(c) > 0.0005f)
+    #endif
     {
         // calculate the x angle
          rx =  pM->m_Table[2][2] / c;
          ry = -pM->m_Table[2][1] / c;
-        *pX =  atan2(ry, rx);
+        *pX =  atan2f(ry, rx);
 
         // calculate the z angle
          rx =  pM->m_Table[0][0] / c;
          ry = -pM->m_Table[1][0] / c;
-        *pZ =  atan2(ry, rx);
+        *pZ =  atan2f(ry, rx);
     }
     else
     {
@@ -529,20 +553,32 @@ void csrMat4RotationFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ)
         // calculate the z angle
          rx = pM->m_Table[1][1];
          ry = pM->m_Table[0][1];
-        *pZ = atan2(ry, rx);
+        *pZ = atan2f(ry, rx);
     }
 
     // limit the resulting angles between the max possible value
-    *pX = fmod(*pX, M_PI);
-    *pY = fmod(*pY, M_PI);
-    *pZ = fmod(*pZ, M_PI);
+    #ifdef __CODEGEARC__
+        *pX = fmod(*pX, (float)M_PI);
+        *pY = fmod(*pY, (float)M_PI);
+        *pZ = fmod(*pZ, (float)M_PI);
+    #else
+        *pX = fmodf(*pX, (float)M_PI);
+        *pY = fmodf(*pY, (float)M_PI);
+        *pZ = fmodf(*pZ, (float)M_PI);
+    #endif
 }
 //---------------------------------------------------------------------------
 void csrMat4ScalingFrom(const CSR_Matrix4* pM, float* pX, float* pY, float* pZ)
 {
-    CSR_Vector3 vX;
-    CSR_Vector3 vY;
-    CSR_Vector3 vZ;
+    #ifdef _MSC_VER
+        CSR_Vector3 vX = {0};
+        CSR_Vector3 vY = {0};
+        CSR_Vector3 vZ = {0};
+    #else
+        CSR_Vector3 vX;
+        CSR_Vector3 vY;
+        CSR_Vector3 vZ;
+    #endif
 
     vX.m_X = pM->m_Table[0][0];
     vX.m_Y = pM->m_Table[1][0];
@@ -601,12 +637,12 @@ void csrQuatFromEuler(float angleX, float angleY, float angleZ, CSR_Quaternion* 
 void csrQuatFromPYR(float pitch, float yaw, float roll, CSR_Quaternion* pR)
 {
     // calculate the sinus and cosinus of each angles
-    const float c1 = cos(yaw   / 2.0f);
-    const float c2 = cos(pitch / 2.0f);
-    const float c3 = cos(roll  / 2.0f);
-    const float s1 = sin(yaw   / 2.0f);
-    const float s2 = sin(pitch / 2.0f);
-    const float s3 = sin(roll  / 2.0f);
+    const float c1 = cosf(yaw   / 2.0f);
+    const float c2 = cosf(pitch / 2.0f);
+    const float c3 = cosf(roll  / 2.0f);
+    const float s1 = sinf(yaw   / 2.0f);
+    const float s2 = sinf(pitch / 2.0f);
+    const float s3 = sinf(roll  / 2.0f);
 
     // calculate the quaternion values
     pR->m_X = (s1 * s2 * c3) + (c1 * c2 * s3);
@@ -625,7 +661,7 @@ void csrQuatLength(const CSR_Quaternion* pQ, float* pR)
     float norm;
     csrQuatLengthSquared(pQ, &norm);
 
-    *pR = sqrt(norm);
+    *pR = sqrtf(norm);
 }
 //---------------------------------------------------------------------------
 void csrQuatNormalize(const CSR_Quaternion* pQ, CSR_Quaternion* pR)
@@ -701,9 +737,15 @@ void csrQuatInverse(const CSR_Quaternion* pQ, CSR_Quaternion* pR)
 //---------------------------------------------------------------------------
 void csrQuatRotate(const CSR_Quaternion* pQ, const CSR_Vector3* pV, CSR_Vector3* pR)
 {
-    CSR_Quaternion qv;
-    CSR_Quaternion qi;
-    CSR_Quaternion qm;
+    #ifdef _MSC_VER
+        CSR_Quaternion qv = {0};
+        CSR_Quaternion qi = {0};
+        CSR_Quaternion qm = {0};
+    #else
+        CSR_Quaternion qv;
+        CSR_Quaternion qi;
+        CSR_Quaternion qm;
+    #endif
 
     qv.m_X = pV->m_X;
     qv.m_Y = pV->m_Y;
@@ -725,12 +767,21 @@ void csrQuatRotate(const CSR_Quaternion* pQ, const CSR_Vector3* pV, CSR_Vector3*
 //---------------------------------------------------------------------------
 int csrQuatSlerp(const CSR_Quaternion* pQ1, const CSR_Quaternion* pQ2, float p, CSR_Quaternion* pR)
 {
-    CSR_Quaternion interpolateWith;
-    float          scale0;
-    float          scale1;
-    float          theta;
-    float          sinTheta;
-    float          result;
+    #ifdef _MSC_VER
+        CSR_Quaternion interpolateWith = {0};
+        float          scale0;
+        float          scale1;
+        float          theta;
+        float          sinTheta;
+        float          result;
+    #else
+        CSR_Quaternion interpolateWith;
+        float          scale0;
+        float          scale1;
+        float          theta;
+        float          sinTheta;
+        float          result;
+    #endif
 
     // are quaternions identical?
     if (pQ1->m_X == pQ2->m_X && pQ1->m_Y == pQ2->m_Y && pQ1->m_Z == pQ2->m_Z && pQ1->m_W == pQ2->m_W)
@@ -763,8 +814,13 @@ int csrQuatSlerp(const CSR_Quaternion* pQ1, const CSR_Quaternion* pQ2, float p, 
     if ((1.0f - result) > 0.1f)
     {
         // calculate the angle between the 2 quaternions and get the sinus of that angle
-        theta    = acos(result);
-        sinTheta = sinf(theta);
+        #ifdef __CODEGEARC__
+            theta    = acos(result);
+            sinTheta = sinf(theta);
+        #else
+            theta    = acosf(result);
+            sinTheta = sinf(theta);
+        #endif
 
         // is resulting sinus equal to 0? (just to verify, should not happen)
         if (!sinTheta)
@@ -803,7 +859,7 @@ int csrQuatFromMatrix(const CSR_Matrix4* pM, CSR_Quaternion* pR)
     if (diagonal > 0.00000001f)
     {
         // calculate the diagonal scale
-        scale = sqrt(diagonal) * 2.0f;
+        scale = sqrtf(diagonal) * 2.0f;
 
         // calculate the quaternion values using the respective equation
         pR->m_X = (pM->m_Table[1][2] - pM->m_Table[2][1]) / scale;
@@ -818,7 +874,7 @@ int csrQuatFromMatrix(const CSR_Matrix4* pM, CSR_Quaternion* pR)
     if (pM->m_Table[0][0] > pM->m_Table[1][1] && pM->m_Table[0][0] > pM->m_Table[2][2])
     {
         // calculate scale using the first diagonal element and double that value
-        scale = sqrt(1.0f + pM->m_Table[0][0] - pM->m_Table[1][1] - pM->m_Table[2][2]) * 2.0f;
+        scale = sqrtf(1.0f + pM->m_Table[0][0] - pM->m_Table[1][1] - pM->m_Table[2][2]) * 2.0f;
 
         // should not happen, but better to verify
         if (!scale)
@@ -843,7 +899,7 @@ int csrQuatFromMatrix(const CSR_Matrix4* pM, CSR_Quaternion* pR)
     if (pM->m_Table[1][1] > pM->m_Table[2][2])
     {
         // calculate scale using the second diagonal element and double that value
-        scale = sqrt(1.0f + pM->m_Table[1][1] - pM->m_Table[0][0] - pM->m_Table[2][2]) * 2.0f;
+        scale = sqrtf(1.0f + pM->m_Table[1][1] - pM->m_Table[0][0] - pM->m_Table[2][2]) * 2.0f;
 
         // should not happen, but better to verify
         if (!scale)
@@ -866,7 +922,7 @@ int csrQuatFromMatrix(const CSR_Matrix4* pM, CSR_Quaternion* pR)
     }
 
     // calculate scale using the third diagonal element and double that value
-    scale = sqrt(1.0f + pM->m_Table[2][2] - pM->m_Table[0][0] - pM->m_Table[1][1]) * 2.0f;
+    scale = sqrtf(1.0f + pM->m_Table[2][2] - pM->m_Table[0][0] - pM->m_Table[1][1]) * 2.0f;
 
     // should not happen, but better to verify
     if (!scale)
@@ -943,8 +999,13 @@ void csrPlaneTransform(const CSR_Plane* pPlane, const CSR_Matrix4* pM, CSR_Plane
 //---------------------------------------------------------------------------
 void csrPlaneDistanceTo(const CSR_Vector3* pP, const CSR_Plane* pPl, float* pR)
 {
-    CSR_Vector3 n;
-    float       dist;
+    #ifdef _MSC_VER
+        CSR_Vector3 n = {0};
+        float       dist;
+    #else
+        CSR_Vector3 n;
+        float       dist;
+    #endif
 
     // get the normal of the plane
     n.m_X = pPl->m_A;
@@ -960,8 +1021,12 @@ void csrPlaneDistanceTo(const CSR_Vector3* pP, const CSR_Plane* pPl, float* pR)
 //---------------------------------------------------------------------------
 void csrRay2FromPointDir(const CSR_Vector2* pP, const CSR_Vector2* pD, CSR_Ray2* pR)
 {
-    // get infinite value (NOTE this is the only case where a division by 0 is allowed)
-    const float inf = 1.0f / 0.0f;
+    #ifdef _MSC_VER
+        const float inf = INFINITY;
+    #else
+        // get infinite value (NOTE this is the only case where a division by 0 is allowed)
+        const float inf = 1.0f / 0.0f;
+    #endif
 
     pR->m_Pos = *pP;
     pR->m_Dir = *pD;
@@ -982,8 +1047,12 @@ void csrRay2FromPointDir(const CSR_Vector2* pP, const CSR_Vector2* pD, CSR_Ray2*
 //---------------------------------------------------------------------------
 void csrRay3FromPointDir(const CSR_Vector3* pP, const CSR_Vector3* pD, CSR_Ray3* pR)
 {
-    // get infinite value (NOTE this is the only case where a division by 0 is allowed)
-    const float inf = 1.0f / 0.0f;
+    #ifdef _MSC_VER
+        const float inf = INFINITY;
+    #else
+        // get infinite value (NOTE this is the only case where a division by 0 is allowed)
+        const float inf = 1.0f / 0.0f;
+    #endif
 
     pR->m_Pos = *pP;
     pR->m_Dir = *pD;
@@ -1012,23 +1081,43 @@ void csrSeg3DistanceBetween(const CSR_Segment3* pS1,
                                   float         tolerance,
                                   float*        pR)
 {
-    CSR_Vector3 delta21;
-    CSR_Vector3 delta43;
-    CSR_Vector3 delta13;
-    CSR_Vector3 dP;
-    float       a;
-    float       b;
-    float       c;
-    float       d;
-    float       e;
-    float       D;
-    float       sc;
-    float       sN;
-    float       sD;
-    float       tc;
-    float       tN;
-    float       tD;
-    float       dotdP;
+    #ifdef _MSC_VER
+        CSR_Vector3 delta21 = {0};
+        CSR_Vector3 delta43 = {0};
+        CSR_Vector3 delta13 = {0};
+        CSR_Vector3 dP      = {0};
+        float       a;
+        float       b;
+        float       c;
+        float       d;
+        float       e;
+        float       D;
+        float       sc;
+        float       sN;
+        float       sD;
+        float       tc;
+        float       tN;
+        float       tD;
+        float       dotdP;
+    #else
+        CSR_Vector3 delta21;
+        CSR_Vector3 delta43;
+        CSR_Vector3 delta13;
+        CSR_Vector3 dP;
+        float       a;
+        float       b;
+        float       c;
+        float       d;
+        float       e;
+        float       D;
+        float       sc;
+        float       sN;
+        float       sD;
+        float       tc;
+        float       tN;
+        float       tD;
+        float       dotdP;
+    #endif
 
     // the parametric formulas for the 2 segments are:
     // p = s1 + s(s2 - s1), where s1 = pS1->m_Start and s2 = pS1->m_End
@@ -1053,7 +1142,11 @@ void csrSeg3DistanceBetween(const CSR_Segment3* pS1,
     tD = D;
 
     // compute the line parameters of the two closest points
-    if (fabs(D) < tolerance)
+    #ifdef __CODEGEARC__
+        if (fabs(D) < tolerance)
+    #else
+        if (fabsf(D) < tolerance)
+    #endif
     {
         // the lines are almost parallel, force using point P0 on segment S1 to prevent possible
         // division by 0 later
@@ -1122,12 +1215,20 @@ void csrSeg3DistanceBetween(const CSR_Segment3* pS1,
     }
 
     // finally do the division to get sc and tc
-    if (fabs(sN) < tolerance)
+    #ifdef __CODEGEARC__
+        if (fabs(sN) < tolerance)
+    #else
+        if (fabsf(sN) < tolerance)
+    #endif
         sc = 0.0f;
     else
         sc = sN / sD;
 
-    if (fabs(tN) < tolerance)
+    #ifdef __CODEGEARC__
+        if (fabs(tN) < tolerance)
+    #else
+        if (fabsf(tN) < tolerance)
+    #endif
         tc = 0.0f;
     else
         tc = tN / tD;
@@ -1139,17 +1240,26 @@ void csrSeg3DistanceBetween(const CSR_Segment3* pS1,
 
     // return the closest distance
     csrVec3Dot(&dP, &dP, &dotdP);
-    *pR = sqrt(dotdP);
+    *pR = sqrtf(dotdP);
 }
 //---------------------------------------------------------------------------
 void csrSeg3ClosestPoint(const CSR_Segment3* pS, const CSR_Vector3* pP, CSR_Vector3* pR)
 {
-    float       segLength;
-    float       angle;
-    CSR_Vector3 PToStart;
-    CSR_Vector3 length;
-    CSR_Vector3 normalizedLength;
-    CSR_Vector3 p;
+    #ifdef _MSC_VER
+        float       segLength;
+        float       angle;
+        CSR_Vector3 PToStart         = {0};
+        CSR_Vector3 length           = {0};
+        CSR_Vector3 normalizedLength = {0};
+        CSR_Vector3 p                = {0};
+    #else
+        float       segLength;
+        float       angle;
+        CSR_Vector3 PToStart;
+        CSR_Vector3 length;
+        CSR_Vector3 normalizedLength;
+        CSR_Vector3 p;
+    #endif
 
     // calculate the distance between the test point and the segment
     csrVec3Sub( pP,        &pS->m_Start, &PToStart);
@@ -1185,19 +1295,35 @@ void csrSeg3ClosestPoint(const CSR_Segment3* pS, const CSR_Vector3* pP, CSR_Vect
 //---------------------------------------------------------------------------
 void csrPolygon3ClosestPoint(const CSR_Vector3* pP, const CSR_Polygon3* pPo, CSR_Vector3* pR)
 {
-    float        dAB;
-    float        dBC;
-    float        dCA;
-    float        min;
-    CSR_Vector3  rab;
-    CSR_Vector3  rbc;
-    CSR_Vector3  rca;
-    CSR_Vector3  vAB;
-    CSR_Vector3  vBC;
-    CSR_Vector3  vCA;
-    CSR_Segment3 sab;
-    CSR_Segment3 sbc;
-    CSR_Segment3 sca;
+    #ifdef _MSC_VER
+        float        dAB;
+        float        dBC;
+        float        dCA;
+        float        min;
+        CSR_Vector3  rab = {0};
+        CSR_Vector3  rbc = {0};
+        CSR_Vector3  rca = {0};
+        CSR_Vector3  vAB = {0};
+        CSR_Vector3  vBC = {0};
+        CSR_Vector3  vCA = {0};
+        CSR_Segment3 sab = {0};
+        CSR_Segment3 sbc = {0};
+        CSR_Segment3 sca = {0};
+    #else
+        float        dAB;
+        float        dBC;
+        float        dCA;
+        float        min;
+        CSR_Vector3  rab;
+        CSR_Vector3  rbc;
+        CSR_Vector3  rca;
+        CSR_Vector3  vAB;
+        CSR_Vector3  vBC;
+        CSR_Vector3  vCA;
+        CSR_Segment3 sab;
+        CSR_Segment3 sbc;
+        CSR_Segment3 sca;
+    #endif
 
     // get line segments from each polygon edge
     sab.m_Start = pPo->m_Vertex[0];
@@ -1318,9 +1444,15 @@ void csrBoxCut(const CSR_Box* pBox, CSR_Box* pLeftBox, CSR_Box* pRightBox)
     unsigned longestAxis;
 
     // calculate each edge length
-    x = fabs(pBox->m_Max.m_X - pBox->m_Min.m_X);
-    y = fabs(pBox->m_Max.m_Y - pBox->m_Min.m_Y);
-    z = fabs(pBox->m_Max.m_Z - pBox->m_Min.m_Z);
+    #ifdef __CODEGEARC__
+        x = fabs(pBox->m_Max.m_X - pBox->m_Min.m_X);
+        y = fabs(pBox->m_Max.m_Y - pBox->m_Min.m_Y);
+        z = fabs(pBox->m_Max.m_Z - pBox->m_Min.m_Z);
+    #else
+        x = fabsf(pBox->m_Max.m_X - pBox->m_Min.m_X);
+        y = fabsf(pBox->m_Max.m_Y - pBox->m_Min.m_Y);
+        z = fabsf(pBox->m_Max.m_Z - pBox->m_Min.m_Z);
+    #endif
 
     // search for longest axis
     if (x >= y && x >= z)
@@ -1433,7 +1565,11 @@ int csrInsidePolygon2(const CSR_Vector2* pP, const CSR_Polygon2* pPo)
         a3 = -1.0f;
 
     // calculate the sum of all angles
-    angleResult = acos(a1) + acos(a2) + acos(a3);
+    #ifdef __CODEGEARC__
+        angleResult = acos(a1) + acos(a2) + acos(a3);
+    #else
+        angleResult = acosf(a1) + acosf(a2) + acosf(a3);
+    #endif
 
     // if sum is equal or higher to 6.28 radians then point P is inside polygon
     if (angleResult >= 6.28f)
@@ -1504,7 +1640,11 @@ int csrInsidePolygon3(const CSR_Vector3* pP, const CSR_Polygon3* pPo)
         a3 = -1.0f;
 
     // calculate the sum of all angles
-    angleResult = acos(a1) + acos(a2) + acos(a3);
+    #ifdef __CODEGEARC__
+        angleResult = acos(a1) + acos(a2) + acos(a3);
+    #else
+        angleResult = acosf(a1) + acosf(a2) + acosf(a3);
+    #endif
 
     // if sum is equal or higher to 6.28 radians then point P is inside polygon
     if (angleResult >= 6.28f)
@@ -1559,8 +1699,8 @@ int csrIntersect2(const CSR_Figure2* pFigure1,
                         CSR_Vector2* pP2)
 {
     int         intersectionType;
-    const void* pFirst;
-    const void* pSecond;
+    const void* pFirst  = 0;
+    const void* pSecond = 0;
 
     // intersection calculation isn't possible if at least one of the figures is missing
     if (!pFigure1 || !pFigure2 || !pFigure1->m_pFigure || !pFigure2->m_pFigure)
@@ -1701,7 +1841,7 @@ int csrIntersect2(const CSR_Figure2* pFigure1,
                 float t1;
                 float t2;
 
-                sqrtDisc = sqrt(discriminant);
+                sqrtDisc = sqrtf(discriminant);
                 invA     = 1.0f / a;
 
                 // calculate the parametric values at intersection points (i.e. the length from the line
@@ -1730,11 +1870,19 @@ int csrIntersect2(const CSR_Figure2* pFigure1,
         // ray-circle intersection
         case 10:
         {
-            CSR_Vector2 p1;
-            CSR_Vector2 p2;
-            CSR_Line2   line;
-            CSR_Figure2 figure1;
-            CSR_Figure2 figure2;
+            #ifdef _MSC_VER
+                CSR_Vector2 p1      = {0};
+                CSR_Vector2 p2      = {0};
+                CSR_Line2   line    = {0};
+                CSR_Figure2 figure1 = {0};
+                CSR_Figure2 figure2 = {0};
+            #else
+                CSR_Vector2 p1;
+                CSR_Vector2 p2;
+                CSR_Line2   line;
+                CSR_Figure2 figure1;
+                CSR_Figure2 figure2;
+            #endif
 
             // get the figures to check
             const CSR_Ray2*   pRay    = (CSR_Ray2*)pFirst;
@@ -1807,16 +1955,26 @@ int csrIntersect2(const CSR_Figure2* pFigure1,
         // circle-circle intersection
         case 20:
         {
-            CSR_Vector2 dist;
-            float       length;
+            #ifdef _MSC_VER
+                CSR_Vector2 dist = {0};
+                float       length;
+            #else
+                CSR_Vector2 dist;
+                float       length;
+            #endif
 
             // get the figures to check
             const CSR_Circle* pCircle1 = (CSR_Circle*)pFirst;
             const CSR_Circle* pCircle2 = (CSR_Circle*)pSecond;
 
             // calculate the distance between the both circle centers
-            dist.m_X = fabs(pCircle1->m_Center.m_X - pCircle2->m_Center.m_X);
-            dist.m_Y = fabs(pCircle1->m_Center.m_Y - pCircle2->m_Center.m_Y);
+            #ifdef __CODEGEARC__
+                dist.m_X = fabs(pCircle1->m_Center.m_X - pCircle2->m_Center.m_X);
+                dist.m_Y = fabs(pCircle1->m_Center.m_Y - pCircle2->m_Center.m_Y);
+            #else
+                dist.m_X = fabsf(pCircle1->m_Center.m_X - pCircle2->m_Center.m_X);
+                dist.m_Y = fabsf(pCircle1->m_Center.m_Y - pCircle2->m_Center.m_Y);
+            #endif
 
             // calculate the length between the both circle centers
             csrVec2Length(&dist, &length);
@@ -1839,8 +1997,8 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
                         CSR_Plane*   pR3)
 {
     int         intersectionType;
-    const void* pFirst;
-    const void* pSecond;
+    const void* pFirst  = 0;
+    const void* pSecond = 0;
 
     // intersection calculation isn't possible if at least one of the figures is missing
     if (!pFigure1 || !pFigure2 || !pFigure1->m_pFigure || !pFigure2->m_pFigure)
@@ -1969,10 +2127,17 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
         // ray-plane intersection
         case 9:
         {
-            CSR_Vector3 n;
-            float       dot;
-            float       nDot;
-            float       temp;
+            #ifdef _MSC_VER
+                CSR_Vector3 n = {0};
+                float       dot;
+                float       nDot;
+                float       temp;
+            #else
+                CSR_Vector3 n;
+                float       dot;
+                float       nDot;
+                float       temp;
+            #endif
 
             // get the figures to check
             const CSR_Ray3*  pRay   = (CSR_Ray3*)pFirst;
@@ -2010,9 +2175,15 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
         // ray-polygon intersection
         case 10:
         {
-            CSR_Plane     polygonPlane;
-            CSR_Vector3   pointOnPlane;
-            CSR_Figure3   plane;
+            #ifdef _MSC_VER
+                CSR_Plane     polygonPlane = {0};
+                CSR_Vector3   pointOnPlane = {0};
+                CSR_Figure3   plane        = {0};
+            #else
+                CSR_Plane     polygonPlane;
+                CSR_Vector3   pointOnPlane;
+                CSR_Figure3   plane;
+            #endif
 
             // get the polygon to check
             const CSR_Polygon3* pPolygon = (CSR_Polygon3*)pSecond;
@@ -2066,7 +2237,11 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
             const CSR_Box*  pBox = (CSR_Box*)pSecond;
 
             // get infinite value
-            const float inf = 1.0f / 0.0f;
+            #ifdef _MSC_VER
+                const float inf = INFINITY;
+            #else
+                const float inf = 1.0f / 0.0f;
+            #endif
 
             // calculate nearest point where ray intersects box on x coordinate
             if (pRay->m_InvDir.m_X != inf)
@@ -2143,10 +2318,17 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
         // segment-plane intersection
         case 14:
         {
-            CSR_Vector3 point;
-            CSR_Vector3 dir;
-            CSR_Ray3    ray;
-            CSR_Figure3 rayFigure;
+            #ifdef _MSC_VER
+                CSR_Vector3 point     = {0};
+                CSR_Vector3 dir       = {0};
+                CSR_Ray3    ray       = {0};
+                CSR_Figure3 rayFigure = {0};
+            #else
+                CSR_Vector3 point;
+                CSR_Vector3 dir;
+                CSR_Ray3    ray;
+                CSR_Figure3 rayFigure;
+            #endif
 
             // get the segment to check
             const CSR_Segment3* pSegment = (CSR_Segment3*)pFirst;
@@ -2166,7 +2348,7 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
             // check the intersection. NOTE the segment will only intersect the plane if the
             // intersection point is inside the segment limits
             if (csrIntersect3(&rayFigure, pSecond, &point, pR2, pR3))
-                if (csrVec3BetweenRange(&point, &pSegment->m_Start, &pSegment->m_End, M_CSR_Epsilon))
+                if (csrVec3BetweenRange(&point, &pSegment->m_Start, &pSegment->m_End, (float)M_CSR_Epsilon))
                 {
                     if (pR1)
                         *pR1 = point;
@@ -2180,9 +2362,15 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
         // segment-polygon intersection
         case 15:
         {
-            CSR_Figure3 plane;
-            CSR_Plane   polygonPlane;
-            CSR_Vector3 pointOnPlane;
+            #ifdef _MSC_VER
+                CSR_Figure3 plane        = {0};
+                CSR_Plane   polygonPlane = {0};
+                CSR_Vector3 pointOnPlane = {0};
+            #else
+                CSR_Figure3 plane;
+                CSR_Plane   polygonPlane;
+                CSR_Vector3 pointOnPlane;
+            #endif
 
             // get the figures to check
             const CSR_Polygon3* pPolygon = (CSR_Polygon3*)pSecond;
@@ -2216,16 +2404,29 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
         // polygon-sphere intersection
         case 24:
         {
-            float        testPoint1;
-            float        testPoint2;
-            CSR_Vector3  sphereNormal;
-            CSR_Vector3  pointOnSphere;
-            CSR_Vector3  pointOnPlane;
-            CSR_Vector3  pointOnTriangle;
-            CSR_Plane    polygonPlane;
-            CSR_Segment3 seg;
-            CSR_Figure3  segment;
-            CSR_Figure3  plane;
+            #ifdef _MSC_VER
+                float        testPoint1;
+                float        testPoint2;
+                CSR_Vector3  sphereNormal    = {0};
+                CSR_Vector3  pointOnSphere   = {0};
+                CSR_Vector3  pointOnPlane    = {0};
+                CSR_Vector3  pointOnTriangle = {0};
+                CSR_Plane    polygonPlane    = {0};
+                CSR_Segment3 seg             = {0};
+                CSR_Figure3  segment         = {0};
+                CSR_Figure3  plane           = {0};
+            #else
+                float        testPoint1;
+                float        testPoint2;
+                CSR_Vector3  sphereNormal;
+                CSR_Vector3  pointOnSphere;
+                CSR_Vector3  pointOnPlane;
+                CSR_Vector3  pointOnTriangle;
+                CSR_Plane    polygonPlane;
+                CSR_Segment3 seg;
+                CSR_Figure3  segment;
+                CSR_Figure3  plane;
+            #endif
 
             // get the figures to check
             const CSR_Polygon3* pPolygon = (CSR_Polygon3*)pFirst;
@@ -2352,42 +2553,53 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
 
             // find the square of the distance from the sphere to the box on the x axis
             if (pSphere->m_Center.m_X < pBox->m_Min.m_X)
-                d += pow(pSphere->m_Center.m_X - pBox->m_Min.m_X, 2.0f);
+                d += powf(pSphere->m_Center.m_X - pBox->m_Min.m_X, 2.0f);
             else
             if (pSphere->m_Center.m_X > pBox->m_Max.m_X)
-                d += pow(pSphere->m_Center.m_X - pBox->m_Max.m_X, 2.0f);
+                d += powf(pSphere->m_Center.m_X - pBox->m_Max.m_X, 2.0f);
 
             // find the square of the distance from the sphere to the box on the y axis
             if (pSphere->m_Center.m_Y < pBox->m_Min.m_Y)
-                d += pow(pSphere->m_Center.m_Y - pBox->m_Min.m_Y, 2.0f);
+                d += powf(pSphere->m_Center.m_Y - pBox->m_Min.m_Y, 2.0f);
             else
             if (pSphere->m_Center.m_Y > pBox->m_Max.m_Y)
-                d += pow(pSphere->m_Center.m_Y - pBox->m_Max.m_Y, 2.0f);
+                d += powf(pSphere->m_Center.m_Y - pBox->m_Max.m_Y, 2.0f);
 
             // find the square of the distance from the sphere to the box on the z axis
             if (pSphere->m_Center.m_Z < pBox->m_Min.m_Z)
-                d += pow(pSphere->m_Center.m_Z - pBox->m_Min.m_Z, 2.0f);
+                d += powf(pSphere->m_Center.m_Z - pBox->m_Min.m_Z, 2.0f);
             else
             if (pSphere->m_Center.m_Z > pBox->m_Max.m_Z)
-                d += pow(pSphere->m_Center.m_Z - pBox->m_Max.m_Z, 2.0f);
+                d += powf(pSphere->m_Center.m_Z - pBox->m_Max.m_Z, 2.0f);
 
-            return (d <= pow(pSphere->m_Radius, 2.0f));
+            return (d <= powf(pSphere->m_Radius, 2.0f));
         }
 
         // sphere-sphere intersection
         case 27:
         {
-            CSR_Vector3 dist;
-            float       length;
+            #ifdef _MSC_VER
+                CSR_Vector3 dist = {0};
+                float       length;
+            #else
+                CSR_Vector3 dist;
+                float       length;
+            #endif
 
             // get the figures to check
             const CSR_Sphere* pSphere1 = (CSR_Sphere*)pFirst;
             const CSR_Sphere* pSphere2 = (CSR_Sphere*)pSecond;
 
             // calculate the distance between the both sphere centers
-            dist.m_X = fabs(pSphere1->m_Center.m_X - pSphere2->m_Center.m_X);
-            dist.m_Y = fabs(pSphere1->m_Center.m_Y - pSphere2->m_Center.m_Y);
-            dist.m_Z = fabs(pSphere1->m_Center.m_Z - pSphere2->m_Center.m_Z);
+            #ifdef __CODEGEARC__
+                dist.m_X = fabs(pSphere1->m_Center.m_X - pSphere2->m_Center.m_X);
+                dist.m_Y = fabs(pSphere1->m_Center.m_Y - pSphere2->m_Center.m_Y);
+                dist.m_Z = fabs(pSphere1->m_Center.m_Z - pSphere2->m_Center.m_Z);
+            #else
+                dist.m_X = fabsf(pSphere1->m_Center.m_X - pSphere2->m_Center.m_X);
+                dist.m_Y = fabsf(pSphere1->m_Center.m_Y - pSphere2->m_Center.m_Y);
+                dist.m_Z = fabsf(pSphere1->m_Center.m_Z - pSphere2->m_Center.m_Z);
+            #endif
 
             // calculate the length between the both sphere centers
             csrVec3Length(&dist, &length);

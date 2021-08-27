@@ -31,7 +31,7 @@
     #define CSR_OPENGL_2_ONLY
     #include <OpenGLES/ES2/gl.h>
     #include <OpenGLES/ES2/glext.h>
-#elif defined(__CODEGEARC__) || defined(__GNUC__)
+#elif defined(__CODEGEARC__) || defined(__GNUC__) || defined(_MSC_VER)
     #define WIN32_LEAN_AND_MEAN
     #include <Windows.h>
     #define GLEW_STATIC

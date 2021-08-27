@@ -21,13 +21,6 @@
 #include "CSR_Common.h"
 
 //---------------------------------------------------------------------------
-// Prototypes
-//---------------------------------------------------------------------------
-
-// task context prototype
-typedef struct CSR_TaskContext CSR_TaskContext;
-
-//---------------------------------------------------------------------------
 // Structures
 //---------------------------------------------------------------------------
 
@@ -76,11 +69,11 @@ typedef void (*CSR_fOnTaskChange)(CSR_Task* pTask, double elapsedTime);
 /**
 * Task context
 */
-struct CSR_TaskContext
+typedef struct
 {
     CSR_fOnTaskRun    m_fOnTaskRun;
     CSR_fOnTaskChange m_fOnTaskChange;
-};
+} CSR_TaskContext;
 
 #ifdef __cplusplus
     extern "C"

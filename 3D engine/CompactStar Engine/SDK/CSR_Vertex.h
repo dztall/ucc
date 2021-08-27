@@ -83,7 +83,7 @@ typedef struct
     CSR_EVertexType m_Type;
     int             m_HasNormal;         // each vertex contains a normal
     int             m_HasTexCoords;      // each vertex contains an UV texture coordinate
-    int             m_HasPerVertexColor; // each vertex contains his own color, see CSR_fOnGetVertexColor callback
+    int             m_HasPerVertexColor; // each vertex contains its own color, see CSR_fOnGetVertexColor callback
     unsigned        m_Stride;
 } CSR_VertexFormat;
 
@@ -317,7 +317,7 @@ typedef unsigned (*CSR_fOnGetVertexColor)(const CSR_VertexBuffer* pVB,
         *@return indexed polygon buffer, 0 on error
         *@note The indexed polygon buffer must be released when no longer used, see
         *      csrIndexedPolygonBufferRelease()
-        *@note BE CAREFUL, the indexed polygon buffer is valid as long as his source mesh is valid.
+        *@note BE CAREFUL, the indexed polygon buffer is valid as long as its source mesh is valid.
         *      If the mesh is released, the indexed polygon buffer should be released together.
         *      However the indexed polygon buffer may be released after the mesh
         */

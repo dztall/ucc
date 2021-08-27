@@ -83,7 +83,7 @@ typedef struct CSR_tagAABBNode
         void csrAABBTreeNodeContentRelease(CSR_AABBNode* pNode);
 
         /**
-        * Releases an AABB tree node and all his children
+        * Releases an AABB tree node and all its children
         *@param[in, out] pNode - AABB tree root node to release from
         */
         void csrAABBTreeNodeRelease(CSR_AABBNode* pNode);
