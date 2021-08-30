@@ -5677,7 +5677,7 @@ int csrXBuildMesh(const CSR_Item_X*           pItem,
                         #ifdef _MSC_VER
                             if (pX->m_pMeshWeights[meshWeightsIndex].m_pSkinWeights[weightIndex].m_pBoneName)
                                 strcpy_s(pX->m_pMeshWeights[meshWeightsIndex].m_pSkinWeights[weightIndex].m_pBoneName,
-                                         length,
+                                         length + 1,
                                          pSkinWeightsDataset->m_pBoneName);
                         #else
                             strcpy(pX->m_pMeshWeights[meshWeightsIndex].m_pSkinWeights[weightIndex].m_pBoneName,
@@ -5849,7 +5849,7 @@ int csrXBuildMesh(const CSR_Item_X*           pItem,
                     // get the file name
                     #ifdef _MSC_VER
                         if (pX->m_pMesh[index].m_Skin.m_Texture.m_pFileName)
-                            strcpy_s(pX->m_pMesh[index].m_Skin.m_Texture.m_pFileName, length, pTextureDataset->m_pFileName);
+                            strcpy_s(pX->m_pMesh[index].m_Skin.m_Texture.m_pFileName, length + 1, pTextureDataset->m_pFileName);
                     #else
                         strcpy(pX->m_pMesh[index].m_Skin.m_Texture.m_pFileName, pTextureDataset->m_pFileName);
                         pX->m_pMesh[index].m_Skin.m_Texture.m_pFileName[length] = '\0';
@@ -7900,7 +7900,7 @@ int csrXItemToModel(const CSR_Item_X*           pItem,
 
                 #ifdef _MSC_VER
                 if (pCurrent->m_pName)
-                    strcpy_s(pCurrent->m_pName, length, pData->m_pName);
+                    strcpy_s(pCurrent->m_pName, length + 1, pData->m_pName);
                 #else
                     strcpy(pCurrent->m_pName, pData->m_pName);
                     pCurrent->m_pName[length] = '\0';
