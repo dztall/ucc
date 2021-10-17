@@ -77,7 +77,7 @@ int csrAABBTreeFromIndexedPolygonBuffer(const CSR_IndexedPolygonBuffer* pIPB,
     // iterate through polygons to divide
     for (i = 0; i < pIPB->m_Count; ++i)
     {
-        // using his index, extract the polygon from his vertex buffer
+        // using its index, extract the polygon from its vertex buffer
         csrIndexedPolygonToPolygon(&pIPB->m_pIndexedPolygon[i], &polygon);
 
         // extend the bounding box to include the polygon
@@ -148,7 +148,7 @@ int csrAABBTreeFromIndexedPolygonBuffer(const CSR_IndexedPolygonBuffer* pIPB,
             pRightPolygons->m_pIndexedPolygon = pNewPolygons;
             ++pRightPolygons->m_Count;
 
-            // copy the polygon content inside his buffer
+            // copy the polygon content inside its buffer
             pRightPolygons->m_pIndexedPolygon[pRightPolygons->m_Count - 1] = pIPB->m_pIndexedPolygon[i];
         }
     }

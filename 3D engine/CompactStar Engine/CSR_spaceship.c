@@ -745,8 +745,8 @@ void on_GLES2_Init(int view_w, int view_h)
     material.m_Transparent = 0;
 
     // create the background surface
-    pMesh = csrShapeCreateSurface(10.0f,
-                                  10.0f,
+    pMesh = csrShapeCreateSurface(11.5f,
+                                  11.5f,
                                  &vertexFormat,
                                   0,
                                  &material,

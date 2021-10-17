@@ -23,11 +23,20 @@
 #include "CSR_Model.h"
 #include "CSR_Renderer.h"
 
+// visual studio specific code
+#ifdef _MSC_VER
+    #include <math.h>
+#endif
+
 //---------------------------------------------------------------------------
 // Global defines
 //---------------------------------------------------------------------------
 
-#define M_CSR_NoGround 1.0f / 0.0f // i.e. infinite, this is the only case where a division by 0 is allowed
+#ifdef _MSC_VER
+    #define M_CSR_NoGround INFINITY
+#else
+    #define M_CSR_NoGround 1.0f / 0.0f // i.e. infinite, this is the only case where a division by 0 is allowed
+#endif
 
 //---------------------------------------------------------------------------
 // Enumerators
@@ -46,7 +55,7 @@ typedef enum
 } CSR_EModelType;
 
 /**
-* Collision type (can be combinated)
+* Collision type (can be combined)
 */
 typedef enum
 {
@@ -155,7 +164,7 @@ typedef struct
 typedef struct
 {
     CSR_Ray3    m_MouseRay;       // ray starting from the mouse position, transformed in the viewport coordinates system
-    CSR_Sphere  m_BoundingSphere; // bounding sphere representing the model or point of view at his current position
+    CSR_Sphere  m_BoundingSphere; // bounding sphere representing the model or point of view at its current position
     CSR_Vector3 m_CheckPos;       // the model or point of view position to check
 } CSR_CollisionInput;
 
@@ -520,7 +529,7 @@ struct CSR_SceneContext
         *@param pScene - scene from which the item should be deleted
         *@param pKey - key to delete, may be any model kind or a matrix
         *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
-        *@note The item and all his associated resources will be freed internally. For that reason
+        *@note The item and all its associated resources will be freed internally. For that reason
         *      the caller should not take care of deleting them. Be aware that the key will no longer
         *      be valid and should no longer be used after the function will be executed
         */

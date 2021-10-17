@@ -22,7 +22,7 @@
 //---------------------------------------------------------------------------
 // Global defines
 //---------------------------------------------------------------------------
-#define M_CSR_Version        1.05
+#define M_CSR_Version        1.06
 #define M_CSR_Error_Code     0xFFFFFFFF // yes this is a 32 bit error code, but enough for this engine
 #define M_CSR_Unknown_Index -1
 #define M_CSR_Epsilon        1.0E-3     // epsilon value used for tolerance
@@ -164,7 +164,7 @@ typedef struct
         void csrMathRound(float value, float* pR);
 
         /**
-        * Rounds a value to his next exponent
+        * Rounds a value to its next exponent
         *@param value - value to round
         *@param exp - exponent to which the value will be rounded
         *@param[out] pR - rounded value
@@ -215,7 +215,7 @@ typedef struct
         CSR_Array* csrArrayCreate(void);
 
         /**
-        * Releases an array and frees his memory
+        * Releases an array and frees its memory
         *@param[in, out] pArray - array to release
         */
         void csrArrayRelease(CSR_Array* pArray);
@@ -302,7 +302,7 @@ typedef struct
         CSR_Buffer* csrBufferCreate(void);
 
         /**
-        * Releases a buffer and frees his memory
+        * Releases a buffer and frees its memory
         *@param[in, out] pBuffer - buffer to release
         */
         void csrBufferRelease(CSR_Buffer* pBuffer);

@@ -84,14 +84,25 @@ void csrPhysicsRoll(const CSR_Vector3* pSlopeDir,
                           float        elapsedTime,
                           CSR_Vector3* pVelocity)
 {
-    float       gravity;
-    float       thetaX;
-    float       thetaZ;
-    float       ffx;
-    float       ffz;
-    CSR_Vector3 xDir;
-    CSR_Vector3 zDir;
-    CSR_Vector3 acceleration;
+    #ifdef _MSC_VER
+        float       gravity;
+        float       thetaX;
+        float       thetaZ;
+        float       ffx;
+        float       ffz;
+        CSR_Vector3 xDir         = {0};
+        CSR_Vector3 zDir         = {0};
+        CSR_Vector3 acceleration = {0};
+    #else
+        float       gravity;
+        float       thetaX;
+        float       thetaZ;
+        float       ffx;
+        float       ffz;
+        CSR_Vector3 xDir;
+        CSR_Vector3 zDir;
+        CSR_Vector3 acceleration;
+    #endif
 
     // calculate the gravity force to apply to the body
     csrPhysicsGravity(mass, &gravity);
@@ -111,8 +122,13 @@ void csrPhysicsRoll(const CSR_Vector3* pSlopeDir,
     csrVec3Dot(&zDir, pSlopeDir, &thetaZ);
 
     // the angles should always be positive
-    thetaX = fabs(thetaX);
-    thetaZ = fabs(thetaZ);
+    #ifdef __CODEGEARC__
+        thetaX = fabs(thetaX);
+        thetaZ = fabs(thetaZ);
+    #else
+        thetaX = fabsf(thetaX);
+        thetaZ = fabsf(thetaZ);
+    #endif
 
     // calculate the friction force to apply to the body (using the formula a = dv / dt)
     if (elapsedTime)

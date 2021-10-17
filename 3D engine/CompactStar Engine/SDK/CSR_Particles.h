@@ -140,7 +140,7 @@ struct CSR_Particles
         /**
         * Deletes a particle matching with a model from a particle system
         *@param pKey - key to delete, may be any model kind
-        *@note The particle and all his associated resources will be freed internally. For that
+        *@note The particle and all its associated resources will be freed internally. For that
         *      reason the caller should not take care of deleting them
         */
         void csrParticlesDeleteFrom(CSR_Particles* pParticles, const void* pKey);

@@ -180,9 +180,9 @@ void csrRasterInit(CSR_Raster* pRaster)
     if (!pRaster)
         return;
 
-    pRaster->m_ApertureWidth  = 0.980; // 35mm full aperture in inches
-    pRaster->m_ApertureHeight = 0.735; // 35mm full aperture in inches
-    pRaster->m_FocalLength    = 20.0f; // focal length in mm
+    pRaster->m_ApertureWidth  = 0.980f; // 35mm full aperture in inches
+    pRaster->m_ApertureHeight = 0.735f; // 35mm full aperture in inches
+    pRaster->m_FocalLength    = 20.0f;  // focal length in mm
     pRaster->m_Type           = CSR_RT_Overscan;
 }
 //---------------------------------------------------------------------------
@@ -290,13 +290,23 @@ void csrRasterRasterizeVertex(const CSR_Vector3* pInVertex,
                                     float        imageHeight,
                                     CSR_Vector3* pOutVertex)
 {
-    CSR_Vector3 vertexCamera;
-    CSR_Vector2 vertexScreen;
-    CSR_Vector2 vertexNDC;
-    float       subRightLeft;
-    float       addRightLeft;
-    float       subTopBottom;
-    float       addTopBottom;
+    #ifdef _MSC_VER
+        CSR_Vector3 vertexCamera = {0};
+        CSR_Vector2 vertexScreen = {0};
+        CSR_Vector2 vertexNDC    = {0};
+        float       subRightLeft;
+        float       addRightLeft;
+        float       subTopBottom;
+        float       addTopBottom;
+    #else
+        CSR_Vector3 vertexCamera;
+        CSR_Vector2 vertexScreen;
+        CSR_Vector2 vertexNDC;
+        float       subRightLeft;
+        float       addRightLeft;
+        float       subTopBottom;
+        float       addTopBottom;
+    #endif
 
     // validate the input
     if (!pInVertex || !pMatrix || !pScreenRect || !pOutVertex)
@@ -460,43 +470,74 @@ int csrRasterDrawPolygon(const CSR_Polygon3*              pPolygon,
                                CSR_DepthBuffer*           pDB,
                          const CSR_fOnApplyFragmentShader fOnApplyFragmentShader)
 {
-    float         xMin;
-    float         yMin;
-    float         xMax;
-    float         yMax;
-    float         xStart;
-    float         yStart;
-    float         xEnd;
-    float         yEnd;
-    float         area;
-    float         w0;
-    float         w1;
-    float         w2;
-    float         invZ;
-    float         z;
-    size_t        x;
-    size_t        y;
-    size_t        x0;
-    size_t        x1;
-    size_t        y0;
-    size_t        y1;
-    int           cullingMode;
-    int           pixelVisible;
-    CSR_Polygon3  rasterPoly;
-    CSR_Vector2   st[3];
-    CSR_Vector2   stCoord;
-    CSR_Vector3   pixelSample;
-    CSR_Vector3   sampler;
-    CSR_Color     color;
+    #ifdef _MSC_VER
+        float         xMin;
+        float         yMin;
+        float         xMax;
+        float         yMax;
+        float         xStart;
+        float         yStart;
+        float         xEnd;
+        float         yEnd;
+        float         area;
+        float         w0;
+        float         w1;
+        float         w2;
+        float         invZ;
+        float         z;
+        size_t        x;
+        size_t        y;
+        size_t        x0;
+        size_t        x1;
+        size_t        y0;
+        size_t        y1;
+        int           cullingMode;
+        int           pixelVisible;
+        CSR_Polygon3  rasterPoly  = {0};
+        CSR_Vector2   st[3]       = {0};
+        CSR_Vector2   stCoord     = {0};
+        CSR_Vector3   pixelSample = {0};
+        CSR_Vector3   sampler     = {0};
+        CSR_Color     color       = {0};
+    #else
+        float         xMin;
+        float         yMin;
+        float         xMax;
+        float         yMax;
+        float         xStart;
+        float         yStart;
+        float         xEnd;
+        float         yEnd;
+        float         area;
+        float         w0;
+        float         w1;
+        float         w2;
+        float         invZ;
+        float         z;
+        size_t        x;
+        size_t        y;
+        size_t        x0;
+        size_t        x1;
+        size_t        y0;
+        size_t        y1;
+        int           cullingMode;
+        int           pixelVisible;
+        CSR_Polygon3  rasterPoly;
+        CSR_Vector2   st[3];
+        CSR_Vector2   stCoord;
+        CSR_Vector3   pixelSample;
+        CSR_Vector3   sampler;
+        CSR_Color     color;
+    #endif
 
     // validate the input
     if (!pPolygon || !pNormal || !pST || !pColor || !pMatrix || !pScreenRect || !pFB || !pDB)
         return 0;
 
     // rasterize the polygon
-    csrRasterRasterizeVertex(&pPolygon->m_Vertex[0], pMatrix, pScreenRect, zNear, pFB->m_Width, pFB->m_Height, &rasterPoly.m_Vertex[0]);
-    csrRasterRasterizeVertex(&pPolygon->m_Vertex[1], pMatrix, pScreenRect, zNear, pFB->m_Width, pFB->m_Height, &rasterPoly.m_Vertex[1]);
-    csrRasterRasterizeVertex(&pPolygon->m_Vertex[2], pMatrix, pScreenRect, zNear, pFB->m_Width, pFB->m_Height, &rasterPoly.m_Vertex[2]);
+    csrRasterRasterizeVertex(&pPolygon->m_Vertex[0], pMatrix, pScreenRect, zNear, (float)pFB->m_Width, (float)pFB->m_Height, &rasterPoly.m_Vertex[0]);
+    csrRasterRasterizeVertex(&pPolygon->m_Vertex[1], pMatrix, pScreenRect, zNear, (float)pFB->m_Width, (float)pFB->m_Height, &rasterPoly.m_Vertex[1]);
+    csrRasterRasterizeVertex(&pPolygon->m_Vertex[2], pMatrix, pScreenRect, zNear, (float)pFB->m_Width, (float)pFB->m_Height, &rasterPoly.m_Vertex[2]);
 
     // check if the polygon is culled and determine the culling mode to use (0 = CW, 1 = CCW, 2 = both)
     switch (cullingType)
@@ -510,10 +551,17 @@ int csrRasterDrawPolygon(const CSR_Polygon3*              pPolygon,
         case CSR_CT_Front:
         case CSR_CT_Back:
         {
-            CSR_Plane   polygonPlane;
-            CSR_Vector3 polygonNormal;
-            CSR_Vector3 cullingNormal;
-            float       cullingDot;
+            #ifdef _MSC_VER
+                CSR_Plane   polygonPlane  = {0};
+                CSR_Vector3 polygonNormal = {0};
+                CSR_Vector3 cullingNormal = {0};
+                float       cullingDot;
+            #else
+                CSR_Plane   polygonPlane;
+                CSR_Vector3 polygonNormal;
+                CSR_Vector3 cullingNormal;
+                float       cullingDot;
+            #endif
 
             // calculate the rasterized polygon plane
             csrPlaneFromPoints(&rasterPoly.m_Vertex[0],
@@ -573,7 +621,7 @@ int csrRasterDrawPolygon(const CSR_Polygon3*              pPolygon,
     rasterPoly.m_Vertex[1].m_Z = 1.0f / rasterPoly.m_Vertex[1].m_Z;
     rasterPoly.m_Vertex[2].m_Z = 1.0f / rasterPoly.m_Vertex[2].m_Z;
 
-    // calculate the texture coordinates, divde them by their vertex z-coordinate
+    // calculate the texture coordinates, divide them by their vertex z-coordinate
     st[0].m_X = pST[0].m_X * rasterPoly.m_Vertex[0].m_Z;
     st[0].m_Y = pST[0].m_Y * rasterPoly.m_Vertex[0].m_Z;
     st[1].m_X = pST[1].m_X * rasterPoly.m_Vertex[1].m_Z;
@@ -598,10 +646,17 @@ int csrRasterDrawPolygon(const CSR_Polygon3*              pPolygon,
     csrMathMax(0.0f,                       yMin, &yStart);
     csrMathMin((float)(pFB->m_Height - 1), yMax, &yEnd);
 
-    x0 = floor(xStart);
-    x1 = floor(xEnd);
-    y0 = floor(yStart);
-    y1 = floor(yEnd);
+    #ifdef __CODEGEARC__
+        x0 = (size_t)floor(xStart);
+        x1 = (size_t)floor(xEnd);
+        y0 = (size_t)floor(yStart);
+        y1 = (size_t)floor(yEnd);
+    #else
+        x0 = (size_t)floorf(xStart);
+        x1 = (size_t)floorf(xEnd);
+        y0 = (size_t)floorf(yStart);
+        y1 = (size_t)floorf(yEnd);
+    #endif
 
     // calculate the triangle area (multiplied by 2)
     csrRasterFindEdge(&rasterPoly.m_Vertex[0], &rasterPoly.m_Vertex[1], &rasterPoly.m_Vertex[2], &area);
@@ -754,8 +809,8 @@ int csrRasterDraw(const CSR_Matrix4*               pMatrix,
 
     // get the raster screen coordinates
     csrRasterGetScreenCoordinates(pRaster,
-                                  pFB->m_Width,
-                                  pFB->m_Height,
+                                  (float)pFB->m_Width,
+                                  (float)pFB->m_Height,
                                   zNear,
                                  &screenRect);
 

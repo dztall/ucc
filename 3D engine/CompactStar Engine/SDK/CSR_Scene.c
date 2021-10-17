@@ -20,6 +20,12 @@
 #include <math.h>
 #include <string.h>
 
+// visual studio specific code
+#ifdef _MSC_VER
+    #define _USE_MATH_DEFINES
+    #include <math.h>
+#endif
+
 //---------------------------------------------------------------------------
 // Hit model functions
 //---------------------------------------------------------------------------
@@ -450,11 +456,19 @@ void csrSceneItemDetectCollision(const CSR_Scene*                   pScene,
                                        CSR_CollisionOutput*         pCollisionOutput,
                                        CSR_fOnCustomDetectCollision fOnCustomDetectCollision)
 {
-    size_t      i;
-    CSR_Vector3 rayPos;
-    CSR_Vector3 rayDir;
-    CSR_Vector3 rayDirN;
-    CSR_Sphere  sphere;
+    #ifdef _MSC_VER
+        size_t      i;
+        CSR_Vector3 rayPos  = {0};
+        CSR_Vector3 rayDir  = {0};
+        CSR_Vector3 rayDirN = {0};
+        CSR_Sphere  sphere  = {0};
+    #else
+        size_t      i;
+        CSR_Vector3 rayPos;
+        CSR_Vector3 rayDir;
+        CSR_Vector3 rayDirN;
+        CSR_Sphere  sphere;
+    #endif
 
     // validate the inputs
     if (!pScene || !pSceneItem || !pCollisionInput || !pCollisionOutput)
@@ -977,7 +991,7 @@ CSR_SceneItem* csrSceneAddModel(CSR_Scene* pScene, CSR_Model* pModel, int transp
             // copy the tree content
             memcpy(&pItem[index].m_pAABBTree[i], pAABBTree, sizeof(CSR_AABBNode));
 
-            // release the source tree (NOTE reset his value before, otherwise the copied tree
+            // release the source tree (NOTE reset its value before, otherwise the copied tree
             // content will also be released, which will corrupt the tree)
             pAABBTree->m_pParent        = 0;
             pAABBTree->m_pLeft          = 0;
@@ -1113,7 +1127,7 @@ CSR_SceneItem* csrSceneAddMDL(CSR_Scene* pScene, CSR_MDL* pMDL, int transparent,
                 // copy the tree content
                 memcpy(&pItem[index].m_pAABBTree[i], pAABBTree, sizeof(CSR_AABBNode));
 
-                // release the source tree (NOTE reset his value before, otherwise the copied tree
+                // release the source tree (NOTE reset its value before, otherwise the copied tree
                 // content will also be released, which will corrupt the tree)
                 pAABBTree->m_pParent        = 0;
                 pAABBTree->m_pLeft          = 0;
@@ -1247,7 +1261,7 @@ CSR_SceneItem* csrSceneAddX(CSR_Scene* pScene, CSR_X* pX, int transparent, int a
             // copy the tree content
             memcpy(&pItem[index].m_pAABBTree[i], pAABBTree, sizeof(CSR_AABBNode));
 
-            // release the source tree (NOTE reset his value before, otherwise the copied tree
+            // release the source tree (NOTE reset its value before, otherwise the copied tree
             // content will also be released, which will corrupt the tree)
             pAABBTree->m_pParent        = 0;
             pAABBTree->m_pLeft          = 0;
@@ -1518,22 +1532,38 @@ void csrSceneDraw(const CSR_Scene* pScene, const CSR_SceneContext* pContext)
 //---------------------------------------------------------------------------
 void csrSceneArcBallToMatrix(const CSR_ArcBall* pArcball, CSR_Matrix4* pR)
 {
-    float       angleX;
-    float       angleY;
-    CSR_Vector3 axis;
-    CSR_Matrix4 cameraMatrixX;
-    CSR_Matrix4 cameraMatrixY;
-    CSR_Matrix4 cameraMatrixXY;
-    CSR_Matrix4 cameraMatrix;
-    CSR_Camera  camera;
+    #ifdef _MSC_VER
+        float       angleX;
+        float       angleY;
+        CSR_Vector3 axis           = {0};
+        CSR_Matrix4 cameraMatrixX  = {0};
+        CSR_Matrix4 cameraMatrixY  = {0};
+        CSR_Matrix4 cameraMatrixXY = {0};
+        CSR_Matrix4 cameraMatrix   = {0};
+        CSR_Camera  camera         = {0};
+    #else
+        float       angleX;
+        float       angleY;
+        CSR_Vector3 axis;
+        CSR_Matrix4 cameraMatrixX;
+        CSR_Matrix4 cameraMatrixY;
+        CSR_Matrix4 cameraMatrixXY;
+        CSR_Matrix4 cameraMatrix;
+        CSR_Camera  camera;
+    #endif
 
     // validate the inputs
     if (!pArcball || !pR)
         return;
 
     // are angles out of bounds?
-    angleX = fmod(pArcball->m_AngleX, M_PI * 2.0f);
-    angleY = fmod(pArcball->m_AngleY, M_PI * 2.0f);
+    #ifdef __CODEGEARC__
+        angleX = fmod(pArcball->m_AngleX, (float)(M_PI * 2.0));
+        angleY = fmod(pArcball->m_AngleY, (float)(M_PI * 2.0));
+    #else
+        angleX = fmodf(pArcball->m_AngleX, (float)(M_PI * 2.0));
+        angleY = fmodf(pArcball->m_AngleY, (float)(M_PI * 2.0));
+    #endif
 
     // create a matrix for the rotation on the X axis
     axis.m_X = 1.0f;
@@ -1569,15 +1599,27 @@ void csrSceneArcBallToMatrix(const CSR_ArcBall* pArcball, CSR_Matrix4* pR)
 //---------------------------------------------------------------------------
 void csrSceneCameraToMatrix(const CSR_Camera* pCamera, CSR_Matrix4* pR)
 {
-    CSR_Vector3 axis;
-    CSR_Matrix4 scaleMatrix;
-    CSR_Matrix4 rotateXMatrix;
-    CSR_Matrix4 rotateYMatrix;
-    CSR_Matrix4 rotateZMatrix;
-    CSR_Matrix4 translateMatrix;
-    CSR_Matrix4 buildMatrix1;
-    CSR_Matrix4 buildMatrix2;
-    CSR_Matrix4 buildMatrix3;
+    #ifdef _MSC_VER
+        CSR_Vector3 axis            = {0};
+        CSR_Matrix4 scaleMatrix     = {0};
+        CSR_Matrix4 rotateXMatrix   = {0};
+        CSR_Matrix4 rotateYMatrix   = {0};
+        CSR_Matrix4 rotateZMatrix   = {0};
+        CSR_Matrix4 translateMatrix = {0};
+        CSR_Matrix4 buildMatrix1    = {0};
+        CSR_Matrix4 buildMatrix2    = {0};
+        CSR_Matrix4 buildMatrix3    = {0};
+    #else
+        CSR_Vector3 axis;
+        CSR_Matrix4 scaleMatrix;
+        CSR_Matrix4 rotateXMatrix;
+        CSR_Matrix4 rotateYMatrix;
+        CSR_Matrix4 rotateZMatrix;
+        CSR_Matrix4 translateMatrix;
+        CSR_Matrix4 buildMatrix1;
+        CSR_Matrix4 buildMatrix2;
+        CSR_Matrix4 buildMatrix3;
+    #endif
 
     // validate the inputs
     if (!pCamera || !pR)
@@ -1727,7 +1769,11 @@ void csrSceneGetTouchRay(const CSR_Vector2* pTouchPos,
                          const CSR_Matrix4* pViewMatrix,
                                CSR_Ray3*    pTouchRay)
 {
-    CSR_Rect viewportRect;
+    #ifdef _MSC_VER
+        CSR_Rect viewportRect = {0};
+    #else
+        CSR_Rect viewportRect;
+    #endif
 
     // validate the inputs
     if (!pTouchPos || !pTouchRect || !pProjectionMatrix || !pViewMatrix || !pTouchRay)

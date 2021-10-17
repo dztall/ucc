@@ -397,7 +397,7 @@ typedef struct
 
 /**
 * DirectX (.x) model
-*@note Each mesh is connected to his own weights count and skeleton, sorted in the same order in each list
+*@note Each mesh is connected to its own weights count and skeleton, sorted in the same order in each list
 */
 typedef struct
 {
@@ -1079,7 +1079,7 @@ typedef void (*CSR_fOnApplySkin)(size_t index, const CSR_Skin* pSkin, int* pCanR
         *@param modelIndex - model index, 0 if unknown (csrMDLUpdateIndex() may be called first)
         *@param meshIndex - mesh index, 0 if unknown (csrMDLUpdateIndex() may be called first)
         *@return current mesh from MDL model, 0 on error or if not found
-        *@note The returned mesh will be valid as long as his owner model is
+        *@note The returned mesh will be valid as long as its owner model is
         */
         CSR_Mesh* csrMDLGetMesh(const CSR_MDL* pMDL, size_t modelIndex, size_t meshIndex);
 

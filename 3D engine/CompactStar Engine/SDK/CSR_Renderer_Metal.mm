@@ -528,7 +528,7 @@ typedef std::map<std::string,                       id<MTLRenderPipelineState>> 
                                 &boneMatrix,
                                 &finalMatrix);
                 
-                // apply the bone and his skin weights to each vertices
+                // apply the bone and its skin weights to each vertices
                 for (k = 0; k < pX->m_pMeshWeights[i].m_pSkinWeights[j].m_IndexTableCount; ++k)
                     for (l = 0; l < pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pIndexTable[k].m_Count; ++l)
                     {
@@ -737,7 +737,7 @@ typedef std::map<std::string,                       id<MTLRenderPipelineState>> 
     if (!pImageNames)
         return false;
     
-    // load the first cubemap texture image and get his size
+    // load the first cubemap texture image and get its size
     UIImage*      pFirstImage = [UIImage imageNamed:[pImageNames firstObject]];
     const CGFloat cubeSize    = pFirstImage.size.width * pFirstImage.scale;
     

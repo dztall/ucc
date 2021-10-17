@@ -568,7 +568,7 @@ typedef struct
         //-------------------------------------------------------------------
 
         /**
-        * Initializes a quaternion to his identity value
+        * Initializes a quaternion to its identity value
         *@param pQ - quaternion to initialize, initialized quaternion on function ends
         */
         void csrQuatIdentity(CSR_Quaternion* pQ);
@@ -601,8 +601,8 @@ typedef struct
 
         /**
         * Gets the squared length of a quaternion
-        *@param pQ - quaternion for which the norm should be get
-        *@param[out] pR - the resulting norm
+        *@param pQ - quaternion for which the squared length should be get
+        *@param[out] pR - the resulting squared length
         */
         void csrQuatLengthSquared(const CSR_Quaternion* pQ, float* pR);
 
@@ -615,8 +615,8 @@ typedef struct
 
         /**
         * Normalizes the quaternion
-        *@param pQ - vector to normalize
-        *@param[out] pR - normailzed vector
+        *@param pQ - quaternion to normalize
+        *@param[out] pR - normailzed quaternion
         */
         void csrQuatNormalize(const CSR_Quaternion* pQ, CSR_Quaternion* pR);
 
@@ -652,7 +652,7 @@ typedef struct
         void csrQuatMultiply(const CSR_Quaternion* pQ1, const CSR_Quaternion* pQ2, CSR_Quaternion* pR);
 
         /**
-        * Inverse the quaternion
+        * Inverses the quaternion
         *@param pQ - quaternion to inverse
         *@param[out] pR - inverted quaternion
         */
@@ -661,7 +661,7 @@ typedef struct
         /**
         * Rotates a vector by a quaternion
         *@param pQ - quaternion by which the vector will be rotated
-        *@param pV  vector to rotate
+        *@param pV - vector to rotate
         *@param[out] pR - rotated vector
         */
         void csrQuatRotate(const CSR_Quaternion* pQ, const CSR_Vector3* pV, CSR_Vector3* pR);
@@ -680,7 +680,7 @@ typedef struct
                                CSR_Quaternion* pR);
 
         /**
-        * Get a quaternion from a matrix
+        * Gets a quaternion from a matrix
         *@param pM - rotation matrix
         *@param[out] pR - quaternion
         *@return 1 on success, otherwise 0
