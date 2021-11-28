@@ -40,6 +40,56 @@ void csrVec2Sub(const CSR_Vector2* pV1, const CSR_Vector2* pV2, CSR_Vector2* pR)
     pR->m_Y = pV1->m_Y - pV2->m_Y;
 }
 //---------------------------------------------------------------------------
+void csrVec2Mul(const CSR_Vector2* pV1, const CSR_Vector2* pV2, CSR_Vector2* pR)
+{
+    pR->m_X = pV1->m_X * pV2->m_X;
+    pR->m_Y = pV1->m_Y * pV2->m_Y;
+}
+//---------------------------------------------------------------------------
+void csrVec2Div(const CSR_Vector2* pV1, const CSR_Vector2* pV2, CSR_Vector2* pR)
+{
+    if (pV2->m_X == 0.0f || pV2->m_Y == 0.0f)
+    {
+        pR->m_X = 0.0f;
+        pR->m_Y = 0.0f;
+        return;
+    }
+
+    pR->m_X = pV1->m_X / pV2->m_X;
+    pR->m_Y = pV1->m_Y / pV2->m_Y;
+}
+//---------------------------------------------------------------------------
+void csrVec2AddVal(const CSR_Vector2* pV, float val, CSR_Vector2* pR)
+{
+    pR->m_X = pV->m_X + val;
+    pR->m_Y = pV->m_Y + val;
+}
+//---------------------------------------------------------------------------
+void csrVec2SubVal(const CSR_Vector2* pV, float val, CSR_Vector2* pR)
+{
+    pR->m_X = pV->m_X - val;
+    pR->m_Y = pV->m_Y - val;
+}
+//---------------------------------------------------------------------------
+void csrVec2MulVal(const CSR_Vector2* pV, float val, CSR_Vector2* pR)
+{
+    pR->m_X = pV->m_X * val;
+    pR->m_Y = pV->m_Y * val;
+}
+//---------------------------------------------------------------------------
+void csrVec2DivVal(const CSR_Vector2* pV, float val, CSR_Vector2* pR)
+{
+    if (val == 0.0f)
+    {
+        pR->m_X = 0.0f;
+        pR->m_Y = 0.0f;
+        return;
+    }
+
+    pR->m_X = pV->m_X / val;
+    pR->m_Y = pV->m_Y / val;
+}
+//---------------------------------------------------------------------------
 void csrVec2Length(const CSR_Vector2* pV, float* pR)
 {
     *pR = sqrtf((pV->m_X * pV->m_X) + (pV->m_Y * pV->m_Y));
@@ -105,6 +155,64 @@ void csrVec3Sub(const CSR_Vector3* pV1, const CSR_Vector3* pV2, CSR_Vector3* pR)
     pR->m_X = pV1->m_X - pV2->m_X;
     pR->m_Y = pV1->m_Y - pV2->m_Y;
     pR->m_Z = pV1->m_Z - pV2->m_Z;
+}
+//---------------------------------------------------------------------------
+void csrVec3Mul(const CSR_Vector3* pV1, const CSR_Vector3* pV2, CSR_Vector3* pR)
+{
+    pR->m_X = pV1->m_X * pV2->m_X;
+    pR->m_Y = pV1->m_Y * pV2->m_Y;
+    pR->m_Z = pV1->m_Z * pV2->m_Z;
+}
+//---------------------------------------------------------------------------
+void csrVec3Div(const CSR_Vector3* pV1, const CSR_Vector3* pV2, CSR_Vector3* pR)
+{
+    if (pV2->m_X == 0.0f || pV2->m_Y == 0.0f || pV2->m_Z == 0.0f)
+    {
+        pR->m_X = 0.0f;
+        pR->m_Y = 0.0f;
+        pR->m_Z = 0.0f;
+        return;
+    }
+
+    pR->m_X = pV1->m_X / pV2->m_X;
+    pR->m_Y = pV1->m_Y / pV2->m_Y;
+    pR->m_Z = pV1->m_Z / pV2->m_Z;
+}
+//---------------------------------------------------------------------------
+void csrVec3AddVal(const CSR_Vector3* pV, float val, CSR_Vector3* pR)
+{
+    pR->m_X = pV->m_X + val;
+    pR->m_Y = pV->m_Y + val;
+    pR->m_Z = pV->m_Z + val;
+}
+//---------------------------------------------------------------------------
+void csrVec3SubVal(const CSR_Vector3* pV, float val, CSR_Vector3* pR)
+{
+    pR->m_X = pV->m_X - val;
+    pR->m_Y = pV->m_Y - val;
+    pR->m_Z = pV->m_Z - val;
+}
+//---------------------------------------------------------------------------
+void csrVec3MulVal(const CSR_Vector3* pV, float val, CSR_Vector3* pR)
+{
+    pR->m_X = pV->m_X * val;
+    pR->m_Y = pV->m_Y * val;
+    pR->m_Z = pV->m_Z * val;
+}
+//---------------------------------------------------------------------------
+void csrVec3DivVal(const CSR_Vector3* pV, float val, CSR_Vector3* pR)
+{
+    if (val == 0.0f)
+    {
+        pR->m_X = 0.0f;
+        pR->m_Y = 0.0f;
+        pR->m_Z = 0.0f;
+        return;
+    }
+
+    pR->m_X = pV->m_X / val;
+    pR->m_Y = pV->m_Y / val;
+    pR->m_Z = pV->m_Z / val;
 }
 //---------------------------------------------------------------------------
 void csrVec3Length(const CSR_Vector3* pV, float* pR)
@@ -2010,13 +2118,14 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
         case CSR_F3_Line:
             switch (pFigure2->m_Type)
             {
-                case CSR_F3_Line:    intersectionType =  0; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
-                case CSR_F3_Ray:     intersectionType =  1; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
-                case CSR_F3_Segment: intersectionType =  2; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
-                case CSR_F3_Plane:   intersectionType =  3; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
-                case CSR_F3_Polygon: intersectionType =  4; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
-                case CSR_F3_Box:     intersectionType =  5; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
-                case CSR_F3_Sphere:  intersectionType =  6; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                case CSR_F3_Line:    intersectionType =  0;  pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                case CSR_F3_Ray:     intersectionType =  1;  pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                case CSR_F3_Segment: intersectionType =  2;  pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                case CSR_F3_Plane:   intersectionType =  3;  pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                case CSR_F3_Polygon: intersectionType =  4;  pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                case CSR_F3_Box:     intersectionType =  5;  pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                case CSR_F3_Sphere:  intersectionType =  6;  pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                case CSR_F3_Capsule: intersectionType =  28; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 default:             intersectionType = -1;
             }
 
@@ -2032,6 +2141,7 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
                 case CSR_F3_Polygon: intersectionType =  10; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 case CSR_F3_Box:     intersectionType =  11; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 case CSR_F3_Sphere:  intersectionType =  12; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                case CSR_F3_Capsule: intersectionType =  29; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 default:             intersectionType = -1;
             }
 
@@ -2047,6 +2157,7 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
                 case CSR_F3_Polygon: intersectionType =  15; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 case CSR_F3_Box:     intersectionType =  16; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 case CSR_F3_Sphere:  intersectionType =  17; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                case CSR_F3_Capsule: intersectionType =  30; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 default:             intersectionType = -1;
             }
 
@@ -2062,6 +2173,7 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
                 case CSR_F3_Polygon: intersectionType =  19; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 case CSR_F3_Box:     intersectionType =  20; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 case CSR_F3_Sphere:  intersectionType =  21; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                case CSR_F3_Capsule: intersectionType =  31; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 default:             intersectionType = -1;
             }
 
@@ -2077,6 +2189,7 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
                 case CSR_F3_Polygon: intersectionType =  22; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 case CSR_F3_Box:     intersectionType =  23; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 case CSR_F3_Sphere:  intersectionType =  24; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                case CSR_F3_Capsule: intersectionType =  32; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 default:             intersectionType = -1;
             }
 
@@ -2092,6 +2205,7 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
                 case CSR_F3_Polygon: intersectionType =  23; pFirst = pFigure2->m_pFigure; pSecond = pFigure1->m_pFigure; break;
                 case CSR_F3_Box:     intersectionType =  25; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 case CSR_F3_Sphere:  intersectionType =  26; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                case CSR_F3_Capsule: intersectionType =  33; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 default:             intersectionType = -1;
             }
 
@@ -2107,6 +2221,23 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
                 case CSR_F3_Polygon: intersectionType =  24; pFirst = pFigure2->m_pFigure; pSecond = pFigure1->m_pFigure; break;
                 case CSR_F3_Box:     intersectionType =  26; pFirst = pFigure2->m_pFigure; pSecond = pFigure1->m_pFigure; break;
                 case CSR_F3_Sphere:  intersectionType =  27; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                case CSR_F3_Capsule: intersectionType =  34; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
+                default:             intersectionType = -1;
+            }
+
+            break;
+
+        case CSR_F3_Capsule:
+            switch (pFigure2->m_Type)
+            {
+                case CSR_F3_Line:    intersectionType =  28; pFirst = pFigure2->m_pFigure; pSecond = pFigure1->m_pFigure; break;
+                case CSR_F3_Ray:     intersectionType =  29; pFirst = pFigure2->m_pFigure; pSecond = pFigure1->m_pFigure; break;
+                case CSR_F3_Segment: intersectionType =  30; pFirst = pFigure2->m_pFigure; pSecond = pFigure1->m_pFigure; break;
+                case CSR_F3_Plane:   intersectionType =  31; pFirst = pFigure2->m_pFigure; pSecond = pFigure1->m_pFigure; break;
+                case CSR_F3_Polygon: intersectionType =  32; pFirst = pFigure2->m_pFigure; pSecond = pFigure1->m_pFigure; break;
+                case CSR_F3_Box:     intersectionType =  33; pFirst = pFigure2->m_pFigure; pSecond = pFigure1->m_pFigure; break;
+                case CSR_F3_Sphere:  intersectionType =  34; pFirst = pFigure2->m_pFigure; pSecond = pFigure1->m_pFigure; break;
+                case CSR_F3_Capsule: intersectionType =  35; pFirst = pFigure1->m_pFigure; pSecond = pFigure2->m_pFigure; break;
                 default:             intersectionType = -1;
             }
 
@@ -2607,6 +2738,130 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
             // the spheres are in collision if the length between their centers is lower than or equal to
             // the sum of the both sphere radius
             return (length <= (pSphere1->m_Radius + pSphere2->m_Radius));
+        }
+
+        case 35:
+        {
+            #ifdef _MSC_VER
+                CSR_Vector3  firstLineDir        = {0};
+                CSR_Vector3  firstLineEndOffset  = {0};
+                CSR_Vector3  firstTop            = {0};
+                CSR_Vector3  firstBottom         = {0};
+                CSR_Vector3  secondLineDir       = {0};
+                CSR_Vector3  secondLineEndOffset = {0};
+                CSR_Vector3  secondTop           = {0};
+                CSR_Vector3  secondBottom        = {0};
+                CSR_Vector3  v0                  = {0};
+                CSR_Vector3  v1                  = {0};
+                CSR_Vector3  v2                  = {0};
+                CSR_Vector3  v3                  = {0};
+                CSR_Vector3  bestCandidate       = {0};
+                CSR_Vector3  secondBestCandidate = {0};
+                CSR_Vector3  penetrationNormal   = {0};
+                CSR_Segment3 line                = {0};
+                CSR_Segment3 secondLine          = {0};
+                float        d0                  = 0.0f;
+                float        d1                  = 0.0f;
+                float        d2                  = 0.0f;
+                float        d3                  = 0.0f;
+                float        len                 = 0.0f;
+                float        penetrationDepth    = 0.0f;
+            #else
+                CSR_Vector3  firstLineDir;
+                CSR_Vector3  firstLineEndOffset;
+                CSR_Vector3  firstTop;
+                CSR_Vector3  firstBottom;
+                CSR_Vector3  secondLineDir;
+                CSR_Vector3  secondLineEndOffset;
+                CSR_Vector3  secondTop;
+                CSR_Vector3  secondBottom;
+                CSR_Vector3  v0;
+                CSR_Vector3  v1;
+                CSR_Vector3  v2;
+                CSR_Vector3  v3;
+                CSR_Vector3  bestCandidate;
+                CSR_Vector3  secondBestCandidate;
+                CSR_Vector3  penetrationNormal;
+                CSR_Segment3 line;
+                CSR_Segment3 secondLine;
+                float        d0;
+                float        d1;
+                float        d2;
+                float        d3;
+                float        len;
+                float        penetrationDepth;
+            #endif
+
+            // get the figures to check
+            const CSR_Capsule* pCapsule1 = (CSR_Capsule*)pFirst;
+            const CSR_Capsule* pCapsule2 = (CSR_Capsule*)pSecond;
+
+            // perfect collision (rare, but may happen)
+            if ((pCapsule1->m_Top.m_X    == pCapsule2->m_Top.m_X    &&
+                 pCapsule1->m_Top.m_Y    == pCapsule2->m_Top.m_Y    &&
+                 pCapsule1->m_Top.m_Z    == pCapsule2->m_Top.m_Z)   ||
+                (pCapsule1->m_Bottom.m_X == pCapsule2->m_Bottom.m_X &&
+                 pCapsule1->m_Bottom.m_Y == pCapsule2->m_Bottom.m_Y &&
+                 pCapsule1->m_Bottom.m_Z == pCapsule2->m_Bottom.m_Z))
+                return 1;
+
+            // this capsule
+            csrVec3Sub      (&pCapsule1->m_Top,    &pCapsule1->m_Bottom, &firstLineDir);
+            csrVec3Normalize(&firstLineDir,        &firstLineDir);
+            csrVec3MulVal   (&firstLineDir,         pCapsule1->m_Radius, &firstLineEndOffset);
+            csrVec3Sub      (&pCapsule1->m_Top,    &firstLineEndOffset,  &firstTop);
+            csrVec3Add      (&pCapsule1->m_Bottom, &firstLineEndOffset,  &firstBottom);
+
+            // second capsule
+            csrVec3Sub      (&pCapsule2->m_Top,    &pCapsule2->m_Bottom, &secondLineDir);
+            csrVec3Normalize(&secondLineDir,       &secondLineDir);
+            csrVec3MulVal   (&secondLineDir,        pCapsule2->m_Radius, &secondLineEndOffset);
+            csrVec3Sub      (&pCapsule2->m_Top,    &secondLineEndOffset, &secondTop);
+            csrVec3Add      (&pCapsule2->m_Bottom, &secondLineEndOffset, &secondBottom);
+
+            // vectors between line endpoints
+            csrVec3Sub(&secondBottom, &firstBottom, &v0);
+            csrVec3Sub(&secondTop,    &firstBottom, &v1);
+            csrVec3Sub(&secondBottom, &firstTop,    &v2);
+            csrVec3Sub(&secondTop,    &firstTop,    &v3);
+
+            // squared distances
+            csrVec3Dot(&v0, &v0, &d0);
+            csrVec3Dot(&v1, &v1, &d1);
+            csrVec3Dot(&v2, &v2, &d2);
+            csrVec3Dot(&v3, &v3, &d3);
+
+            // select best candidate for endpoint on first capsule
+            if (d2 < d0 || d2 < d1 || d3 < d0 || d3 < d1)
+                bestCandidate = firstTop;
+            else
+                bestCandidate = firstBottom;
+
+            line.m_Start       = firstBottom;
+            line.m_End         = firstTop;
+            secondLine.m_Start = secondBottom;
+            secondLine.m_End   = secondTop;
+
+            // select best candidate for point on second capsule line segment nearest to best potential endpoint on first capsule
+            csrSeg3ClosestPoint(&secondLine, &bestCandidate, &secondBestCandidate);
+
+            // do the same for first capsule segment
+            csrSeg3ClosestPoint(&line, &secondBestCandidate, &bestCandidate);
+
+            // calculate penetration normal and length
+            csrVec3Sub   (&bestCandidate,     &secondBestCandidate, &penetrationNormal);
+            csrVec3Length(&penetrationNormal, &len);
+
+            if (len == 0.0f)
+                return 0;
+
+            // normalize
+            csrVec3DivVal(&penetrationNormal, len, &penetrationNormal);
+
+            // calculate the penetration depth
+            penetrationDepth = (pCapsule1->m_Radius + pCapsule2->m_Radius) - len;
+
+            return (penetrationDepth > 0.0f);
         }
 
         default:

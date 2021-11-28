@@ -110,8 +110,8 @@ typedef struct CSR_tagAABBNode
 
         /**
         * Calculates the position where a model or a point of view is placed on the ground
-        *@param pPolygon - polygon belonging to the model showing the ground of a scene
         *@param pSphere - bounding sphere surrounding the point of view or model
+        *@param pPolygon - polygon belonging to the model showing the ground of a scene
         *@param pGroundDir - ground direction. If 0, a default direction of [0, -1, 0] will be used
         *@param[in, out] pR - resulting position where the bounding sphere surrounding the point of
         *                     view or model will be placed on the ground. Ignored if 0

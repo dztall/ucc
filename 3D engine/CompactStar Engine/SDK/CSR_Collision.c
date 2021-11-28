@@ -458,23 +458,23 @@ void csrSlidingPoint(const CSR_Plane*   pSlidingPlane,
         plane.m_D = -plane.m_D;
     }
 
-    // calculate the direction of the segment position - plane
+    // calculate the direction of the line segment position - plane
     planeRatio.m_X = radius * plane.m_A;
     planeRatio.m_Y = radius * plane.m_B;
     planeRatio.m_Z = radius * plane.m_C;
 
-    // calculate who the segment perpendicular to the plane, from the center
+    // calculate who the line segment perpendicular to the plane, from the center
     // of the sphere, cross the collision sphere. Normally this point is beyond
     // the plane
     pointBeyondPlane.m_X = pPosition->m_X - planeRatio.m_X;
     pointBeyondPlane.m_Y = pPosition->m_Y - planeRatio.m_Y;
     pointBeyondPlane.m_Z = pPosition->m_Z - planeRatio.m_Z;
 
-    // configure the segment to test
+    // configure the line segment to test
     segment.m_Start = *pPosition;
     segment.m_End   =  pointBeyondPlane;
 
-    // build a figure containing the segment
+    // build a figure containing the line segment
     segmentFigure.m_Type    =  CSR_F3_Segment;
     segmentFigure.m_pFigure = &segment;
 
@@ -486,8 +486,7 @@ void csrSlidingPoint(const CSR_Plane*   pSlidingPlane,
     // the plane" cross the collision plane
     csrIntersect3(&segmentFigure, &planeFigure, &pointOnPlane, 0, 0);
 
-    // from point calculated below, we add the radius of the sphere, and we
-    // returns the value
+    // from point calculated above, add the sphere radius and return the value
     pR->m_X = pointOnPlane.m_X + planeRatio.m_X;
     pR->m_Y = pointOnPlane.m_Y + planeRatio.m_Y;
     pR->m_Z = pointOnPlane.m_Z + planeRatio.m_Z;

@@ -1250,7 +1250,7 @@ void csrOpenGLDrawVertexBuffer(const CSR_VertexBuffer* pVB,
     {
         // send normals to shader
         pNormals = &pVB->m_pData[offset];
-        glVertexAttribPointer(pShader->m_TexCoordSlot,
+        glVertexAttribPointer(pShader->m_NormalSlot,
                               3,
                               GL_FLOAT,
                               GL_FALSE,

@@ -288,6 +288,134 @@ unsigned char g_ColorTable[] =
     159, 91,  83
 };
 //---------------------------------------------------------------------------
+// Shape private functions
+//---------------------------------------------------------------------------
+void csrCapsuleGetCylinderVertex(const CSR_Vector3* pTop,
+                                 const CSR_Vector3* pLocalX,
+                                 const CSR_Vector3* pLocalY,
+                                 const CSR_Vector3* pLocalZ,
+                                       float        radius,
+                                       float        length,
+                                       float        u,
+                                       float        v,
+                                       CSR_Vector3* pR)
+{
+    #ifdef _MSC_VER
+        CSR_Vector3 vX      = {0};
+        CSR_Vector3 vY      = {0};
+        CSR_Vector3 vZ      = {0};
+        CSR_Vector3 vBuild1 = {0};
+        CSR_Vector3 vBuild2 = {0};
+    #else
+        CSR_Vector3 vX;
+        CSR_Vector3 vY;
+        CSR_Vector3 vZ;
+        CSR_Vector3 vBuild1;
+        CSR_Vector3 vBuild2;
+    #endif
+
+    const float x = cosf(2.0f * (float)M_PI * u) * radius;
+    const float y = sinf(2.0f * (float)M_PI * u) * radius;
+    const float z = v * length;
+
+    csrVec3MulVal(pLocalX, x, &vX);
+    csrVec3MulVal(pLocalY, y, &vY);
+    csrVec3MulVal(pLocalZ, z, &vZ);
+
+    csrVec3Add(pTop,     &vX, &vBuild1);
+    csrVec3Add(&vBuild1, &vY, &vBuild2);
+    csrVec3Add(&vBuild2, &vZ, pR);
+}
+//---------------------------------------------------------------------------
+void csrCapsuleGetSphereStartVertex(const CSR_Vector3* pTop,
+                                    const CSR_Vector3* pLocalX,
+                                    const CSR_Vector3* pLocalY,
+                                    const CSR_Vector3* pLocalZ,
+                                          float        radius,
+                                          float        u,
+                                          float        v,
+                                          CSR_Vector3* pR)
+{
+    #ifdef _MSC_VER
+        CSR_Vector3 vX      = {0};
+        CSR_Vector3 vY      = {0};
+        CSR_Vector3 vZ      = {0};
+        CSR_Vector3 vBuild1 = {0};
+        CSR_Vector3 vBuild2 = {0};
+    #else
+        CSR_Vector3 vX;
+        CSR_Vector3 vY;
+        CSR_Vector3 vZ;
+        CSR_Vector3 vBuild1;
+        CSR_Vector3 vBuild2;
+    #endif
+
+    const float latitude = (float)(M_PI / 2.0) * (v - 1);
+    const float x        = cosf(2.0f * (float)M_PI * u) * cosf(latitude) * radius;
+    const float y        = sinf(2.0f * (float)M_PI * u) * cosf(latitude) * radius;
+    const float z        = sinf(latitude) * radius;
+
+    csrVec3MulVal(pLocalX, x, &vX);
+    csrVec3MulVal(pLocalY, y, &vY);
+    csrVec3MulVal(pLocalZ, z, &vZ);
+
+    csrVec3Add(pTop,     &vX, &vBuild1);
+    csrVec3Add(&vBuild1, &vY, &vBuild2);
+    csrVec3Add(&vBuild2, &vZ, pR);
+}
+//---------------------------------------------------------------------------
+void csrCapsuleGetSphereEndVertex(const CSR_Vector3* pBottom,
+                                  const CSR_Vector3* pLocalX,
+                                  const CSR_Vector3* pLocalY,
+                                  const CSR_Vector3* pLocalZ,
+                                        float        radius,
+                                        float        u,
+                                        float        v,
+                                        CSR_Vector3* pR)
+{
+    #ifdef _MSC_VER
+        CSR_Vector3 vX      = {0};
+        CSR_Vector3 vY      = {0};
+        CSR_Vector3 vZ      = {0};
+        CSR_Vector3 vBuild1 = {0};
+        CSR_Vector3 vBuild2 = {0};
+    #else
+        CSR_Vector3 vX;
+        CSR_Vector3 vY;
+        CSR_Vector3 vZ;
+        CSR_Vector3 vBuild1;
+        CSR_Vector3 vBuild2;
+    #endif
+
+    const float latitude = (float)(M_PI / 2.0) * v;
+    const float x        = cosf(2.0f * (float)M_PI * u) * cosf(latitude) * radius;
+    const float y        = sinf(2.0f * (float)M_PI * u) * cosf(latitude) * radius;
+    const float z        = sinf(latitude) * radius;
+
+    csrVec3MulVal(pLocalX, x, &vX);
+    csrVec3MulVal(pLocalY, y, &vY);
+    csrVec3MulVal(pLocalZ, z, &vZ);
+
+    csrVec3Add(pBottom,  &vX, &vBuild1);
+    csrVec3Add(&vBuild1, &vY, &vBuild2);
+    csrVec3Add(&vBuild2, &vZ, pR);
+}
+//---------------------------------------------------------------------------
+void csrCapsuleGetAnyPerpendicularUnitVector(const CSR_Vector3* pVec, CSR_Vector3* pR)
+{
+    if (pVec->m_Y != 0.0f || pVec->m_Z != 0.0f)
+    {
+        pR->m_X = 1.0f;
+        pR->m_Y = 0.0f;
+        pR->m_Z = 0.0f;
+        return;
+    }
+
+    pR->m_X = 0.0f;
+    pR->m_Y = 1.0f;
+    pR->m_Z = 0.0f;
+}
+//---------------------------------------------------------------------------
 // Shape functions
 //---------------------------------------------------------------------------
 CSR_Mesh* csrShapeCreateSurface(float                 width,
@@ -778,7 +906,7 @@ CSR_Mesh* csrShapeCreateSphere(float                 radius,
             csrVertexBufferAdd(&vertex,
                                &normal,
                                &uv,
-                                j * 2,
+                                (size_t)j * 2,
                                 fOnGetVertexColor,
                                &pMesh->m_pVB[index]);
 
@@ -806,7 +934,7 @@ CSR_Mesh* csrShapeCreateSphere(float                 radius,
             csrVertexBufferAdd(&vertex,
                                &normal,
                                &uv,
-                               (j * 2) + 1,
+                               ((size_t)j * 2) + 1,
                                 fOnGetVertexColor,
                                &pMesh->m_pVB[index]);
         }
@@ -831,7 +959,7 @@ CSR_Mesh* csrShapeCreateCylinder(float                 minRadius,
         CSR_Vector3 vertex = {0};
         CSR_Vector3 normal = {0};
         CSR_Vector2 uv     = {0};
-        CSR_Mesh*   pMesh  = {0};
+        CSR_Mesh*   pMesh;
     #else
         int         i;
         float       angle;
@@ -921,7 +1049,7 @@ CSR_Mesh* csrShapeCreateCylinder(float                 minRadius,
         }
 
         // add the vertex to the buffer
-        csrVertexBufferAdd(&vertex, &normal, &uv, i * 2, fOnGetVertexColor, pMesh->m_pVB);
+        csrVertexBufferAdd(&vertex, &normal, &uv, (size_t)i * 2, fOnGetVertexColor, pMesh->m_pVB);
 
         // set vertex data
         vertex.m_X =  maxRadius * cosf(angle);
@@ -956,8 +1084,284 @@ CSR_Mesh* csrShapeCreateCylinder(float                 minRadius,
         }
 
         // add the vertex to the buffer
-        csrVertexBufferAdd(&vertex, &normal, &uv, (i * 2) + 1, fOnGetVertexColor, pMesh->m_pVB);
+        csrVertexBufferAdd(&vertex, &normal, &uv, ((size_t)i * 2) + 1, fOnGetVertexColor, pMesh->m_pVB);
     }
+
+    return pMesh;
+}
+//---------------------------------------------------------------------------
+CSR_Mesh* csrShapeCreateCapsule(float                 height,
+                                float                 radius,
+                                float                 resolution,
+                          const CSR_VertexFormat*     pVertFormat,
+                          const CSR_VertexCulling*    pVertCulling,
+                          const CSR_Material*         pMaterial,
+                          const CSR_fOnGetVertexColor fOnGetVertexColor)
+{
+    #ifdef _MSC_VER
+        size_t      i;
+        size_t      j;
+        float       length;
+        CSR_Vector3 capsuleTop    = {0};
+        CSR_Vector3 capsuleBottom = {0};
+        CSR_Vector3 lineDir       = {0};
+        CSR_Vector3 lineEndOffset = {0};
+        CSR_Vector3 top           = {0};
+        CSR_Vector3 bottom        = {0};
+        CSR_Vector3 axis          = {0};
+        CSR_Vector3 localZ        = {0};
+        CSR_Vector3 localX        = {0};
+        CSR_Vector3 localY        = {0};
+        CSR_Vector3 start         = {0};
+        CSR_Vector3 end           = {0};
+        CSR_Vector3 step          = {0};
+        CSR_Vector3 p0            = {0};
+        CSR_Vector3 p1            = {0};
+        CSR_Vector3 p2            = {0};
+        CSR_Vector3 p3            = {0};
+        CSR_Vector3 normal0       = {0};
+        CSR_Vector3 normal1       = {0};
+        CSR_Vector3 normal2       = {0};
+        CSR_Vector3 normal3       = {0};
+        CSR_Vector3 uv0           = {0};
+        CSR_Vector3 uv1           = {0};
+        CSR_Vector3 uv2           = {0};
+        CSR_Vector3 uv3           = {0};
+        CSR_Mesh*   pMesh         =  0;
+    #else
+        size_t      i;
+        size_t      j;
+        float       length;
+        CSR_Vector3 capsuleTop;
+        CSR_Vector3 capsuleBottom;
+        CSR_Vector3 lineDir;
+        CSR_Vector3 lineEndOffset;
+        CSR_Vector3 top;
+        CSR_Vector3 bottom;
+        CSR_Vector3 axis;
+        CSR_Vector3 localZ;
+        CSR_Vector3 localX;
+        CSR_Vector3 localY;
+        CSR_Vector3 start;
+        CSR_Vector3 end;
+        CSR_Vector3 step;
+        CSR_Vector3 p0;
+        CSR_Vector3 p1;
+        CSR_Vector3 p2;
+        CSR_Vector3 p3;
+        CSR_Vector3 normal0;
+        CSR_Vector3 normal1;
+        CSR_Vector3 normal2;
+        CSR_Vector3 normal3;
+        CSR_Vector3 uv0;
+        CSR_Vector3 uv1;
+        CSR_Vector3 uv2;
+        CSR_Vector3 uv3;
+        CSR_Mesh*   pMesh;
+    #endif
+
+    if (radius == 0.0f || resolution == 0.0f)
+        return;
+
+    const float third     = 1.0f / 3.0f;
+    const float twoThirds = 2.0f / 3.0f;
+
+    capsuleTop.m_X    = 0.0f;
+    capsuleTop.m_Y    = height;
+    capsuleTop.m_Z    = 0.0f;
+    capsuleBottom.m_X = 0.0f;
+    capsuleBottom.m_Y = 0.0f;
+    capsuleBottom.m_Z = 0.0f;
+
+    // calculate capsule bounds
+    csrVec3Sub(&capsuleTop, &capsuleBottom, &lineDir);
+    csrVec3Normalize(&lineDir, &lineDir);
+    csrVec3MulVal(&lineDir, radius,        &lineEndOffset);
+    csrVec3Sub(&capsuleTop, &lineEndOffset, &top);
+    csrVec3Add(&capsuleBottom, &lineEndOffset, &bottom);
+
+    // calculate capsule axis and length
+    csrVec3Sub(&bottom, &top, &axis);
+    csrVec3Length(&axis, &length);
+
+    if (length == 0.0f)
+        localZ = axis;
+    else
+        csrVec3DivVal(&axis, length, &localZ);
+
+    csrCapsuleGetAnyPerpendicularUnitVector(&localZ, &localX);
+    csrVec3Cross(&localZ, &localX, &localY);
+
+    start.m_X = 0.0f;
+    start.m_Y = 0.0f;
+    start.m_Z = 0.0f;
+    end.m_X   = 1.0f;
+    end.m_Y   = 1.0f;
+    end.m_Z   = 1.0f;
+
+    csrVec3Sub(&end, &start, &step);
+    csrVec3DivVal(&step, resolution, &step);
+
+    // create a mesh to contain the shape
+    pMesh = csrMeshCreate();
+
+    // succeeded?
+    if (!pMesh)
+        return 0;
+
+    // create a vertex buffer
+    pMesh->m_pVB = csrVertexBufferCreate();
+
+    // succeeded?
+    if (!pMesh->m_pVB)
+    {
+        csrMeshRelease(pMesh, 0);
+        return 0;
+    }
+
+    pMesh->m_Count = 1;
+
+    // apply the user wished vertex format
+    if (pVertFormat)
+        pMesh->m_pVB->m_Format = *pVertFormat;
+
+    // apply the user wished vertex culling
+    if (pVertCulling)
+        pMesh->m_pVB->m_Culling = *pVertCulling;
+
+    // apply the user wished material
+    if (pMaterial)
+        pMesh->m_pVB->m_Material = *pMaterial;
+
+    // set the vertex format type
+    pMesh->m_pVB->m_Format.m_Type = CSR_VT_Triangles;
+
+    // calculate the stride
+    csrVertexFormatCalculateStride(&pMesh->m_pVB->m_Format);
+
+    // iterate through latitude and longitude
+    for (i = 0; i < (size_t)resolution; ++i)
+        for (j = 0; j < (size_t)resolution; ++j)
+        {
+            // calculate the current slice
+            const float u = i * step.m_X + start.m_X;
+            const float v = j * step.m_Y + start.m_Y;
+
+            // calculate the next slice
+            const float un = (i + 1 == resolution) ? end.m_X : (i + 1) * step.m_X + start.m_X;
+            const float vn = (j + 1 == resolution) ? end.m_Y : (j + 1) * step.m_Y + start.m_Y;
+
+            // create next cylinder face
+            csrCapsuleGetCylinderVertex(&top, &localX, &localY, &localZ, radius, length, u,  v,  &p0);
+            csrCapsuleGetCylinderVertex(&top, &localX, &localY, &localZ, radius, length, u,  vn, &p1);
+            csrCapsuleGetCylinderVertex(&top, &localX, &localY, &localZ, radius, length, un, v,  &p2);
+            csrCapsuleGetCylinderVertex(&top, &localX, &localY, &localZ, radius, length, un, vn, &p3);
+
+            // vertex has UV texture coordinates?
+            if (pMesh->m_pVB[0].m_Format.m_HasNormal)
+            {
+                // calculate the vertex normals
+                csrVec3DivVal(&p0, radius, &normal0);
+                csrVec3DivVal(&p1, radius, &normal1);
+                csrVec3DivVal(&p2, radius, &normal2);
+                csrVec3DivVal(&p3, radius, &normal3);
+            }
+
+            // vertex has UV texture coordinates?
+            if (pMesh->m_pVB[0].m_Format.m_HasTexCoords)
+            {
+                uv0.m_X =           (i      / resolution);
+                uv0.m_Y = third +  ((j      / resolution) * third);
+                uv1.m_X =           (i      / resolution);
+                uv1.m_Y = third + (((j + 1) / resolution) * third);
+                uv2.m_X =          ((i + 1) / resolution);
+                uv2.m_Y = third +  ((j      / resolution) * third);
+                uv3.m_X =          ((i + 1) / resolution);
+                uv3.m_Y = third + (((j + 1) / resolution) * third);
+            }
+
+            // add face to vertex buffer
+            csrVertexBufferAdd(&p0, &normal0, &uv0, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p1, &normal1, &uv1, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p2, &normal2, &uv2, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p2, &normal2, &uv2, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p1, &normal1, &uv1, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p3, &normal3, &uv3, 0, fOnGetVertexColor, pMesh->m_pVB);
+
+            // create next sphere start face
+            csrCapsuleGetSphereStartVertex(&top, &localX, &localY, &localZ, radius, u,  v,  &p0);
+            csrCapsuleGetSphereStartVertex(&top, &localX, &localY, &localZ, radius, u,  vn, &p1);
+            csrCapsuleGetSphereStartVertex(&top, &localX, &localY, &localZ, radius, un, v,  &p2);
+            csrCapsuleGetSphereStartVertex(&top, &localX, &localY, &localZ, radius, un, vn, &p3);
+
+            // vertex has UV texture coordinates?
+            if (pMesh->m_pVB[0].m_Format.m_HasNormal)
+            {
+                // calculate the vertex normals
+                csrVec3DivVal(&p0, radius, &normal0);
+                csrVec3DivVal(&p1, radius, &normal1);
+                csrVec3DivVal(&p2, radius, &normal2);
+                csrVec3DivVal(&p3, radius, &normal3);
+            }
+
+            // vertex has UV texture coordinates?
+            if (pMesh->m_pVB[0].m_Format.m_HasTexCoords)
+            {
+                uv0.m_X =   (i      / resolution);
+                uv0.m_Y =  ((j      / resolution) * third);
+                uv1.m_X =   (i      / resolution);
+                uv1.m_Y = (((j + 1) / resolution) * third);
+                uv2.m_X =  ((i + 1) / resolution);
+                uv2.m_Y =  ((j      / resolution) * third);
+                uv3.m_X =  ((i + 1) / resolution);
+                uv3.m_Y = (((j + 1) / resolution) * third);
+            }
+
+            // add face to vertex buffer
+            csrVertexBufferAdd(&p0, &normal0, &uv0, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p1, &normal1, &uv1, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p2, &normal2, &uv2, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p2, &normal2, &uv2, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p1, &normal1, &uv1, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p3, &normal3, &uv3, 0, fOnGetVertexColor, pMesh->m_pVB);
+
+            // create next sphere end face
+            csrCapsuleGetSphereEndVertex(&bottom, &localX, &localY, &localZ, radius, u,  v,  &p0);
+            csrCapsuleGetSphereEndVertex(&bottom, &localX, &localY, &localZ, radius, u,  vn, &p1);
+            csrCapsuleGetSphereEndVertex(&bottom, &localX, &localY, &localZ, radius, un, v,  &p2);
+            csrCapsuleGetSphereEndVertex(&bottom, &localX, &localY, &localZ, radius, un, vn, &p3);
+
+            // vertex has UV texture coordinates?
+            if (pMesh->m_pVB[0].m_Format.m_HasNormal)
+            {
+                // calculate the vertex normals
+                csrVec3DivVal(&p0, radius, &normal0);
+                csrVec3DivVal(&p1, radius, &normal1);
+                csrVec3DivVal(&p2, radius, &normal2);
+                csrVec3DivVal(&p3, radius, &normal3);
+            }
+
+            // vertex has UV texture coordinates?
+            if (pMesh->m_pVB[0].m_Format.m_HasTexCoords)
+            {
+                uv0.m_X =               (i      / resolution);
+                uv0.m_Y = twoThirds +  ((j      / resolution) * third);
+                uv1.m_X =               (i      / resolution);
+                uv1.m_Y = twoThirds + (((j + 1) / resolution) * third);
+                uv2.m_X =              ((i + 1) / resolution);
+                uv2.m_Y = twoThirds +  ((j      / resolution) * third);
+                uv3.m_X =              ((i + 1) / resolution);
+                uv3.m_Y = twoThirds + (((j + 1) / resolution) * third);
+            }
+
+            // add face to vertex buffer
+            csrVertexBufferAdd(&p0, &normal0, &uv0, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p1, &normal1, &uv1, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p2, &normal2, &uv2, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p2, &normal2, &uv2, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p1, &normal1, &uv1, 0, fOnGetVertexColor, pMesh->m_pVB);
+            csrVertexBufferAdd(&p3, &normal3, &uv3, 0, fOnGetVertexColor, pMesh->m_pVB);
+        }
 
     return pMesh;
 }
@@ -1226,7 +1630,7 @@ CSR_Mesh* csrShapeCreateRing(float                 centerX,
         }
 
         // add the vertex to the buffer
-        csrVertexBufferAdd(&vertex, &normal, &uv, i * 2, fOnGetVertexColor, pMesh->m_pVB);
+        csrVertexBufferAdd(&vertex, &normal, &uv, (size_t)i * 2, fOnGetVertexColor, pMesh->m_pVB);
 
         // add max point in the buffer
         vertex.m_X = xB;
@@ -1251,7 +1655,7 @@ CSR_Mesh* csrShapeCreateRing(float                 centerX,
         }
 
         // add the vertex to the buffer
-        csrVertexBufferAdd(&vertex, &normal, &uv, (i * 2) + 1, fOnGetVertexColor, pMesh->m_pVB);
+        csrVertexBufferAdd(&vertex, &normal, &uv, ((size_t)i * 2) + 1, fOnGetVertexColor, pMesh->m_pVB);
     }
 
     return pMesh;
@@ -1423,7 +1827,7 @@ CSR_Mesh* csrShapeCreateSpiral(float                 centerX,
             csrVertexBufferAdd(&vertex,
                                &normal,
                                &uv,
-                                j * 2,
+                               (size_t)j * 2,
                                 fOnGetVertexColor,
                                &pMesh->m_pVB[index]);
 
@@ -1453,7 +1857,7 @@ CSR_Mesh* csrShapeCreateSpiral(float                 centerX,
             csrVertexBufferAdd(&vertex,
                                &normal,
                                &uv,
-                               (j * 2) + 1,
+                               ((size_t)j * 2) + 1,
                                 fOnGetVertexColor,
                                &pMesh->m_pVB[index]);
         }
@@ -2285,7 +2689,7 @@ CSR_MDL* csrMDLCreate(const CSR_Buffer*           pBuffer,
     char                 prevSkinName[16];
     unsigned             animationStartIndex;
     unsigned             skinNameIndex;
-    const unsigned       skinNameLength = sizeof(skinName);
+    const size_t         skinNameLength = sizeof(skinName);
     size_t               i;
     size_t               j;
     size_t               offset        = 0;
@@ -2580,7 +2984,7 @@ CSR_MDL* csrMDLCreate(const CSR_Buffer*           pBuffer,
                 memcpy(prevSkinName, skinName, skinNameLength);
 
             // do begin a new animation?
-            if (i == pHeader->m_FrameCount - 1 || memcmp(skinName, prevSkinName, skinNameLength) != 0)
+            if (i == (size_t)pHeader->m_FrameCount - 1 || memcmp(skinName, prevSkinName, skinNameLength) != 0)
             {
                 // increase the memory to contain the new animation
                 pAnimation = (CSR_ModelAnimation*)csrMemoryAlloc(pMDL->m_pAnimation,
@@ -3056,7 +3460,7 @@ int csrMDLReadSkin(const CSR_Buffer*    pBuffer,
     #endif
 
     // create memory for texture
-    pSkin->m_pData = (unsigned char*)malloc(pSkin->m_TexLen * pSkin->m_Count);
+    pSkin->m_pData = (unsigned char*)malloc((size_t)(pSkin->m_TexLen * pSkin->m_Count));
 
     // read texture from buffer. NOTE 8 bit array, same in all endianness
     return csrBufferRead(pBuffer, pOffset, pSkin->m_TexLen , pSkin->m_Count, pSkin->m_pData);
@@ -4306,7 +4710,7 @@ int csrLandscapeGenerateVertices(const CSR_PixelBuffer* pPixelBuffer,
         return 0;
 
     // calculate landscape data size and reserve memory for landscape mesh
-    pVertices->m_Length = pPixelBuffer->m_Width * pPixelBuffer->m_Height;
+    pVertices->m_Length = (size_t)(pPixelBuffer->m_Width * pPixelBuffer->m_Height);
     pVertices->m_pData  = malloc(pVertices->m_Length * sizeof(CSR_Vector3));
 
     // calculate scaling factor on x and z axis
@@ -6166,20 +6570,11 @@ CSR_X* csrXCreate(const CSR_Buffer*           pBuffer,
         return 0;
     }
 
+    csrXInit(pX);
+
     // configure it
-    pX->m_pMesh               = 0;
-    pX->m_MeshCount           = 0;
-    pX->m_pPrint              = 0;
-    pX->m_PrintCount          = 0;
-    pX->m_pMeshWeights        = 0;
-    pX->m_MeshWeightsCount    = 0;
-    pX->m_pMeshToBoneDict     = 0;
-    pX->m_MeshToBoneDictCount = 0;
-    pX->m_pSkeleton           = 0;
-    pX->m_pAnimationSet       = 0;
-    pX->m_AnimationSetCount   = 0;
-    pX->m_MeshOnly            = meshOnly;
-    pX->m_PoseOnly            = poseOnly;
+    pX->m_MeshOnly = meshOnly;
+    pX->m_PoseOnly = poseOnly;
 
     // convert the read item hierarchy to an x model
     if (!csrXItemToModel(pLocalRoot,
@@ -6371,6 +6766,21 @@ void csrXInit(CSR_X* pX)
     // no X model to initialize?
     if (!pX)
         return;
+
+    // initialize the x model
+    pX->m_pMesh               = 0;
+    pX->m_MeshCount           = 0;
+    pX->m_pPrint              = 0;
+    pX->m_PrintCount          = 0;
+    pX->m_pMeshWeights        = 0;
+    pX->m_MeshWeightsCount    = 0;
+    pX->m_pMeshToBoneDict     = 0;
+    pX->m_MeshToBoneDictCount = 0;
+    pX->m_pSkeleton           = 0;
+    pX->m_pAnimationSet       = 0;
+    pX->m_AnimationSetCount   = 0;
+    pX->m_MeshOnly            = 0;
+    pX->m_PoseOnly            = 0;
 }
 //---------------------------------------------------------------------------
 int csrXParse(const CSR_Buffer* pBuffer, size_t* pOffset, CSR_Item_X** pItem)

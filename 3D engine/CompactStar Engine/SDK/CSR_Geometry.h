@@ -61,7 +61,8 @@ typedef enum
     CSR_F3_Plane,
     CSR_F3_Polygon,
     CSR_F3_Box,
-    CSR_F3_Sphere
+    CSR_F3_Sphere,
+    CSR_F3_Capsule
 } CSR_EFigure3;
 
 //---------------------------------------------------------------------------
@@ -202,6 +203,16 @@ typedef struct
 } CSR_Box;
 
 /**
+* Capsule
+*/
+typedef struct 
+{
+    CSR_Vector3 m_Top;
+    CSR_Vector3 m_Bottom;
+    float       m_Radius;
+} CSR_Capsule;
+
+/**
 * 2D Polygon
 */
 typedef struct
@@ -269,6 +280,54 @@ typedef struct
         void csrVec2Sub(const CSR_Vector2* pV1, const CSR_Vector2* pV2, CSR_Vector2* pR);
 
         /**
+        * Multiplies vector contents
+        *@param pV1 - vector that contains values to be multiplied
+        *@param pV2 - vector to multiply by
+        *@param[out] pR - resulting vector
+        */
+        void csrVec2Mul(const CSR_Vector2* pV1, const CSR_Vector2* pV2, CSR_Vector2* pR);
+
+        /**
+        * Divides vector contents
+        *@param pV1 - vector that contains values to be divided
+        *@param pV2 - vector to divide by
+        *@param[out] pR - resulting vector
+        */
+        void csrVec2Div(const CSR_Vector2* pV1, const CSR_Vector2* pV2, CSR_Vector2* pR);
+
+        /**
+        * Adds vector by a value
+        *@param pV - vector that contains values to be added
+        *@param val - value to add to
+        *@param[out] pR - resulting vector
+        */
+        void csrVec2AddVal(const CSR_Vector2* pV, float val, CSR_Vector2* pR);
+
+        /**
+        * Subtracts vector by a value
+        *@param pV - vector that contains values to be subtracted
+        *@param val - value to subtract by
+        *@param[out] pR - resulting vector
+        */
+        void csrVec2SubVal(const CSR_Vector2* pV, float val, CSR_Vector2* pR);
+
+        /**
+        * Multiplies vector by a value
+        *@param pV - vector that contains values to be multiplied
+        *@param val - value to multiply by
+        *@param[out] pR - resulting vector
+        */
+        void csrVec2MulVal(const CSR_Vector2* pV, float val, CSR_Vector2* pR);
+
+        /**
+        * Divides vector by a value
+        *@param pV - vector that contains values to be divided
+        *@param val - value to divide by
+        *@param[out] pR - resulting vector
+        */
+        void csrVec2DivVal(const CSR_Vector2* pV, float val, CSR_Vector2* pR);
+
+        /**
         * Calculates vector length
         *@param pV - vector to calculate length
         *@param[out] pR - vector length
@@ -330,6 +389,54 @@ typedef struct
         *@param[out] pR - resulting vector
         */
         void csrVec3Sub(const CSR_Vector3* pV1, const CSR_Vector3* pV2, CSR_Vector3* pR);
+
+        /**
+        * Multiplies vector contents
+        *@param pV1 - vector that contains values to be multiplied
+        *@param pV2 - vector to multiply by
+        *@param[out] pR - resulting vector
+        */
+        void csrVec3Mul(const CSR_Vector3* pV1, const CSR_Vector3* pV2, CSR_Vector3* pR);
+
+        /**
+        * Divides vector contents
+        *@param pV1 - vector that contains values to be divided
+        *@param pV2 - vector to divide by
+        *@param[out] pR - resulting vector
+        */
+        void csrVec3Div(const CSR_Vector3* pV1, const CSR_Vector3* pV2, CSR_Vector3* pR);
+
+        /**
+        * Adds vector by a value
+        *@param pV - vector that contains values to be added
+        *@param val - value to add to
+        *@param[out] pR - resulting vector
+        */
+        void csrVec3AddVal(const CSR_Vector3* pV, float val, CSR_Vector3* pR);
+
+        /**
+        * Subtracts vector by a value
+        *@param pV - vector that contains values to be subtracted
+        *@param val - value to subtract by
+        *@param[out] pR - resulting vector
+        */
+        void csrVec3SubVal(const CSR_Vector3* pV, float val, CSR_Vector3* pR);
+
+        /**
+        * Multiplies vector by a value
+        *@param pV - vector that contains values to be multiplied
+        *@param val - value to multiply by
+        *@param[out] pR - resulting vector
+        */
+        void csrVec3MulVal(const CSR_Vector3* pV, float val, CSR_Vector3* pR);
+
+        /**
+        * Divides vector by a value
+        *@param pV - vector that contains values to be divided
+        *@param val - value to divide by
+        *@param[out] pR - resulting vector
+        */
+        void csrVec3DivVal(const CSR_Vector3* pV, float val, CSR_Vector3* pR);
 
         /**
         * Calculates vector length
