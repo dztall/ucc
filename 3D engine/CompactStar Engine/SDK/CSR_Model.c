@@ -3657,6 +3657,12 @@ CSR_PixelBuffer* csrMDLUncompressTexture(const CSR_MDLSkin* pSkin,
     unsigned char*   pTexPal;
     unsigned         bpp = 3;
 
+    if (!pSkin)
+        return 0;
+
+    if (!pSkin->m_TexLen)
+        return 0;
+
     // create a new pixel buffer
     pPB = csrPixelBufferCreate();
 
@@ -3686,9 +3692,9 @@ CSR_PixelBuffer* csrMDLUncompressTexture(const CSR_MDLSkin* pSkin,
     // convert indexed 8 bits texture to RGB 24 bits
     for (i = 0; i < pSkin->m_TexLen; ++i)
     {
-        ((unsigned char*)pPB->m_pData)[(i * bpp)]     = pTexPal[pSkin->m_pData[offset + i] * bpp];
-        ((unsigned char*)pPB->m_pData)[(i * bpp) + 1] = pTexPal[pSkin->m_pData[offset + i] * bpp + 1];
-        ((unsigned char*)pPB->m_pData)[(i * bpp) + 2] = pTexPal[pSkin->m_pData[offset + i] * bpp + 2];
+        ((unsigned char*)pPB->m_pData)[(i * bpp)]     = pTexPal[(pSkin->m_pData[offset + i] * bpp)];
+        ((unsigned char*)pPB->m_pData)[(i * bpp) + 1] = pTexPal[(pSkin->m_pData[offset + i] * bpp) + 1];
+        ((unsigned char*)pPB->m_pData)[(i * bpp) + 2] = pTexPal[(pSkin->m_pData[offset + i] * bpp) + 2];
     }
 
     return pPB;
@@ -3753,6 +3759,10 @@ void csrMDLPopulateModel(const CSR_MDLHeader*        pHeader,
 
     // model contains no frame?
     if (!pHeader->m_FrameCount)
+        return;
+
+    // no frame group?
+    if (!pFrameGroup->m_Count)
         return;
 
     // no model to populate?
@@ -4709,9 +4719,15 @@ int csrLandscapeGenerateVertices(const CSR_PixelBuffer* pPixelBuffer,
     if (!pPixelBuffer || height <= 0.0f || scale == 0.0f || !pVertices)
         return 0;
 
-    // calculate landscape data size and reserve memory for landscape mesh
+    // calculate landscape data size
     pVertices->m_Length = (size_t)(pPixelBuffer->m_Width * pPixelBuffer->m_Height);
-    pVertices->m_pData  = malloc(pVertices->m_Length * sizeof(CSR_Vector3));
+
+    // incorrect length?
+    if (!pVertices->m_Length)
+        return 0;
+
+    // allocate memory for landscape mesh
+    pVertices->m_pData = (CSR_Vector3*)malloc(pVertices->m_Length * sizeof(CSR_Vector3));
 
     // calculate scaling factor on x and z axis
     scaleX = -(((pPixelBuffer->m_Width  - 1) * scale) / 2.0f);
@@ -5233,8 +5249,15 @@ char* csrXGetText(const CSR_Buffer* pBuffer, size_t startOffset, size_t endOffse
     // calculate text length
     length = endOffset - startOffset;
 
+    if (!length)
+        return "";
+
+    pText = (char*)malloc(length + 1);
+
+    if (!pText)
+        return "";
+
     // get the text
-    pText         = (char*)malloc(length + 1);
     memcpy(pText, (char*)pBuffer->m_pData + startOffset, length);
     pText[length] = '\0';
 
@@ -5771,7 +5794,7 @@ int csrXBuildVertex(const CSR_Item_X*                 pItem,
     // mesh contains texture coordinates?
     if (pMesh->m_pVB->m_Format.m_HasTexCoords && pUVDataset)
     {
-        // calculate the uv index from the indice table
+        // calculate the uv index from the indices table
         const size_t uvIndex = pMeshDataset->m_pIndices[vertexIndex] * 2;
 
         // is index out of bounds?
@@ -5797,14 +5820,19 @@ int csrXBuildVertex(const CSR_Item_X*                 pItem,
         CSR_Item_X* pMaterialItem;
         size_t      materialIndex;
 
-        // get the material index to apply to this vertex
-        if (pMatListDataset->m_MaterialCount == 1)
-            materialIndex = pMatListDataset->m_pMaterialIndices[0];
-        else
-            materialIndex = pMatListDataset->m_pMaterialIndices[matListIndex];
+        if (pMatListDataset->m_pMaterialIndices)
+        {
+            // get the material index to apply to this vertex
+            if (pMatListDataset->m_MaterialCount == 1)
+                materialIndex = pMatListDataset->m_pMaterialIndices[0];
+            else
+                materialIndex = pMatListDataset->m_pMaterialIndices[matListIndex];
 
-        // get the material item
-        pMaterialItem = csrXGetMaterial(pMatList, materialIndex);
+            // get the material item
+            pMaterialItem = csrXGetMaterial(pMatList, materialIndex);
+        }
+        else
+            pMaterialItem = 0;
 
         // succeeded?
         if (pMaterialItem && pMaterialItem->m_ID == CSR_XI_Material_ID)
@@ -5861,7 +5889,7 @@ int csrXBuildVertex(const CSR_Item_X*                 pItem,
 
     weightIndex = 0;
 
-    // link the newly added vertice to the mesh skin weights
+    // link the newly added vertices to the mesh skin weights
     for (i = 0; i < pItem->m_ChildrenCount; ++i)
         switch (pItem->m_pChildren[i].m_ID)
         {
@@ -5880,7 +5908,7 @@ int csrXBuildVertex(const CSR_Item_X*                 pItem,
                     // is current vertex index matching with one in the current skin weights?
                     if (pSkinWeightsDataset->m_pIndices[j] == pMeshDataset->m_pIndices[vertexIndex])
                     {
-                        // allocate memory for the new indice to add
+                        // allocate memory for the new indices to add
                         size_t* pWeightIndices =
                                 (size_t*)csrMemoryAlloc
                                         (pX->m_pMeshWeights[meshIndex].m_pSkinWeights[weightIndex].m_pIndexTable[j].m_pData,
@@ -6291,7 +6319,7 @@ int csrXBuildMesh(const CSR_Item_X*           pItem,
     prevColor     = pX->m_pMesh[index].m_pVB->m_Material.m_Color;
     materialIndex = 0;
 
-    // iterate through indice table
+    // iterate through indices table
     for (i = 0; i < pMeshDataset->m_IndiceCount; i += pMeshDataset->m_pIndices[i] + 1)
     {
         // iterate through source vertices
@@ -6465,6 +6493,9 @@ int csrXBuildAnimationSet(const CSR_Item_X* pItem, CSR_X* pX)
                 pX->m_pAnimationSet[index].m_pAnimation[i].m_pKeys[j].m_pKey[k].m_Frame   = pData->m_pKeys[k].m_Frame;
                 pX->m_pAnimationSet[index].m_pAnimation[i].m_pKeys[j].m_pKey[k].m_pValues =
                         (float*)malloc(pData->m_pKeys[k].m_Count * sizeof(float));
+
+                if (!pX->m_pAnimationSet[index].m_pAnimation[i].m_pKeys[j].m_pKey[k].m_pValues)
+                    return 0;
 
                 // get the key values
                 memcpy(pX->m_pAnimationSet[index].m_pAnimation[i].m_pKeys[j].m_pKey[k].m_pValues,
@@ -7892,7 +7923,7 @@ int csrXParseWord(const CSR_Buffer* pBuffer, size_t startOffset, size_t endOffse
                         if (!pData)
                             return 0;
 
-                        // do read the vertices or indice count, or a new indice?
+                        // do read the vertices or indices count, or a new index?
                         if (!pData->m_VerticeTotal)
                         {
                             // get the value to convert
