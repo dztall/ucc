@@ -298,12 +298,21 @@ int csrAABBTreeResolve(const CSR_Ray3*           pRay,
                              size_t              deep,
                              CSR_Polygon3Buffer* pPolygons)
 {
-    unsigned      i;
-    int           leftResolved  = 0;
-    int           rightResolved = 0;
-    CSR_Polygon3* pPolygonBuffer;
-    CSR_Figure3   ray;
-    CSR_Figure3   box;
+    #ifdef _MSC_VER
+        unsigned      i;
+        int           leftResolved   = 0;
+        int           rightResolved  = 0;
+        CSR_Polygon3* pPolygonBuffer = 0;
+        CSR_Figure3   ray            = {0};
+        CSR_Figure3   box            = {0};
+    #else
+        unsigned      i;
+        int           leftResolved  = 0;
+        int           rightResolved = 0;
+        CSR_Polygon3* pPolygonBuffer;
+        CSR_Figure3   ray;
+        CSR_Figure3   box;
+    #endif
 
     // no ray?
     if (!pRay)
@@ -434,14 +443,25 @@ void csrSlidingPoint(const CSR_Plane*   pSlidingPlane,
                            float        radius,
                            CSR_Vector3* pR)
 {
-    float        distanceToPlane;
-    CSR_Plane    plane;
-    CSR_Vector3  planeRatio;
-    CSR_Vector3  pointBeyondPlane;
-    CSR_Vector3  pointOnPlane;
-    CSR_Segment3 segment;
-    CSR_Figure3  segmentFigure;
-    CSR_Figure3  planeFigure;
+    #ifdef _MSC_VER
+        float        distanceToPlane;
+        CSR_Plane    plane;
+        CSR_Vector3  planeRatio       = {0};
+        CSR_Vector3  pointBeyondPlane = {0};
+        CSR_Vector3  pointOnPlane     = {0};
+        CSR_Segment3 segment          = {0};
+        CSR_Figure3  segmentFigure    = {0};
+        CSR_Figure3  planeFigure      = {0};
+    #else
+        float        distanceToPlane;
+        CSR_Plane    plane;
+        CSR_Vector3  planeRatio;
+        CSR_Vector3  pointBeyondPlane;
+        CSR_Vector3  pointOnPlane;
+        CSR_Segment3 segment;
+        CSR_Figure3  segmentFigure;
+        CSR_Figure3  planeFigure;
+    #endif
 
     plane = *pSlidingPlane;
 
@@ -499,10 +519,17 @@ int csrGroundCollision(const CSR_Sphere*   pSphere,
                        const CSR_Vector3*  pGroundDir,
                              CSR_Vector3*  pR)
 {
-    CSR_Ray3    ray;
-    CSR_Vector3 groundDir;
-    CSR_Figure3 rayToCheck;
-    CSR_Figure3 polygonToCheck;
+    #ifdef _MSC_VER
+        CSR_Ray3    ray;
+        CSR_Vector3 groundDir;
+        CSR_Figure3 rayToCheck     = {0};
+        CSR_Figure3 polygonToCheck = {0};
+    #else
+        CSR_Ray3    ray;
+        CSR_Vector3 groundDir;
+        CSR_Figure3 rayToCheck;
+        CSR_Figure3 polygonToCheck;
+    #endif
 
     // validate the inputs
     if (!pSphere || !pPolygon)

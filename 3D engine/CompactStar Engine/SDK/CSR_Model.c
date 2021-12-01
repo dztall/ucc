@@ -1123,10 +1123,10 @@ CSR_Mesh* csrShapeCreateCapsule(float                 height,
         CSR_Vector3 normal1       = {0};
         CSR_Vector3 normal2       = {0};
         CSR_Vector3 normal3       = {0};
-        CSR_Vector3 uv0           = {0};
-        CSR_Vector3 uv1           = {0};
-        CSR_Vector3 uv2           = {0};
-        CSR_Vector3 uv3           = {0};
+        CSR_Vector2 uv0           = {0};
+        CSR_Vector2 uv1           = {0};
+        CSR_Vector2 uv2           = {0};
+        CSR_Vector2 uv3           = {0};
         CSR_Mesh*   pMesh         =  0;
     #else
         size_t      i;
@@ -1153,15 +1153,15 @@ CSR_Mesh* csrShapeCreateCapsule(float                 height,
         CSR_Vector3 normal1;
         CSR_Vector3 normal2;
         CSR_Vector3 normal3;
-        CSR_Vector3 uv0;
-        CSR_Vector3 uv1;
-        CSR_Vector3 uv2;
-        CSR_Vector3 uv3;
+        CSR_Vector2 uv0;
+        CSR_Vector2 uv1;
+        CSR_Vector2 uv2;
+        CSR_Vector2 uv3;
         CSR_Mesh*   pMesh;
     #endif
 
     if (radius == 0.0f || resolution == 0.0f)
-        return;
+        return 0;
 
     const float third     = 1.0f / 3.0f;
     const float twoThirds = 2.0f / 3.0f;
@@ -2799,7 +2799,7 @@ CSR_MDL* csrMDLCreate(const CSR_Buffer*           pBuffer,
         pFrameGroup = 0;
 
     // do generate skin?
-    if (!pVertFormat || pVertFormat->m_HasTexCoords)
+    if (pSkin && (!pVertFormat || pVertFormat->m_HasTexCoords))
     {
         // assign the memory to contain the skin
         pMDL->m_pSkin     = (CSR_Skin*)malloc(sizeof(CSR_Skin) * pSkin->m_Count);
@@ -3366,7 +3366,7 @@ int csrMDLReadHeader(const CSR_Buffer* pBuffer, size_t* pOffset, CSR_MDLHeader* 
         // the read bytes are inverted and should be swapped if the target system is big endian
         if (success && csrMemoryEndianness() == CSR_E_BigEndian)
         {
-            // swap the readed values in the memory (thus 0xAABBCCDD will become 0xDDCCBBAA)
+            // swap the read values in the memory (thus 0xAABBCCDD will become 0xDDCCBBAA)
             csrMemorySwap(&pHeader->m_ID,             sizeof(unsigned));
             csrMemorySwap(&pHeader->m_Version,        sizeof(unsigned));
             csrMemorySwap(&pHeader->m_Scale[0],       sizeof(float));
@@ -3411,7 +3411,7 @@ int csrMDLReadSkin(const CSR_Buffer*    pBuffer,
     #ifdef CONVERT_ENDIANNESS
         // the read bytes are inverted and should be swapped if the target system is big endian
         if (csrMemoryEndianness() == CSR_E_BigEndian)
-            // swap the readed value in the memory (thus 0xAABBCCDD will become 0xDDCCBBAA)
+            // swap the read value in the memory (thus 0xAABBCCDD will become 0xDDCCBBAA)
             csrMemorySwap(&pSkin->m_Group, sizeof(unsigned));
     #endif
 
@@ -3435,7 +3435,7 @@ int csrMDLReadSkin(const CSR_Buffer*    pBuffer,
     #ifdef CONVERT_ENDIANNESS
         // the read bytes are inverted and should be swapped if the target system is big endian
         if (csrMemoryEndianness() == CSR_E_BigEndian)
-            // swap the readed value in the memory (thus 0xAABBCCDD will become 0xDDCCBBAA)
+            // swap the read value in the memory (thus 0xAABBCCDD will become 0xDDCCBBAA)
             csrMemorySwap(&pSkin->m_Count, sizeof(unsigned));
     #endif
 
@@ -3481,7 +3481,7 @@ int csrMDLReadTextureCoord(const CSR_Buffer*          pBuffer,
         // the read bytes are inverted and should be swapped if the target system is big endian
         if (success && csrMemoryEndianness() == CSR_E_BigEndian)
         {
-            // swap the readed values in the memory (thus 0xAABBCCDD will become 0xDDCCBBAA)
+            // swap the read values in the memory (thus 0xAABBCCDD will become 0xDDCCBBAA)
             csrMemorySwap(&pTexCoord->m_OnSeam, sizeof(unsigned));
             csrMemorySwap(&pTexCoord->m_U,      sizeof(unsigned));
             csrMemorySwap(&pTexCoord->m_V,      sizeof(unsigned));
@@ -3503,7 +3503,7 @@ int csrMDLReadPolygon(const CSR_Buffer* pBuffer, size_t* pOffset, CSR_MDLPolygon
         // the read bytes are inverted and should be swapped if the target system is big endian
         if (success && csrMemoryEndianness() == CSR_E_BigEndian)
         {
-            // swap the readed values in the memory (thus 0xAABBCCDD will become 0xDDCCBBAA)
+            // swap the read values in the memory (thus 0xAABBCCDD will become 0xDDCCBBAA)
             csrMemorySwap(&pPolygon->m_FacesFront,     sizeof(unsigned));
             csrMemorySwap(&pPolygon->m_VertexIndex[0], sizeof(unsigned));
             csrMemorySwap(&pPolygon->m_VertexIndex[1], sizeof(unsigned));
@@ -3570,7 +3570,7 @@ int csrMDLReadFrameGroup(const CSR_Buffer*        pBuffer,
     #ifdef CONVERT_ENDIANNESS
         // the read bytes are inverted and should be swapped if the target system is big endian
         if (csrMemoryEndianness() == CSR_E_BigEndian)
-            // swap the readed value in the memory (thus 0xAABBCCDD will become 0xDDCCBBAA)
+            // swap the read value in the memory (thus 0xAABBCCDD will become 0xDDCCBBAA)
             csrMemorySwap(&pFrameGroup->m_Type, sizeof(unsigned));
     #endif
 
@@ -5314,7 +5314,7 @@ int csrXTranslateWord(const CSR_Buffer* pBuffer, size_t startOffset, size_t endO
     int    itemType = CSR_XT_Unknown;
     size_t offset   = startOffset;
 
-    // is word empty or comtains just 1 char?
+    // is word empty or contains just 1 char?
     if (endOffset <= startOffset)
         return 0;
     else
@@ -5720,7 +5720,7 @@ CSR_Item_X* csrXGetMaterial(const CSR_Item_X* pItem, size_t index)
     if (index >= pItem->m_ChildrenCount)
         return 0;
 
-    // return the material matching with the indice. NOTE assume that the material list object only
+    // return the material matching with the index. NOTE assume that the material list object only
     // contains materials as children and that the read order was the correct one
     return &pItem->m_pChildren[index];
 }
@@ -5747,8 +5747,8 @@ int csrXBuildVertex(const CSR_Item_X*                 pItem,
         CSR_Vector3  vertex  = {0};
         CSR_Vector3  normal  = {0};
         CSR_Vector2  uv      = {0};
-        CSR_Vector3* pNormal = 0;
-        CSR_Vector2* pUV     = 0;
+        CSR_Vector3* pNormal =  0;
+        CSR_Vector2* pUV     =  0;
     #else
         size_t       i;
         size_t       j;
@@ -6149,7 +6149,7 @@ int csrXBuildMesh(const CSR_Item_X*           pItem,
                 if (!pX->m_pMeshWeights[meshWeightsIndex].m_pSkinWeights[weightIndex].m_pIndexTable)
                     return 0;
 
-                // set the vertex tabe item count
+                // set the vertex table item count
                 pX->m_pMeshWeights[meshWeightsIndex].m_pSkinWeights[weightIndex].m_IndexTableCount =
                         pSkinWeightsDataset->m_IndiceCount;
 
@@ -6354,7 +6354,6 @@ int csrXBuildMesh(const CSR_Item_X*           pItem,
                                      pMatListDataset,
                                      fOnGetVertexColor))
                     return 0;
-
             }
         }
 
@@ -8064,7 +8063,7 @@ int csrXParseWord(const CSR_Buffer* pBuffer, size_t startOffset, size_t endOffse
                         if (!pData)
                             return 0;
 
-                        // do read the skin weights item count, or a new indice?
+                        // do read the skin weights item count, or a new index?
                         if (!pData->m_ItemCount)
                         {
                             // get the value to convert
@@ -8285,7 +8284,7 @@ int csrXItemToModel(const CSR_Item_X*           pItem,
             // no current bone?
             if (!pBone)
             {
-                // then the skeletton should also be not initalized
+                // then the skeleton should also be not initialized
                 if (pX->m_pSkeleton)
                     return 0;
 

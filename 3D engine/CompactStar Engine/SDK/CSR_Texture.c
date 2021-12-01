@@ -86,13 +86,23 @@ CSR_PixelBuffer* csrPixelBufferFromBitmapFile(const char* pFileName)
 //---------------------------------------------------------------------------
 CSR_PixelBuffer* csrPixelBufferFromBitmapBuffer(const CSR_Buffer* pBuffer)
 {
-    CSR_PixelBuffer* pPixelBuffer;
-    size_t           offset;
-    unsigned         dataOffset;
-    unsigned         headerSize;
-    unsigned short   bpp;
-    unsigned short   compressed;
-    unsigned char    signature[2];
+    #ifdef _MSC_VER
+        CSR_PixelBuffer* pPixelBuffer;
+        size_t           offset;
+        unsigned         dataOffset;
+        unsigned         headerSize;
+        unsigned short   bpp;
+        unsigned short   compressed;
+        unsigned char    signature[2] = {0};
+    #else
+        CSR_PixelBuffer* pPixelBuffer;
+        size_t           offset;
+        unsigned         dataOffset;
+        unsigned         headerSize;
+        unsigned short   bpp;
+        unsigned short   compressed;
+        unsigned char    signature[2];
+    #endif
 
     // validate the input
     if (!pBuffer)
@@ -417,7 +427,7 @@ void csrSkinContentRelease(CSR_Skin* pSkin, const CSR_fOnDeleteTexture fOnDelete
     // release the texture content
     csrTextureContentRelease(&pSkin->m_Texture);
 
-    // release the bumpmap content
+    // release the bump map content
     csrTextureContentRelease(&pSkin->m_BumpMap);
 
     // release the cubemap content

@@ -281,10 +281,10 @@ void csrSceneItemContentRelease(CSR_SceneItem*       pSceneItem,
         switch (pSceneItem->m_Type)
         {
             case CSR_MT_Line:  free((CSR_Line*)pSceneItem->m_pModel);                   break;
-            case CSR_MT_Mesh:  csrMeshRelease(pSceneItem->m_pModel,  fOnDeleteTexture); break;
+            case CSR_MT_Mesh:  csrMeshRelease (pSceneItem->m_pModel, fOnDeleteTexture); break;
             case CSR_MT_Model: csrModelRelease(pSceneItem->m_pModel, fOnDeleteTexture); break;
-            case CSR_MT_MDL:   csrMDLRelease(pSceneItem->m_pModel,   fOnDeleteTexture); break;
-            case CSR_MT_X:     csrXRelease(pSceneItem->m_pModel,     fOnDeleteTexture); break;
+            case CSR_MT_MDL:   csrMDLRelease  (pSceneItem->m_pModel, fOnDeleteTexture); break;
+            case CSR_MT_X:     csrXRelease    (pSceneItem->m_pModel, fOnDeleteTexture); break;
         }
 
     // release the aligned-axis bounding box tree

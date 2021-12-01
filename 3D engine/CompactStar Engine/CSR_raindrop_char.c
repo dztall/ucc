@@ -157,14 +157,13 @@ void* OnGetShader(const void* pModel, CSR_EModelType type)
         return g_pSkyboxShader;
 
     csrShaderEnable(g_pShader);
-    
+
     if (g_AlphaSlot)
         glUniform1f(g_AlphaSlot, 0.8f);
 
     return g_pShader;
 }
 //---------------------------------------------------------------------------
-/**/
 void* OnGetID(const void* pKey)
 {
     size_t i;
@@ -178,7 +177,6 @@ void* OnGetID(const void* pKey)
 
     return 0;
 }
-/**/
 //---------------------------------------------------------------------------
 void OnDeleteTexture(const CSR_Texture* pTexture)
 {
@@ -318,7 +316,7 @@ void on_GLES2_Init(int view_w, int view_h)
     if (!g_pShader)
     {
     	printf("FAILED to compile shader\n");
-        return false;
+        return;
     }
 
     csrShaderEnable(g_pShader);
@@ -326,7 +324,6 @@ void on_GLES2_Init(int view_w, int view_h)
     // get shader attributes
     g_pShader->m_VertexSlot  = glGetAttribLocation (g_pShader->m_ProgramID, "csr_aVertices");
     g_pShader->m_NormalSlot  = glGetAttribLocation (g_pShader->m_ProgramID, "csr_aNormal");
-    g_pShader->m_ColorSlot   = glGetAttribLocation (g_pShader->m_ProgramID, "csr_aColor");
     g_pShader->m_CubemapSlot = glGetUniformLocation(g_pShader->m_ProgramID, "csr_sCubemap");
     g_CameraSlot             = glGetUniformLocation(g_pShader->m_ProgramID, "csr_uCamera");
     g_AlphaSlot              = glGetUniformLocation(g_pShader->m_ProgramID, "csr_uAlpha");
@@ -364,7 +361,7 @@ void on_GLES2_Init(int view_w, int view_h)
     material.m_Wireframe   = 0;
 
     /*
-    CSR_Mesh* pMesh = csrShapeCreateSphere(1, 
+    CSR_Mesh* pMesh = csrShapeCreateSphere(1,
                                  20,
                                  20,
                                 &vertexFormat,

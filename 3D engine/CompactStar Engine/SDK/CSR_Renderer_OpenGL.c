@@ -25,14 +25,14 @@
 GLuint csrOpenGLTextureFromPixelBuffer(const CSR_PixelBuffer* pPixelBuffer)
 {
     unsigned char* pPixels = 0;
-    unsigned       x;
-    unsigned       y;
+    size_t         x;
+    size_t         y;
     unsigned char  c;
     GLint          pixelType;
     GLuint         index;
 
     // validate the input
-    if (!pPixelBuffer || !pPixelBuffer->m_Width || !pPixelBuffer->m_Height)
+    if (!pPixelBuffer || !pPixelBuffer->m_Width || !pPixelBuffer->m_Height || !pPixelBuffer->m_pData)
         return M_CSR_Error_Code;
 
     // select the correct pixel type to use
@@ -58,18 +58,29 @@ GLuint csrOpenGLTextureFromPixelBuffer(const CSR_PixelBuffer* pPixelBuffer)
     // reorder the pixels if image is a bitmap
     if (pPixelBuffer->m_ImageType == CSR_IT_Bitmap)
     {
-        pPixels = (unsigned char*)malloc(sizeof(unsigned char)  *
-                                         pPixelBuffer->m_Width  *
-                                         pPixelBuffer->m_Height *
-                                         3);
+        const size_t bufferLength = sizeof(unsigned char)  *
+                                    pPixelBuffer->m_Width  *
+                                    pPixelBuffer->m_Height *
+                                    3;
 
-        // get bitmap data into right format
+        pPixels = (unsigned char*)malloc(bufferLength);
+
+        if (!pPixels || !pPixelBuffer->m_Stride)
+            return M_CSR_Error_Code;
+
+        // format bitmap data
         for (y = 0; y < pPixelBuffer->m_Height; ++y)
             for (x = 0; x < pPixelBuffer->m_Width; ++x)
                 for (c = 0; c < 3; ++c)
-                    pPixels[3 * (pPixelBuffer->m_Width * y + x) + c] =
-                            ((unsigned char*)pPixelBuffer->m_pData)
-                                    [pPixelBuffer->m_Stride * y + 3 * (pPixelBuffer->m_Width - x - 1) + (2 - c)];
+                {
+                    const size_t index = 3 * (pPixelBuffer->m_Width * y + x) + c;
+
+                    if (index >= bufferLength)
+                        continue;
+
+                    pPixels[index] = ((unsigned char*)pPixelBuffer->m_pData)
+                            [pPixelBuffer->m_Stride * y + 3 * (pPixelBuffer->m_Width - x - 1) + (2 - c)];
+                }
     }
     else
         pPixels = (unsigned char*)pPixelBuffer->m_pData;
@@ -135,20 +146,31 @@ GLuint csrOpenGLCubemapLoad(const char** pFileNames)
             size_t y;
             size_t c;
 
+            const size_t bufferLength = sizeof(unsigned char)  *
+                                        pPixelBuffer->m_Width  *
+                                        pPixelBuffer->m_Height *
+                                        3;
+
             doReleasePixels = 1;
 
-            pPixels = (unsigned char*)malloc(sizeof(unsigned char)  *
-                                             pPixelBuffer->m_Width  *
-                                             pPixelBuffer->m_Height *
-                                             3);
+            pPixels = (unsigned char*)malloc(bufferLength);
+
+            if (!pPixels || !pPixelBuffer->m_Stride)
+                continue;
 
             // get bitmap data into right format
             for (y = 0; y < pPixelBuffer->m_Height; ++y)
                 for (x = 0; x < pPixelBuffer->m_Width; ++x)
                     for (c = 0; c < 3; ++c)
-                        pPixels[3 * (pPixelBuffer->m_Width * y + x) + c] =
-                                ((unsigned char*)pPixelBuffer->m_pData)
-                                        [pPixelBuffer->m_Stride * y + 3 * (pPixelBuffer->m_Width - x - 1) + (2 - c)];
+                    {
+                        const size_t index = 3 * (pPixelBuffer->m_Width * y + x) + c;
+
+                        if (index >= bufferLength)
+                            continue;
+
+                        pPixels[index] = ((unsigned char*)pPixelBuffer->m_pData)
+                                [pPixelBuffer->m_Stride * y + 3 * (pPixelBuffer->m_Width - x - 1) + (2 - c)];
+                    }
         }
         else
             pPixels = (unsigned char*)pPixelBuffer->m_pData;
@@ -338,15 +360,23 @@ CSR_OpenGLShader* csrOpenGLShaderLoadFromStr(const char*               pVertex,
     if (!pVS || !pFS)
         return 0;
 
-    // copy the vertex program to read
     pVS->m_Length = vertexLength;
     pVS->m_pData  = (unsigned char*)malloc(pVS->m_Length + 1);
+
+    if (!pVS->m_pData)
+        return 0;
+
+    // copy the vertex program to read
     memcpy(pVS->m_pData, pVertex, pVS->m_Length);
     ((unsigned char*)pVS->m_pData)[pVS->m_Length] = 0x0;
 
-    // copy the fragment program to read
     pFS->m_Length = fragmentLength;
     pFS->m_pData  = (unsigned char*)malloc(pFS->m_Length + 1);
+
+    if (!pFS->m_pData)
+        return 0;
+
+    // copy the fragment program to read
     memcpy(pFS->m_pData, pFragment, pFS->m_Length);
     ((unsigned char*)pFS->m_pData)[pFS->m_Length] = 0x0;
 
@@ -1386,7 +1416,7 @@ void csrOpenGLDrawMesh(const CSR_Mesh*         pMesh,
                     glActiveTexture(GL_TEXTURE0);
                     glUniform1i(pShader->m_TextureSlot, GL_TEXTURE0);
 
-                    // bind the texure to use
+                    // bind the texture to use
                     glBindTexture(GL_TEXTURE_2D, pTextureID->m_ID);
                 }
 
@@ -1397,7 +1427,7 @@ void csrOpenGLDrawMesh(const CSR_Mesh*         pMesh,
                     glActiveTexture(GL_TEXTURE1);
                     glUniform1i(pShader->m_BumpMapSlot, GL_TEXTURE1);
 
-                    // bind the texure to use
+                    // bind the texture to use
                     glBindTexture(GL_TEXTURE_2D, pBumpmapID->m_ID);
                 }
             }
@@ -1412,7 +1442,7 @@ void csrOpenGLDrawMesh(const CSR_Mesh*         pMesh,
                 //glActiveTexture(GL_TEXTURE0);
                 //glUniform1i(pShader->m_CubemapSlot, GL_TEXTURE0);
 
-                // bind the cubemap texure to use
+                // bind the cubemap texture to use
                 glBindTexture(GL_TEXTURE_CUBE_MAP, pCubemapID->m_ID);
             }
         }
@@ -1473,7 +1503,7 @@ void csrOpenGLDrawMDL(const CSR_MDL*          pMDL,
             glActiveTexture(GL_TEXTURE0);
             glUniform1i(pShader->m_TextureSlot, GL_TEXTURE0);
 
-            // bind the texure to use
+            // bind the texture to use
             glBindTexture(GL_TEXTURE_2D, pTextureID->m_ID);
         }
     }
@@ -1517,7 +1547,7 @@ void csrOpenGLDrawX(const CSR_X*            pX,
         CSR_VertexBuffer* pSrcBuffer;
         CSR_Array*        pLocalMatrixArray;
 
-        // if mesh has no skeletton, perform a simple draw
+        // if mesh has no skeleton, perform a simple draw
         if (!pX->m_pSkeleton)
         {
             // draw the model mesh

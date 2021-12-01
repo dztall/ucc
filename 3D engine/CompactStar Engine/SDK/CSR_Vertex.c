@@ -497,11 +497,19 @@ int csrIndexedPolygonBufferAdd(const CSR_IndexedPolygon*       pIndexedPolygon,
 //---------------------------------------------------------------------------
 CSR_IndexedPolygonBuffer* csrIndexedPolygonBufferFromMesh(const CSR_Mesh* pMesh)
 {
-    size_t                    i;
-    size_t                    j;
-    size_t                    index;
-    CSR_IndexedPolygon        indexedPolygon;
-    CSR_IndexedPolygonBuffer* pIPB;
+    #ifdef _MSC_VER
+        size_t                    i;
+        size_t                    j;
+        size_t                    index;
+        CSR_IndexedPolygon        indexedPolygon = {0};
+        CSR_IndexedPolygonBuffer* pIPB           =  0;
+    #else
+        size_t                    i;
+        size_t                    j;
+        size_t                    index;
+        CSR_IndexedPolygon        indexedPolygon;
+        CSR_IndexedPolygonBuffer* pIPB;
+    #endif
 
     // validate the inputs
     if (!pMesh || !pMesh->m_pVB || !pMesh->m_Count)
