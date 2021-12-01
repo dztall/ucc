@@ -249,7 +249,7 @@ CSR_PixelBuffer* csrPixelBufferFromBitmapBuffer(const CSR_Buffer* pBuffer)
     pPixelBuffer->m_ImageType    = CSR_IT_Bitmap;
     pPixelBuffer->m_BytePerPixel = bpp / 8;
     pPixelBuffer->m_Stride       = (((pPixelBuffer->m_Width) * 3 + 3) / 4) * 4 - ((pPixelBuffer->m_Width) * 3 % 4);
-    pPixelBuffer->m_DataLength   = pPixelBuffer->m_Stride * pPixelBuffer->m_Height;
+    pPixelBuffer->m_DataLength   = (size_t)(pPixelBuffer->m_Stride * pPixelBuffer->m_Height);
     pPixelBuffer->m_pData        = malloc(sizeof(unsigned char) * pPixelBuffer->m_DataLength);
 
     offset = dataOffset;

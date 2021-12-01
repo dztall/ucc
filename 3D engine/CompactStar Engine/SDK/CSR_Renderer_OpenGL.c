@@ -27,7 +27,7 @@ GLuint csrOpenGLTextureFromPixelBuffer(const CSR_PixelBuffer* pPixelBuffer)
     unsigned char* pPixels = 0;
     size_t         x;
     size_t         y;
-    unsigned char  c;
+    size_t         c;
     GLint          pixelType;
     GLuint         index;
 

@@ -1160,11 +1160,11 @@ CSR_Mesh* csrShapeCreateCapsule(float                 height,
         CSR_Mesh*   pMesh;
     #endif
 
-    if (radius == 0.0f || resolution == 0.0f)
-        return 0;
-
     const float third     = 1.0f / 3.0f;
     const float twoThirds = 2.0f / 3.0f;
+
+    if (radius == 0.0f || resolution == 0.0f)
+        return 0;
 
     capsuleTop.m_X    = 0.0f;
     capsuleTop.m_Y    = height;
