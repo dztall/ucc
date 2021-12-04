@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides an OpenGL renderer                    *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -1542,10 +1542,11 @@ void csrOpenGLDrawX(const CSR_X*            pX,
     // iterate through the meshes to draw
     for (i = 0; i < pX->m_MeshCount; ++i)
     {
-        int               useLocalMatrixArray;
-        CSR_Mesh*         pMesh;
-        CSR_VertexBuffer* pSrcBuffer;
-        CSR_Array*        pLocalMatrixArray;
+        int        useLocalMatrixArray;
+        int        useSourceBuffer;
+        CSR_Mesh*  pMesh;
+        CSR_Mesh*  pLocalMesh;
+        CSR_Array* pLocalMatrixArray;
 
         // if mesh has no skeleton, perform a simple draw
         if (!pX->m_pSkeleton)
@@ -1568,15 +1569,48 @@ void csrOpenGLDrawX(const CSR_X*            pX,
             // exists, a custom version of this function should also be written for it)
             continue;
 
+        // create a local mesh to contain the processed frame to draw
+        pLocalMesh = csrMeshCreate();
+
+        if (!pLocalMesh)
+            continue;
+
+        // bind the source mesh to the local one. Don't need to take care of copy the pointers, because
+        // the source mesh will remain valid during the whole local mesh lifetime. Just don't delete
+        // them on the loop end
+        pLocalMesh->m_Skin = pMesh->m_Skin;
+        pLocalMesh->m_Time = pMesh->m_Time;
+
         // mesh contains skin weights?
         if (pX->m_pMeshWeights[i].m_pSkinWeights)
         {
-            // clear the previous print vertices (needs to be cleared to properly apply the weights)
-            for (j = 0; j < pMesh->m_pVB->m_Count; j += pMesh->m_pVB->m_Format.m_Stride)
+            useSourceBuffer = 0;
+
+            // allocate memory for the final vertex buffer to draw
+            pLocalMesh->m_pVB   = (CSR_VertexBuffer*)malloc(pMesh->m_Count * sizeof(CSR_VertexBuffer));
+            pLocalMesh->m_Count = pMesh->m_Count;
+
+            if (!pLocalMesh->m_pVB || !pLocalMesh->m_Count)
             {
-                pX->m_pPrint[i].m_pData[j]     = 0.0f;
-                pX->m_pPrint[i].m_pData[j + 1] = 0.0f;
-                pX->m_pPrint[i].m_pData[j + 2] = 0.0f;
+                free(pLocalMesh);
+                continue;
+            }
+
+            // bind the source vertex buffer to the local one
+            pLocalMesh->m_pVB->m_Format   = pMesh->m_pVB->m_Format;
+            pLocalMesh->m_pVB->m_Culling  = pMesh->m_pVB->m_Culling;
+            pLocalMesh->m_pVB->m_Material = pMesh->m_pVB->m_Material;
+            pLocalMesh->m_pVB->m_Time     = pMesh->m_pVB->m_Time;
+
+            // allocate memory for the vertex buffer data
+            pLocalMesh->m_pVB->m_pData = (float*)calloc(pMesh->m_pVB->m_Count, sizeof(float));
+            pLocalMesh->m_pVB->m_Count = pMesh->m_pVB->m_Count;
+
+            if (!pLocalMesh->m_pVB->m_pData || !pLocalMesh->m_pVB->m_Count)
+            {
+                free(pLocalMesh->m_pVB);
+                free(pLocalMesh);
+                continue;
             }
 
             // iterate through mesh skin weights
@@ -1632,16 +1666,30 @@ void csrOpenGLDrawX(const CSR_X*            pX,
                         csrMat4Transform(&finalMatrix, &inputVertex, &outputVertex);
 
                         // apply the skin weights and calculate the final output vertex
-                        pX->m_pPrint[i].m_pData[iX] += (outputVertex.m_X * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
-                        pX->m_pPrint[i].m_pData[iY] += (outputVertex.m_Y * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
-                        pX->m_pPrint[i].m_pData[iZ] += (outputVertex.m_Z * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+                        pLocalMesh->m_pVB->m_pData[iX] += (outputVertex.m_X * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+                        pLocalMesh->m_pVB->m_pData[iY] += (outputVertex.m_Y * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+                        pLocalMesh->m_pVB->m_pData[iZ] += (outputVertex.m_Z * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+
+                        // copy the remaining vertex data
+                        if (pMesh->m_pVB->m_Format.m_Stride > 3)
+                        {
+                            const size_t copyIndex = iZ + 1;
+
+                            memcpy(&pLocalMesh->m_pVB->m_pData[copyIndex],
+                                   &pMesh->m_pVB->m_pData[copyIndex],
+                                    ((size_t)pMesh->m_pVB->m_Format.m_Stride - 3) * sizeof(float));
+                        }
                     }
             }
         }
+        else
+        {
+            useSourceBuffer = 1;
 
-        // use the model print as final vertex buffer
-        pSrcBuffer   = pMesh->m_pVB;
-        pMesh->m_pVB = &pX->m_pPrint[i];
+            // no weights, just use the existing vertex buffer
+            pLocalMesh->m_pVB   = pMesh->m_pVB;
+            pLocalMesh->m_Count = pMesh->m_Count;
+        }
 
         useLocalMatrixArray = 0;
 
@@ -1682,10 +1730,17 @@ void csrOpenGLDrawX(const CSR_X*            pX,
             pLocalMatrixArray = (CSR_Array*)pMatrixArray;
 
         // draw the model mesh
-        csrOpenGLDrawMesh(pMesh, pShader, pLocalMatrixArray, fOnGetID);
+        csrOpenGLDrawMesh(pLocalMesh, pShader, pLocalMatrixArray, fOnGetID);
 
-        // restore the correct mesh vertex buffer
-        pMesh->m_pVB = pSrcBuffer;
+        // delete the local vertex buffer
+        if (!useSourceBuffer)
+        {
+            free(pLocalMesh->m_pVB->m_pData);
+            free(pLocalMesh->m_pVB);
+        }
+
+        // delete the local mesh
+        free(pLocalMesh);
 
         // release the transformed matrix list
         if (useLocalMatrixArray)

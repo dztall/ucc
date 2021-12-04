@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides the draw functions                    *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -20,6 +20,9 @@
 #include "CSR_Common.h"
 #include "CSR_Vertex.h"
 #include "CSR_Model.h"
+#include "CSR_Wavefront.h"
+#include "CSR_Mdl.h"
+#include "CSR_X.h"
 
 // graphics library
 #if defined(_OS_IOS_) || defined(_OS_ANDROID_) || defined(_OS_WINDOWS_)
