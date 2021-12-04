@@ -37,6 +37,7 @@
 #include "SDK/CSR_Common.h"
 #include "SDK/CSR_Vertex.h"
 #include "SDK/CSR_Model.h"
+#include "SDK/CSR_Mdl.h"
 #include "SDK/CSR_Renderer.h"
 #include "SDK/CSR_SoftwareRaster.h"
 #include "SDK/CSR_MobileC_Debug.h"

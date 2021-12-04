@@ -38,6 +38,7 @@
 #include "SDK/CSR_Collision.h"
 #include "SDK/CSR_Vertex.h"
 #include "SDK/CSR_Model.h"
+#include "SDK/CSR_Mdl.h"
 #include "SDK/CSR_Particles.h"
 #include "SDK/CSR_Renderer.h"
 #include "SDK/CSR_Renderer_OpenGL.h"

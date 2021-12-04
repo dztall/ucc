@@ -36,6 +36,7 @@
 #include "SDK/CSR_Common.h"
 #include "SDK/CSR_Vertex.h"
 #include "SDK/CSR_Model.h"
+#include "SDK/CSR_X.h"
 #include "SDK/CSR_Scene.h"
 #include "SDK/CSR_Renderer.h"
 #include "SDK/CSR_Renderer_OpenGL.h"
