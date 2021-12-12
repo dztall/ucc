@@ -1120,17 +1120,21 @@ void csrOpenGLDrawLine(const CSR_Line* pLine, const CSR_OpenGLShader* pShader)
     // bind shader program
     csrOpenGLShaderEnable(pShader);
 
-    // get the model matrix slot from shader
-    slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uModel");
-
-    // found it?
-    if (slot >= 0)
+    // do use a default model matrix?
+    if (!pLine->m_CustomModelMat)
     {
-        CSR_Matrix4 matrix;
-        csrMat4Identity(&matrix);
+        // get the model matrix slot from shader
+        slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uModel");
 
-        // connect default model matrix to shader
-        glUniformMatrix4fv(slot, 1, GL_FALSE, &matrix.m_Table[0][0]);
+        // found it?
+        if (slot >= 0)
+        {
+            CSR_Matrix4 matrix;
+            csrMat4Identity(&matrix);
+
+            // connect default model matrix to shader
+            glUniformMatrix4fv(slot, 1, GL_FALSE, &matrix.m_Table[0][0]);
+        }
     }
 
     // generate the line vertex buffer
@@ -1720,6 +1724,242 @@ void csrOpenGLDrawX(const CSR_X*            pX,
 
                     // get the final matrix after bones transform
                     csrBoneGetMatrix(pX->m_pMeshToBoneDict[i].m_pBone,
+                                     (CSR_Matrix4*)pMatrixArray->m_pItem[j].m_pData,
+                                     (CSR_Matrix4*)pLocalMatrixArray->m_pItem[j].m_pData);
+                }
+            }
+        }
+        else
+            // no matrix array or no bone, keep the original array
+            pLocalMatrixArray = (CSR_Array*)pMatrixArray;
+
+        // draw the model mesh
+        csrOpenGLDrawMesh(pLocalMesh, pShader, pLocalMatrixArray, fOnGetID);
+
+        // delete the local vertex buffer
+        if (!useSourceBuffer)
+        {
+            free(pLocalMesh->m_pVB->m_pData);
+            free(pLocalMesh->m_pVB);
+        }
+
+        // delete the local mesh
+        free(pLocalMesh);
+
+        // release the transformed matrix list
+        if (useLocalMatrixArray)
+            csrArrayRelease(pLocalMatrixArray);
+    }
+}
+//---------------------------------------------------------------------------
+void csrOpenGLDrawCollada(const CSR_Collada*      pCollada,
+                          const CSR_OpenGLShader* pShader,
+                          const CSR_Array*        pMatrixArray,
+                                size_t            animSetIndex,
+                                size_t            frameIndex,
+                          const CSR_fOnGetID      fOnGetID)
+{
+    size_t i;
+    size_t j;
+    size_t k;
+    size_t l;
+
+    // no model to draw?
+    if (!pCollada || !pCollada->m_MeshCount)
+        return;
+
+    // do draw only the mesh and ignore all other data like bones?
+    if (pCollada->m_MeshOnly)
+    {
+        // iterate through the meshes to draw
+        for (i = 0; i < pCollada->m_MeshCount; ++i)
+            // draw the model mesh
+            csrOpenGLDrawMesh(&pCollada->m_pMesh[i], pShader, pMatrixArray, fOnGetID);
+
+        return;
+    }
+
+    // iterate through the meshes to draw
+    for (i = 0; i < pCollada->m_MeshCount; ++i)
+    {
+        int        useLocalMatrixArray;
+        int        useSourceBuffer;
+        CSR_Mesh*  pMesh;
+        CSR_Mesh*  pLocalMesh;
+        CSR_Array* pLocalMatrixArray;
+
+        // if mesh has no skeleton, perform a simple draw
+        if (!pCollada->m_pSkeleton)
+        {
+            // draw the model mesh
+            csrOpenGLDrawMesh(&pCollada->m_pMesh[i], pShader, pMatrixArray, fOnGetID);
+            return;
+        }
+
+        // get the current model mesh to draw
+        pMesh = &pCollada->m_pMesh[i];
+
+        // found it?
+        if (!pMesh)
+            continue;
+
+        // normally each mesh should contain only one vertex buffer
+        if (pMesh->m_Count != 1)
+            // unsupported if not (because cannot know which texture should be binded. If a such model
+            // exists, a custom version of this function should also be written for it)
+            continue;
+
+        // create a local mesh to contain the processed frame to draw
+        pLocalMesh = csrMeshCreate();
+
+        if (!pLocalMesh)
+            continue;
+
+        // bind the source mesh to the local one. Don't need to take care of copy the pointers, because
+        // the source mesh will remain valid during the whole local mesh lifetime. Just don't delete
+        // them on the loop end
+        pLocalMesh->m_Skin = pMesh->m_Skin;
+        pLocalMesh->m_Time = pMesh->m_Time;
+
+        // mesh contains skin weights?
+        if (pCollada->m_pMeshWeights[i].m_pSkinWeights)
+        {
+            useSourceBuffer = 0;
+
+            // allocate memory for the final vertex buffer to draw
+            pLocalMesh->m_pVB   = (CSR_VertexBuffer*)malloc(pMesh->m_Count * sizeof(CSR_VertexBuffer));
+            pLocalMesh->m_Count = pMesh->m_Count;
+
+            if (!pLocalMesh->m_pVB || !pLocalMesh->m_Count)
+            {
+                free(pLocalMesh);
+                continue;
+            }
+
+            // bind the source vertex buffer to the local one
+            pLocalMesh->m_pVB->m_Format   = pMesh->m_pVB->m_Format;
+            pLocalMesh->m_pVB->m_Culling  = pMesh->m_pVB->m_Culling;
+            pLocalMesh->m_pVB->m_Material = pMesh->m_pVB->m_Material;
+            pLocalMesh->m_pVB->m_Time     = pMesh->m_pVB->m_Time;
+
+            // allocate memory for the vertex buffer data
+            pLocalMesh->m_pVB->m_pData = (float*)calloc(pMesh->m_pVB->m_Count, sizeof(float));
+            pLocalMesh->m_pVB->m_Count = pMesh->m_pVB->m_Count;
+
+            if (!pLocalMesh->m_pVB->m_pData || !pLocalMesh->m_pVB->m_Count)
+            {
+                free(pLocalMesh->m_pVB);
+                free(pLocalMesh);
+                continue;
+            }
+
+            // iterate through mesh skin weights
+            for (j = 0; j < pCollada->m_pMeshWeights[i].m_Count; ++j)
+            {
+                CSR_Matrix4 boneMatrix;
+                CSR_Matrix4 finalMatrix;
+
+                // get the bone matrix
+                if (pCollada->m_PoseOnly)
+                    csrBoneGetMatrix(pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pBone, 0, &boneMatrix);
+                else
+                    csrBoneGetAnimMatrix(pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pBone,
+                                        &pCollada->m_pAnimationSet[animSetIndex],
+                                         frameIndex,
+                                         0,
+                                        &boneMatrix);
+
+                // get the final matrix after bones transform
+                csrMat4Multiply(&pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_Matrix,
+                                &boneMatrix,
+                                &finalMatrix);
+
+                // apply the bone and its skin weights to each vertices
+                for (k = 0; k < pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_IndexTableCount; ++k)
+                    for (l = 0; l < pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pIndexTable[k].m_Count; ++l)
+                    {
+                        #ifdef _MSC_VER
+                            size_t      iX;
+                            size_t      iY;
+                            size_t      iZ;
+                            CSR_Vector3 inputVertex  = {0};
+                            CSR_Vector3 outputVertex = {0};
+                        #else
+                            size_t      iX;
+                            size_t      iY;
+                            size_t      iZ;
+                            CSR_Vector3 inputVertex;
+                            CSR_Vector3 outputVertex;
+                        #endif
+
+                        // get the next vertex to which the next skin weight should be applied
+                        iX = pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pIndexTable[k].m_pData[l];
+                        iY = pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pIndexTable[k].m_pData[l] + 1;
+                        iZ = pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pIndexTable[k].m_pData[l] + 2;
+
+                        // get input vertex
+                        inputVertex.m_X = pMesh->m_pVB->m_pData[iX];
+                        inputVertex.m_Y = pMesh->m_pVB->m_pData[iY];
+                        inputVertex.m_Z = pMesh->m_pVB->m_pData[iZ];
+
+                        // apply bone transformation to vertex
+                        csrMat4Transform(&finalMatrix, &inputVertex, &outputVertex);
+
+                        // apply the skin weights and calculate the final output vertex
+                        pLocalMesh->m_pVB->m_pData[iX] += (outputVertex.m_X * pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+                        pLocalMesh->m_pVB->m_pData[iY] += (outputVertex.m_Y * pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+                        pLocalMesh->m_pVB->m_pData[iZ] += (outputVertex.m_Z * pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+
+                        // copy the remaining vertex data
+                        if (pMesh->m_pVB->m_Format.m_Stride > 3)
+                        {
+                            const size_t copyIndex = iZ + 1;
+
+                            memcpy(&pLocalMesh->m_pVB->m_pData[copyIndex],
+                                   &pMesh->m_pVB->m_pData[copyIndex],
+                                    ((size_t)pMesh->m_pVB->m_Format.m_Stride - 3) * sizeof(float));
+                        }
+                    }
+            }
+        }
+        else
+        {
+            useSourceBuffer = 1;
+
+            // no weights, just use the existing vertex buffer
+            pLocalMesh->m_pVB   = pMesh->m_pVB;
+            pLocalMesh->m_Count = pMesh->m_Count;
+        }
+
+        useLocalMatrixArray = 0;
+
+        // has matrix array to transform, and model contain mesh bones?
+        if (pMatrixArray && pMatrixArray->m_Count && pCollada->m_pMeshToBoneDict[i].m_pBone)
+        {
+            // create a new local matrix array
+            pLocalMatrixArray = (CSR_Array*)malloc(sizeof(CSR_Array));
+            csrArrayInit(pLocalMatrixArray);
+            useLocalMatrixArray = 1;
+
+            // create as array item as in the source matrix list
+            pLocalMatrixArray->m_pItem =
+                    (CSR_ArrayItem*)malloc(sizeof(CSR_ArrayItem) * pMatrixArray->m_Count);
+
+            // succeeded?
+            if (pLocalMatrixArray->m_pItem)
+            {
+                // update array count
+                pLocalMatrixArray->m_Count = pMatrixArray->m_Count;
+
+                // iterate through source model matrices
+                for (j = 0; j < pMatrixArray->m_Count; ++j)
+                {
+                    // initialize the local matrix array item
+                    pLocalMatrixArray->m_pItem[j].m_AutoFree = 1;
+                    pLocalMatrixArray->m_pItem[j].m_pData    = malloc(sizeof(CSR_Matrix4));
+
+                    // get the final matrix after bones transform
+                    csrBoneGetMatrix(pCollada->m_pMeshToBoneDict[i].m_pBone,
                                      (CSR_Matrix4*)pMatrixArray->m_pItem[j].m_pData,
                                      (CSR_Matrix4*)pLocalMatrixArray->m_pItem[j].m_pData);
                 }

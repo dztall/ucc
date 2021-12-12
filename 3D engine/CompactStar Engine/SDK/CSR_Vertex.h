@@ -73,6 +73,7 @@ typedef struct
     CSR_Color   m_EndColor;
     float       m_Width;
     int         m_Smooth;
+    int         m_CustomModelMat;
 } CSR_Line;
 
 /**

@@ -56,12 +56,21 @@ typedef struct CSR_tagBone
 } CSR_Bone;
 
 /**
+* Binding between a bone and a mesh
+*/
+typedef struct
+{
+    CSR_Bone* m_pBone;     // bone binded with mesh
+    size_t    m_MeshIndex; // mesh index binded with bone
+} CSR_Bone_Mesh_Binding;
+
+/**
 * Skin weights index table
 */
 typedef struct
 {
-    size_t* m_pData;
-    size_t  m_Count;
+    size_t* m_pData; // indices of the vertices to modify in the source mesh
+    size_t  m_Count; // indices count
 } CSR_Skin_Weight_Index_Table;
 
 /**
@@ -78,6 +87,16 @@ typedef struct
     float*                       m_pWeights;        // weights indicating the bone influence on vertices, between 0.0f and 1.0f
     size_t                       m_WeightCount;     // weight count
 } CSR_Skin_Weights;
+
+/**
+* Skin weights group
+*@note Generally used to contain all skin weights belonging to a mesh
+*/
+typedef struct
+{
+    CSR_Skin_Weights* m_pSkinWeights; // skin weights list
+    size_t            m_Count;        // skin weights count
+} CSR_Skin_Weights_Group;
 
 /**
 * Animation key, may be a rotation, a translation, a scale, a matrix, ...

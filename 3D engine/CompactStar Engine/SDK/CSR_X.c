@@ -27,6 +27,251 @@
 #endif
 
 //---------------------------------------------------------------------------
+// Global defines
+//---------------------------------------------------------------------------
+#define M_X_FORMAT_MAGIC         ((' ' << 24) + ('f' << 16) + ('o' << 8) + 'x')
+#define M_X_FORMAT_VERSION03     (('3' << 8)  +  '0')
+#define M_X_FORMAT_VERSION02     (('2' << 8)  +  '0')
+#define M_X_FORMAT_BINARY        ((' ' << 24) + ('n' << 16) + ('i' << 8) + 'b')
+#define M_X_FORMAT_TEXT          ((' ' << 24) + ('t' << 16) + ('x' << 8) + 't')
+#define M_X_FORMAT_COMPRESSED    ((' ' << 24) + ('p' << 16) + ('m' << 8) + 'c')
+#define M_X_FORMAT_FLOAT_BITS_32 (('2' << 24) + ('3' << 16) + ('0' << 8) + '0')
+#define M_X_FORMAT_FLOAT_BITS_64 (('4' << 24) + ('6' << 16) + ('0' << 8) + '0')
+//---------------------------------------------------------------------------
+// Enumerators
+//---------------------------------------------------------------------------
+
+/**
+* X file tokens
+*@note Tokens MSDN reference:
+*      https://docs.microsoft.com/en-us/windows/desktop/direct3d9/tokens
+*/
+typedef enum
+{
+    // custom tokens
+    CSR_XT_Unknown       = 0,
+    // record-bearing tokens
+    CSR_XT_Name          = 1,
+    CSR_XT_String        = 2,
+    CSR_XT_Integer       = 3,
+    CSR_XT_GUID          = 5,
+    CSR_XT_Integer_List  = 6,
+    CSR_XT_Float_List    = 7,
+    // standalone tokens
+    CSR_XT_Open_Brace    = 10,
+    CSR_XT_Close_Brace   = 11,
+    CSR_XT_Open_Parent   = 12,
+    CSR_XT_Close_Parent  = 13,
+    CSR_XT_Open_Bracket  = 14,
+    CSR_XT_Close_Bracket = 15,
+    CSR_XT_Open_Angle    = 16,
+    CSR_XT_Close_Angle   = 17,
+    CSR_XT_Dot           = 18,
+    CSR_XT_Comma         = 19,
+    CSR_XT_Semicolon     = 20,
+    CSR_XT_Template      = 31,
+    CSR_XT_Word          = 40,
+    CSR_XT_DWord         = 41,
+    CSR_XT_Float         = 42,
+    CSR_XT_Double        = 43,
+    CSR_XT_Char          = 44,
+    CSR_XT_UChar         = 45,
+    CSR_XT_SWord         = 46,
+    CSR_XT_SDWord        = 47,
+    CSR_XT_Void          = 48,
+    CSR_XT_LPSTR         = 49,
+    CSR_XT_Unicode       = 50,
+    CSR_XT_CString       = 51,
+    CSR_XT_Array         = 52
+} CSR_ETokens_X;
+
+/**
+* X file data structure identifiers
+*/
+typedef enum
+{
+    CSR_XI_Link_ID                   = -1, // set to -1 because not part of the official IDs
+    CSR_XI_Unknown                   =  0,
+    CSR_XI_Template_ID               =  60,
+    CSR_XI_Header_ID                 =  61,
+    CSR_XI_Frame_ID                  =  62,
+    CSR_XI_Frame_Transform_Matrix_ID =  63,
+    CSR_XI_Mesh_ID                   =  64,
+    CSR_XI_Mesh_Texture_Coords_ID    =  65,
+    CSR_XI_Mesh_Material_List_ID     =  66,
+    CSR_XI_Material_ID               =  67,
+    CSR_XI_Skin_Mesh_Header_ID       =  68,
+    CSR_XI_Skin_Weights_ID           =  69,
+    CSR_XI_Texture_Filename_ID       =  70,
+    CSR_XI_Mesh_Normals_ID           =  71,
+    CSR_XI_Animation_Set_ID          =  72,
+    CSR_XI_Animation_ID              =  73,
+    CSR_XI_Animation_Key_ID          =  74
+} CSR_EDataStructID_X;
+
+//---------------------------------------------------------------------------
+// X model private structures
+//---------------------------------------------------------------------------
+
+/**
+* X file header
+*/
+typedef struct
+{
+    unsigned       m_Magic;
+    unsigned short m_Major_Version;
+    unsigned short m_Minor_Version;
+    unsigned       m_Format;
+    unsigned       m_Float_Size;
+} CSR_Header_X;
+
+/**
+* Generic dataset containing only a name
+*/
+typedef struct
+{
+    char* m_pName;
+} CSR_Dataset_Generic_X;
+
+/**
+* Dataset containing a header
+*/
+typedef struct
+{
+    char*  m_pName;
+    size_t m_Major;
+    size_t m_Minor;
+    size_t m_Flags;
+    size_t m_ReadValCount;
+} CSR_Dataset_Header_X;
+
+/**
+* Dataset containing a matrix
+*/
+typedef struct
+{
+    char*       m_pName;
+    CSR_Matrix4 m_Matrix;
+    size_t      m_ReadValCount;
+} CSR_Dataset_Matrix_X;
+
+/**
+* Dataset containing an indexed vertex buffer. Used to read the meshes and normals
+*/
+typedef struct
+{
+    char*   m_pName;
+    float*  m_pVertices;
+    size_t  m_VerticeCount;
+    size_t  m_VerticeTotal;
+    size_t* m_pIndices;
+    size_t  m_IndiceCount;
+    size_t  m_IndiceTotal;
+} CSR_Dataset_VertexBuffer_X;
+
+/**
+* Dataset containing the texture coordinates
+*/
+typedef struct
+{
+    char*  m_pName;
+    float* m_pUV;
+    size_t m_UVCount;
+    size_t m_UVTotal;
+} CSR_Dataset_TexCoords_X;
+
+/**
+* Dataset containing the mesh material list
+*/
+typedef struct
+{
+    char*   m_pName;
+    size_t  m_MaterialCount;
+    size_t* m_pMaterialIndices;
+    size_t  m_MaterialIndiceCount;
+    size_t  m_MaterialIndiceTotal;
+} CSR_Dataset_MaterialList_X;
+
+/**
+* Dataset containing the mesh material list
+*/
+typedef struct
+{
+    char*     m_pName;
+    CSR_Color m_Color;
+    float     m_SpecularExp;
+    CSR_Color m_SpecularColor;
+    CSR_Color m_EmisiveColor;
+    size_t    m_ReadValCount;
+} CSR_Dataset_Material_X;
+
+/**
+* Dataset containing the mesh texture
+*/
+typedef struct
+{
+    char* m_pName;
+    char* m_pFileName;
+} CSR_Dataset_Texture_X;
+
+/**
+* Dataset containing the skin weights
+*/
+typedef struct
+{
+    char*       m_pName;
+    char*       m_pBoneName;
+    size_t      m_ItemCount;
+    size_t*     m_pIndices;
+    size_t      m_IndiceCount;
+    float*      m_pWeights;
+    size_t      m_WeightCount;
+    CSR_Matrix4 m_Matrix;
+    size_t      m_ReadValCount;
+    size_t      m_BoneIndex;
+    size_t      m_MeshIndex;
+} CSR_Dataset_SkinWeights_X;
+
+/**
+* Dataset containing the animation key
+*/
+typedef struct
+{
+    int    m_Frame;
+    float* m_pValues;
+    size_t m_Count;
+    size_t m_Total;
+} CSR_Dataset_AnimationKey_X;
+
+/**
+* Dataset containing the animation keys
+*/
+typedef struct
+{
+    char* m_pName;
+    CSR_EAnimKeyType            m_Type;
+    CSR_Dataset_AnimationKey_X* m_pKeys;
+    size_t                      m_KeyCount;
+    size_t                      m_KeyTotal;
+    size_t                      m_KeyIndex;
+    size_t                      m_ReadValCount;
+} CSR_Dataset_AnimationKeys_X;
+
+/**
+* X item
+*/
+typedef struct CSR_tagItemX
+{
+    CSR_EDataStructID_X  m_ID;
+    struct CSR_tagItemX* m_pParent;
+    struct CSR_tagItemX* m_pChildren;
+    size_t               m_ChildrenCount;
+    void*                m_pData;
+    int                  m_Opened;
+    int                  m_ContentRead;
+} CSR_Item_X;
+
+//---------------------------------------------------------------------------
 // X model private functions
 //---------------------------------------------------------------------------
 CSR_Dataset_Generic_X* csrXCreateGenericDataset(void)
@@ -980,9 +1225,9 @@ int csrXBuildMesh(const CSR_Item_X*           pItem,
     unsigned                    prevColor;
     int                         hasTexture;
     CSR_Mesh*                   pMesh;
-    CSR_MeshSkinWeights_X*      pMeshWeights;
+    CSR_Skin_Weights_Group*     pMeshWeights;
     CSR_Item_X*                 pMatListItem;
-    CSR_MeshBoneItem_X*         pMeshBoneItem;
+    CSR_Bone_Mesh_Binding*      pMeshBoneItem;
     CSR_Dataset_VertexBuffer_X* pNormalsDataset;
     CSR_Dataset_TexCoords_X*    pUVDataset;
     CSR_Dataset_MaterialList_X* pMatListDataset;
@@ -1015,9 +1260,9 @@ int csrXBuildMesh(const CSR_Item_X*           pItem,
     if (!pX->m_MeshOnly)
     {
         // add a new mesh skin weights to the model
-        pMeshWeights = csrMemoryAlloc(pX->m_pMeshWeights,
-                                      sizeof(CSR_MeshSkinWeights_X),
-                                      pX->m_MeshWeightsCount + 1);
+        pMeshWeights = (CSR_Skin_Weights_Group*)csrMemoryAlloc(pX->m_pMeshWeights,
+                                                               sizeof(CSR_Skin_Weights_Group),
+                                                               pX->m_MeshWeightsCount + 1);
 
         // succeeded?
         if (!pMeshWeights)
@@ -1186,9 +1431,9 @@ int csrXBuildMesh(const CSR_Item_X*           pItem,
     if (pBone)
     {
         // allocate memory for the new mesh-to-bone dictionary item
-        pMeshBoneItem = (CSR_MeshBoneItem_X*)csrMemoryAlloc(pX->m_pMeshToBoneDict,
-                                                            sizeof(CSR_MeshBoneItem_X),
-                                                            pX->m_MeshToBoneDictCount + 1);
+        pMeshBoneItem = (CSR_Bone_Mesh_Binding*)csrMemoryAlloc(pX->m_pMeshToBoneDict,
+                                                               sizeof(CSR_Bone_Mesh_Binding),
+                                                               pX->m_MeshToBoneDictCount + 1);
 
         // succeeded?
         if (!pMeshBoneItem)
@@ -1524,469 +1769,6 @@ void csrXBuildParentHierarchy(CSR_Bone* pBone, CSR_Bone* pParent, CSR_X* pX)
     // build children hierarchy
     for (i = 0; i < pBone->m_ChildrenCount; ++i)
         csrXBuildParentHierarchy(&pBone->m_pChildren[i], pBone, pX);
-}
-//---------------------------------------------------------------------------
-// X model functions
-//---------------------------------------------------------------------------
-CSR_X* csrXCreate(const CSR_Buffer*           pBuffer,
-                  const CSR_VertexFormat*     pVertFormat,
-                  const CSR_VertexCulling*    pVertCulling,
-                  const CSR_Material*         pMaterial,
-                        int                   meshOnly,
-                        int                   poseOnly,
-                  const CSR_fOnGetVertexColor fOnGetVertexColor,
-                  const CSR_fOnLoadTexture    fOnLoadTexture,
-                  const CSR_fOnApplySkin      fOnApplySkin,
-                  const CSR_fOnDeleteTexture  fOnDeleteTexture)
-{
-    CSR_X*       pX;
-    CSR_Header_X header;
-    size_t       offset;
-    CSR_Item_X*  pRoot;
-    CSR_Item_X*  pLocalRoot;
-
-    // is buffer valid?
-    if (!pBuffer || !pBuffer->m_Length)
-        return 0;
-
-    offset = 0;
-
-    // read the header
-    csrBufferRead(pBuffer, &offset, sizeof(CSR_Header_X), 1, &header);
-
-    // is a .x file?
-    if (header.m_Magic != M_X_FORMAT_MAGIC)
-        return 0;
-
-    // only 3.2 or 3.3 versions are supported
-    if ((header.m_Major_Version != M_X_FORMAT_VERSION03) ||
-        (header.m_Minor_Version != M_X_FORMAT_VERSION03) &&
-        (header.m_Minor_Version != M_X_FORMAT_VERSION02))
-        return 0;
-
-    // is .x file containing text?
-    if (header.m_Format != M_X_FORMAT_TEXT)
-        return 0;
-
-    // create the root item
-    pRoot = (CSR_Item_X*)malloc(sizeof(CSR_Item_X));
-
-    // succeeded?
-    if (!pRoot)
-        return 0;
-
-    // initialize it
-    csrXInitItem(pRoot);
-
-    // as the root pointer itself may change while parsing, keep a local copy of the root pointer
-    pLocalRoot = pRoot;
-
-    // parse the file content
-    if (!csrXParse(pBuffer, &offset, &pRoot))
-    {
-        csrXReleaseItems(pLocalRoot, 0);
-        return 0;
-    }
-
-    // create the x model
-    pX = (CSR_X*)malloc(sizeof(CSR_X));
-
-    // succeeded?
-    if (!pX)
-    {
-        csrXReleaseItems(pLocalRoot, 0);
-        return 0;
-    }
-
-    csrXInit(pX);
-
-    // configure it
-    pX->m_MeshOnly = meshOnly;
-    pX->m_PoseOnly = poseOnly;
-
-    // convert the read item hierarchy to an x model
-    if (!csrXItemToModel(pLocalRoot,
-                         pX,
-                         0,
-                         pVertFormat,
-                         pVertCulling,
-                         pMaterial,
-                         fOnGetVertexColor,
-                         fOnLoadTexture,
-                         fOnApplySkin,
-                         fOnDeleteTexture))
-    {
-        csrXReleaseItems(pLocalRoot, 0);
-        csrXRelease(pX, fOnDeleteTexture);
-        return 0;
-    }
-
-    // build the bones parent hierarchy (could not simply keep the pointer while hierarchy was built
-    // because the bone pointers may change several time while their hierarchy is built)
-    if (pX->m_pSkeleton)
-    {
-        csrXBuildParentHierarchy(pX->m_pSkeleton, 0, pX);
-
-        // skin weights?
-        if (pX->m_pMeshWeights)
-        {
-            size_t i;
-            size_t j;
-
-            // retrieve the bone linked with each skin weights
-            for (i = 0; i < pX->m_MeshWeightsCount; ++i)
-                for (j = 0; j < pX->m_pMeshWeights[i].m_Count; ++j)
-                    pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pBone =
-                            csrBoneFind(pX->m_pSkeleton, pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pBoneName);
-        }
-
-        // animation set?
-        if (!pX->m_PoseOnly && pX->m_pAnimationSet)
-        {
-            size_t i;
-            size_t j;
-
-            // find each bone linked to animation sets
-            for (i = 0; i < pX->m_AnimationSetCount; ++i)
-                for (j = 0; j < pX->m_pAnimationSet[i].m_Count; ++j)
-                    pX->m_pAnimationSet[i].m_pAnimation[j].m_pBone =
-                            csrBoneFind(pX->m_pSkeleton, pX->m_pAnimationSet[i].m_pAnimation[j].m_pBoneName);
-        }
-    }
-
-    // release the parsed items (since now no longer used)
-    csrXReleaseItems(pLocalRoot, 0);
-
-    return pX;
-}
-//---------------------------------------------------------------------------
-CSR_X* csrXOpen(const char*                 pFileName,
-                const CSR_VertexFormat*     pVertFormat,
-                const CSR_VertexCulling*    pVertCulling,
-                const CSR_Material*         pMaterial,
-                      int                   meshOnly,
-                      int                   poseOnly,
-                const CSR_fOnGetVertexColor fOnGetVertexColor,
-                const CSR_fOnLoadTexture    fOnLoadTexture,
-                const CSR_fOnApplySkin      fOnApplySkin,
-                const CSR_fOnDeleteTexture  fOnDeleteTexture)
-{
-    CSR_Buffer* pBuffer;
-    CSR_X*      pX;
-
-    // open the model file
-    pBuffer = csrFileOpen(pFileName);
-
-    // succeeded?
-    if (!pBuffer || !pBuffer->m_Length)
-    {
-        csrBufferRelease(pBuffer);
-        return 0;
-    }
-
-    // create the X model from the file content
-    pX = csrXCreate(pBuffer,
-                    pVertFormat,
-                    pVertCulling,
-                    pMaterial,
-                    meshOnly,
-                    poseOnly,
-                    fOnGetVertexColor,
-                    fOnLoadTexture,
-                    fOnApplySkin,
-                    fOnDeleteTexture);
-
-    // release the file buffer (no longer required)
-    csrBufferRelease(pBuffer);
-
-    return pX;
-}
-//---------------------------------------------------------------------------
-void csrXRelease(CSR_X* pX, const CSR_fOnDeleteTexture fOnDeleteTexture)
-{
-    size_t i;
-    size_t j;
-
-    // no X model to release?
-    if (!pX)
-        return;
-
-    // do free the meshes content?
-    if (pX->m_pMesh)
-    {
-        // iterate through meshes to free
-        for (i = 0; i < pX->m_MeshCount; ++i)
-        {
-            // delete the skin
-            csrSkinContentRelease(&pX->m_pMesh[i].m_Skin, fOnDeleteTexture);
-
-            // do free the mesh vertex buffer?
-            if (pX->m_pMesh[i].m_pVB)
-            {
-                // free the mesh vertex buffer content
-                for (j = 0; j < pX->m_pMesh[i].m_Count; ++j)
-                    if (pX->m_pMesh[i].m_pVB[j].m_pData)
-                        free(pX->m_pMesh[i].m_pVB[j].m_pData);
-
-                // free the mesh vertex buffer
-                free(pX->m_pMesh[i].m_pVB);
-            }
-        }
-
-        // free the meshes
-        free(pX->m_pMesh);
-    }
-
-    // release the weights
-    if (pX->m_pMeshWeights)
-    {
-        // release the mesh weights content
-        for (i = 0; i < pX->m_MeshWeightsCount; ++i)
-        {
-            // release the mesh skin weights content
-            for (j = 0; j < pX->m_pMeshWeights[i].m_Count; ++j)
-                csrSkinWeightsRelease(&pX->m_pMeshWeights[i].m_pSkinWeights[j], 1);
-
-            // free the mesh skin weights
-            free(pX->m_pMeshWeights[i].m_pSkinWeights);
-        }
-
-        // free the mesh weights
-        free(pX->m_pMeshWeights);
-    }
-
-    // release the mesh-to-bone dictionary
-    if (pX->m_pMeshToBoneDict)
-        free(pX->m_pMeshToBoneDict);
-
-    // release the bones
-    csrBoneRelease(pX->m_pSkeleton, 0, 1);
-
-    // release the animation sets
-    if (pX->m_pAnimationSet)
-    {
-        // release the animation set content
-        for (i = 0; i < pX->m_AnimationSetCount; ++i)
-            csrBoneAnimSetRelease(&pX->m_pAnimationSet[i], 1);
-
-        // free the animation sets
-        free(pX->m_pAnimationSet);
-    }
-
-    // release the model
-    free(pX);
-}
-//---------------------------------------------------------------------------
-void csrXInit(CSR_X* pX)
-{
-    // no X model to initialize?
-    if (!pX)
-        return;
-
-    // initialize the x model
-    pX->m_pMesh               = 0;
-    pX->m_MeshCount           = 0;
-    pX->m_pMeshWeights        = 0;
-    pX->m_MeshWeightsCount    = 0;
-    pX->m_pMeshToBoneDict     = 0;
-    pX->m_MeshToBoneDictCount = 0;
-    pX->m_pSkeleton           = 0;
-    pX->m_pAnimationSet       = 0;
-    pX->m_AnimationSetCount   = 0;
-    pX->m_MeshOnly            = 0;
-    pX->m_PoseOnly            = 0;
-}
-//---------------------------------------------------------------------------
-int csrXParse(const CSR_Buffer* pBuffer, size_t* pOffset, CSR_Item_X** pItem)
-{
-    size_t wordOffset    = *pOffset;
-    int    readingString = 0;
-
-    /*
-    xof 0303txt 0032
-
-    Frame Root {
-      FrameTransformMatrix {
-         1.000000, 0.000000, 0.000000, 0.000000,
-         0.000000,-0.000000, 1.000000, 0.000000,
-         0.000000, 1.000000, 0.000000, 0.000000,
-         0.000000, 0.000000, 0.000000, 1.000000;;
-      }
-      Frame Cube {
-        FrameTransformMatrix {
-           1.000000, 0.000000, 0.000000, 0.000000,
-           0.000000, 1.000000, 0.000000, 0.000000,
-           0.000000, 0.000000, 1.000000, 0.000000,
-           0.000000, 0.000000, 0.000000, 1.000000;;
-        }
-        Mesh { // Cube mesh
-          8;
-           1.000000; 1.000000;-1.000000;,
-           1.000000;-1.000000;-1.000000;,
-          -1.000000;-1.000000;-1.000000;,
-          -1.000000; 1.000000;-1.000000;,
-           1.000000; 0.999999; 1.000000;,
-           0.999999;-1.000001; 1.000000;,
-          -1.000000;-1.000000; 1.000000;,
-          -1.000000; 1.000000; 1.000000;;
-          6;
-          4;3,2,1,0;,
-          4;5,6,7,4;,
-          4;1,5,4,0;,
-          4;2,6,5,1;,
-          4;3,7,6,2;,
-          4;7,3,0,4;;
-          MeshNormals { // Cube normals
-            6;
-             0.000000; 0.000000;-1.000000;,
-             0.000000;-0.000000; 1.000000;,
-             1.000000;-0.000000; 0.000000;,
-            -0.000000;-1.000000;-0.000000;,
-            -1.000000; 0.000000;-0.000000;,
-             0.000000; 1.000000; 0.000000;;
-            6;
-            4;0,0,0,0;,
-            4;1,1,1,1;,
-            4;2,2,2,2;,
-            4;3,3,3,3;,
-            4;4,4,4,4;,
-            4;5,5,5,5;;
-          } // End of Cube normals
-          MeshMaterialList { // Cube material list
-            1;
-            6;
-            0,
-            0,
-            0,
-            0,
-            0,
-            0;
-            Material Material {
-               0.640000; 0.640000; 0.640000; 1.000000;;
-               96.078431;
-               0.500000; 0.500000; 0.500000;;
-               0.000000; 0.000000; 0.000000;;
-            }
-          } // End of Cube material list
-        } // End of Cube mesh
-      } // End of Cube
-    } // End of Root
-    */
-    while (*pOffset < pBuffer->m_Length)
-        switch (((char*)pBuffer->m_pData)[*pOffset])
-        {
-            case '\r':
-            case '\n':
-            case '\t':
-            case ' ':
-            case ',':
-            case ';':
-                // reading a string?
-                if (readingString)
-                {
-                    // ignore it in this case
-                    ++(*pOffset);
-                    continue;
-                }
-
-                // parse the next word
-                if (*pOffset > wordOffset)
-                    csrXParseWord(pBuffer, wordOffset, *pOffset, pItem);
-
-                // skip the following separators since the current offset
-                csrXSkipSeparators(pBuffer, pOffset);
-
-                // set the next word start offset
-                wordOffset = *pOffset;
-                continue;
-
-            case '{':
-            case '}':
-                // reading a string?
-                if (readingString)
-                {
-                    // ignore it in this case
-                    ++(*pOffset);
-                    continue;
-                }
-
-                // parse the next word
-                if (*pOffset > wordOffset)
-                    csrXParseWord(pBuffer, wordOffset, *pOffset, pItem);
-
-                // parse the opening or closing brace
-                csrXParseWord(pBuffer, *pOffset, *pOffset + 1, pItem);
-
-                // go to next char
-                ++(*pOffset);
-
-                // skip the following separators since the current offset
-                csrXSkipSeparators(pBuffer, pOffset);
-
-                // set the next word start offset
-                wordOffset = *pOffset;
-                continue;
-
-            case '/':
-                // reading a string?
-                if (readingString)
-                {
-                    // ignore it in this case
-                    ++(*pOffset);
-                    continue;
-                }
-
-                // parse the next word
-                if (*pOffset > wordOffset)
-                    csrXParseWord(pBuffer, wordOffset, *pOffset, pItem);
-
-                // next char should also be a slash, otherwise it's an error
-                if ((*pOffset + 1) >= pBuffer->m_Length || ((char*)pBuffer->m_pData)[*pOffset + 1] != '/')
-                    return 0;
-
-                // skip the text until next line
-                csrXSkipLine(pBuffer, pOffset);
-
-                // set the next word start offset
-                wordOffset = *pOffset;
-                continue;
-
-            case '#':
-                // reading a string?
-                if (readingString)
-                {
-                    // ignore it in this case
-                    ++(*pOffset);
-                    continue;
-                }
-
-                // parse the next word
-                if (*pOffset > wordOffset)
-                    csrXParseWord(pBuffer, wordOffset, *pOffset, pItem);
-
-                // skip the text until next line
-                csrXSkipLine(pBuffer, pOffset);
-
-                // set the next word start offset
-                wordOffset = *pOffset;
-                continue;
-
-            case '\"':
-                // begin or end to read a string
-                if (readingString)
-                    readingString = 0;
-                else
-                    readingString = 1;
-
-                ++(*pOffset);
-                continue;
-
-            default:
-                ++(*pOffset);
-                continue;
-        }
-
-    return 1;
 }
 //---------------------------------------------------------------------------
 int csrXParseWord(const CSR_Buffer* pBuffer, size_t startOffset, size_t endOffset, CSR_Item_X** pItem)
@@ -3232,6 +3014,198 @@ int csrXParseWord(const CSR_Buffer* pBuffer, size_t startOffset, size_t endOffse
     }
 }
 //---------------------------------------------------------------------------
+int csrXParse(const CSR_Buffer* pBuffer, size_t* pOffset, CSR_Item_X** pItem)
+{
+    size_t wordOffset    = *pOffset;
+    int    readingString = 0;
+
+    /*
+    xof 0303txt 0032
+
+    Frame Root {
+      FrameTransformMatrix {
+         1.000000, 0.000000, 0.000000, 0.000000,
+         0.000000,-0.000000, 1.000000, 0.000000,
+         0.000000, 1.000000, 0.000000, 0.000000,
+         0.000000, 0.000000, 0.000000, 1.000000;;
+      }
+      Frame Cube {
+        FrameTransformMatrix {
+           1.000000, 0.000000, 0.000000, 0.000000,
+           0.000000, 1.000000, 0.000000, 0.000000,
+           0.000000, 0.000000, 1.000000, 0.000000,
+           0.000000, 0.000000, 0.000000, 1.000000;;
+        }
+        Mesh { // Cube mesh
+          8;
+           1.000000; 1.000000;-1.000000;,
+           1.000000;-1.000000;-1.000000;,
+          -1.000000;-1.000000;-1.000000;,
+          -1.000000; 1.000000;-1.000000;,
+           1.000000; 0.999999; 1.000000;,
+           0.999999;-1.000001; 1.000000;,
+          -1.000000;-1.000000; 1.000000;,
+          -1.000000; 1.000000; 1.000000;;
+          6;
+          4;3,2,1,0;,
+          4;5,6,7,4;,
+          4;1,5,4,0;,
+          4;2,6,5,1;,
+          4;3,7,6,2;,
+          4;7,3,0,4;;
+          MeshNormals { // Cube normals
+            6;
+             0.000000; 0.000000;-1.000000;,
+             0.000000;-0.000000; 1.000000;,
+             1.000000;-0.000000; 0.000000;,
+            -0.000000;-1.000000;-0.000000;,
+            -1.000000; 0.000000;-0.000000;,
+             0.000000; 1.000000; 0.000000;;
+            6;
+            4;0,0,0,0;,
+            4;1,1,1,1;,
+            4;2,2,2,2;,
+            4;3,3,3,3;,
+            4;4,4,4,4;,
+            4;5,5,5,5;;
+          } // End of Cube normals
+          MeshMaterialList { // Cube material list
+            1;
+            6;
+            0,
+            0,
+            0,
+            0,
+            0,
+            0;
+            Material Material {
+               0.640000; 0.640000; 0.640000; 1.000000;;
+               96.078431;
+               0.500000; 0.500000; 0.500000;;
+               0.000000; 0.000000; 0.000000;;
+            }
+          } // End of Cube material list
+        } // End of Cube mesh
+      } // End of Cube
+    } // End of Root
+    */
+    while (*pOffset < pBuffer->m_Length)
+        switch (((char*)pBuffer->m_pData)[*pOffset])
+        {
+            case '\r':
+            case '\n':
+            case '\t':
+            case ' ':
+            case ',':
+            case ';':
+                // reading a string?
+                if (readingString)
+                {
+                    // ignore it in this case
+                    ++(*pOffset);
+                    continue;
+                }
+
+                // parse the next word
+                if (*pOffset > wordOffset)
+                    csrXParseWord(pBuffer, wordOffset, *pOffset, pItem);
+
+                // skip the following separators since the current offset
+                csrXSkipSeparators(pBuffer, pOffset);
+
+                // set the next word start offset
+                wordOffset = *pOffset;
+                continue;
+
+            case '{':
+            case '}':
+                // reading a string?
+                if (readingString)
+                {
+                    // ignore it in this case
+                    ++(*pOffset);
+                    continue;
+                }
+
+                // parse the next word
+                if (*pOffset > wordOffset)
+                    csrXParseWord(pBuffer, wordOffset, *pOffset, pItem);
+
+                // parse the opening or closing brace
+                csrXParseWord(pBuffer, *pOffset, *pOffset + 1, pItem);
+
+                // go to next char
+                ++(*pOffset);
+
+                // skip the following separators since the current offset
+                csrXSkipSeparators(pBuffer, pOffset);
+
+                // set the next word start offset
+                wordOffset = *pOffset;
+                continue;
+
+            case '/':
+                // reading a string?
+                if (readingString)
+                {
+                    // ignore it in this case
+                    ++(*pOffset);
+                    continue;
+                }
+
+                // parse the next word
+                if (*pOffset > wordOffset)
+                    csrXParseWord(pBuffer, wordOffset, *pOffset, pItem);
+
+                // next char should also be a slash, otherwise it's an error
+                if ((*pOffset + 1) >= pBuffer->m_Length || ((char*)pBuffer->m_pData)[*pOffset + 1] != '/')
+                    return 0;
+
+                // skip the text until next line
+                csrXSkipLine(pBuffer, pOffset);
+
+                // set the next word start offset
+                wordOffset = *pOffset;
+                continue;
+
+            case '#':
+                // reading a string?
+                if (readingString)
+                {
+                    // ignore it in this case
+                    ++(*pOffset);
+                    continue;
+                }
+
+                // parse the next word
+                if (*pOffset > wordOffset)
+                    csrXParseWord(pBuffer, wordOffset, *pOffset, pItem);
+
+                // skip the text until next line
+                csrXSkipLine(pBuffer, pOffset);
+
+                // set the next word start offset
+                wordOffset = *pOffset;
+                continue;
+
+            case '\"':
+                // begin or end to read a string
+                if (readingString)
+                    readingString = 0;
+                else
+                    readingString = 1;
+
+                ++(*pOffset);
+                continue;
+
+            default:
+                ++(*pOffset);
+                continue;
+        }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
 int csrXItemToModel(const CSR_Item_X*           pItem,
                           CSR_X*                pX,
                           CSR_Bone*             pBone,
@@ -3653,5 +3627,276 @@ void csrXReleaseItems(CSR_Item_X* pItem, int contentOnly)
     // release the item
     if (!contentOnly)
         free(pItem);
+}
+//---------------------------------------------------------------------------
+// X model functions
+//---------------------------------------------------------------------------
+CSR_X* csrXCreate(const CSR_Buffer*           pBuffer,
+                  const CSR_VertexFormat*     pVertFormat,
+                  const CSR_VertexCulling*    pVertCulling,
+                  const CSR_Material*         pMaterial,
+                        int                   meshOnly,
+                        int                   poseOnly,
+                  const CSR_fOnGetVertexColor fOnGetVertexColor,
+                  const CSR_fOnLoadTexture    fOnLoadTexture,
+                  const CSR_fOnApplySkin      fOnApplySkin,
+                  const CSR_fOnDeleteTexture  fOnDeleteTexture)
+{
+    CSR_X*       pX;
+    CSR_Header_X header;
+    size_t       offset;
+    CSR_Item_X*  pRoot;
+    CSR_Item_X*  pLocalRoot;
+
+    // is buffer valid?
+    if (!pBuffer || !pBuffer->m_Length)
+        return 0;
+
+    offset = 0;
+
+    // read the header
+    csrBufferRead(pBuffer, &offset, sizeof(CSR_Header_X), 1, &header);
+
+    // is a .x file?
+    if (header.m_Magic != M_X_FORMAT_MAGIC)
+        return 0;
+
+    // only 3.2 or 3.3 versions are supported
+    if ((header.m_Major_Version != M_X_FORMAT_VERSION03) ||
+        (header.m_Minor_Version != M_X_FORMAT_VERSION03) &&
+        (header.m_Minor_Version != M_X_FORMAT_VERSION02))
+        return 0;
+
+    // is .x file containing text?
+    if (header.m_Format != M_X_FORMAT_TEXT)
+        return 0;
+
+    // create the root item
+    pRoot = (CSR_Item_X*)malloc(sizeof(CSR_Item_X));
+
+    // succeeded?
+    if (!pRoot)
+        return 0;
+
+    // initialize it
+    csrXInitItem(pRoot);
+
+    // as the root pointer itself may change while parsing, keep a local copy of the root pointer
+    pLocalRoot = pRoot;
+
+    // parse the file content
+    if (!csrXParse(pBuffer, &offset, &pRoot))
+    {
+        csrXReleaseItems(pLocalRoot, 0);
+        return 0;
+    }
+
+    // create the x model
+    pX = (CSR_X*)malloc(sizeof(CSR_X));
+
+    // succeeded?
+    if (!pX)
+    {
+        csrXReleaseItems(pLocalRoot, 0);
+        return 0;
+    }
+
+    csrXInit(pX);
+
+    // configure it
+    pX->m_MeshOnly = meshOnly;
+    pX->m_PoseOnly = poseOnly;
+
+    // convert the read item hierarchy to an x model
+    if (!csrXItemToModel(pLocalRoot,
+                         pX,
+                         0,
+                         pVertFormat,
+                         pVertCulling,
+                         pMaterial,
+                         fOnGetVertexColor,
+                         fOnLoadTexture,
+                         fOnApplySkin,
+                         fOnDeleteTexture))
+    {
+        csrXReleaseItems(pLocalRoot, 0);
+        csrXRelease(pX, fOnDeleteTexture);
+        return 0;
+    }
+
+    // build the bones parent hierarchy (could not simply keep the pointer while hierarchy was built
+    // because the bone pointers may change several time while their hierarchy is built)
+    if (pX->m_pSkeleton)
+    {
+        csrXBuildParentHierarchy(pX->m_pSkeleton, 0, pX);
+
+        // skin weights?
+        if (pX->m_pMeshWeights)
+        {
+            size_t i;
+            size_t j;
+
+            // retrieve the bone linked with each skin weights
+            for (i = 0; i < pX->m_MeshWeightsCount; ++i)
+                for (j = 0; j < pX->m_pMeshWeights[i].m_Count; ++j)
+                    pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pBone =
+                            csrBoneFind(pX->m_pSkeleton, pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pBoneName);
+        }
+
+        // animation set?
+        if (!pX->m_PoseOnly && pX->m_pAnimationSet)
+        {
+            size_t i;
+            size_t j;
+
+            // find each bone linked to animation sets
+            for (i = 0; i < pX->m_AnimationSetCount; ++i)
+                for (j = 0; j < pX->m_pAnimationSet[i].m_Count; ++j)
+                    pX->m_pAnimationSet[i].m_pAnimation[j].m_pBone =
+                            csrBoneFind(pX->m_pSkeleton, pX->m_pAnimationSet[i].m_pAnimation[j].m_pBoneName);
+        }
+    }
+
+    // release the parsed items (since now no longer used)
+    csrXReleaseItems(pLocalRoot, 0);
+
+    return pX;
+}
+//---------------------------------------------------------------------------
+CSR_X* csrXOpen(const char*                 pFileName,
+                const CSR_VertexFormat*     pVertFormat,
+                const CSR_VertexCulling*    pVertCulling,
+                const CSR_Material*         pMaterial,
+                      int                   meshOnly,
+                      int                   poseOnly,
+                const CSR_fOnGetVertexColor fOnGetVertexColor,
+                const CSR_fOnLoadTexture    fOnLoadTexture,
+                const CSR_fOnApplySkin      fOnApplySkin,
+                const CSR_fOnDeleteTexture  fOnDeleteTexture)
+{
+    CSR_Buffer* pBuffer;
+    CSR_X*      pX;
+
+    // open the model file
+    pBuffer = csrFileOpen(pFileName);
+
+    // succeeded?
+    if (!pBuffer || !pBuffer->m_Length)
+    {
+        csrBufferRelease(pBuffer);
+        return 0;
+    }
+
+    // create the X model from the file content
+    pX = csrXCreate(pBuffer,
+                    pVertFormat,
+                    pVertCulling,
+                    pMaterial,
+                    meshOnly,
+                    poseOnly,
+                    fOnGetVertexColor,
+                    fOnLoadTexture,
+                    fOnApplySkin,
+                    fOnDeleteTexture);
+
+    // release the file buffer (no longer required)
+    csrBufferRelease(pBuffer);
+
+    return pX;
+}
+//---------------------------------------------------------------------------
+void csrXInit(CSR_X* pX)
+{
+    // no X model to initialize?
+    if (!pX)
+        return;
+
+    // initialize the x model
+    pX->m_pMesh               = 0;
+    pX->m_MeshCount           = 0;
+    pX->m_pMeshWeights        = 0;
+    pX->m_MeshWeightsCount    = 0;
+    pX->m_pMeshToBoneDict     = 0;
+    pX->m_MeshToBoneDictCount = 0;
+    pX->m_pSkeleton           = 0;
+    pX->m_pAnimationSet       = 0;
+    pX->m_AnimationSetCount   = 0;
+    pX->m_MeshOnly            = 0;
+    pX->m_PoseOnly            = 0;
+}
+//---------------------------------------------------------------------------
+void csrXRelease(CSR_X* pX, const CSR_fOnDeleteTexture fOnDeleteTexture)
+{
+    size_t i;
+    size_t j;
+
+    // no X model to release?
+    if (!pX)
+        return;
+
+    // do free the meshes content?
+    if (pX->m_pMesh)
+    {
+        // iterate through meshes to free
+        for (i = 0; i < pX->m_MeshCount; ++i)
+        {
+            // delete the skin
+            csrSkinContentRelease(&pX->m_pMesh[i].m_Skin, fOnDeleteTexture);
+
+            // do free the mesh vertex buffer?
+            if (pX->m_pMesh[i].m_pVB)
+            {
+                // free the mesh vertex buffer content
+                for (j = 0; j < pX->m_pMesh[i].m_Count; ++j)
+                    if (pX->m_pMesh[i].m_pVB[j].m_pData)
+                        free(pX->m_pMesh[i].m_pVB[j].m_pData);
+
+                // free the mesh vertex buffer
+                free(pX->m_pMesh[i].m_pVB);
+            }
+        }
+
+        // free the meshes
+        free(pX->m_pMesh);
+    }
+
+    // release the weights
+    if (pX->m_pMeshWeights)
+    {
+        // release the mesh weights content
+        for (i = 0; i < pX->m_MeshWeightsCount; ++i)
+        {
+            // release the mesh skin weights content
+            for (j = 0; j < pX->m_pMeshWeights[i].m_Count; ++j)
+                csrSkinWeightsRelease(&pX->m_pMeshWeights[i].m_pSkinWeights[j], 1);
+
+            // free the mesh skin weights
+            free(pX->m_pMeshWeights[i].m_pSkinWeights);
+        }
+
+        // free the mesh weights
+        free(pX->m_pMeshWeights);
+    }
+
+    // release the mesh-to-bone dictionary
+    if (pX->m_pMeshToBoneDict)
+        free(pX->m_pMeshToBoneDict);
+
+    // release the bones
+    csrBoneRelease(pX->m_pSkeleton, 0, 1);
+
+    // release the animation sets
+    if (pX->m_pAnimationSet)
+    {
+        // release the animation set content
+        for (i = 0; i < pX->m_AnimationSetCount; ++i)
+            csrBoneAnimSetRelease(&pX->m_pAnimationSet[i], 1);
+
+        // free the animation sets
+        free(pX->m_pAnimationSet);
+    }
+
+    // release the model
+    free(pX);
 }
 //---------------------------------------------------------------------------

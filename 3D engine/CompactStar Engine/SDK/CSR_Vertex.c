@@ -44,6 +44,7 @@ void csrLineInit(CSR_Line* pLine)
     pLine->m_EndColor.m_A   =  1.0f;
     pLine->m_Width          =  1.0f;
     pLine->m_Smooth         =  1;
+    pLine->m_CustomModelMat =  0;
 }
 //---------------------------------------------------------------------------
 // Vertex format functions

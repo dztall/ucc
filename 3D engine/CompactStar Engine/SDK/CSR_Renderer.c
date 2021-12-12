@@ -192,6 +192,32 @@ void csrDrawX(const CSR_X*       pX,
     #endif
 }
 //---------------------------------------------------------------------------
+void csrDrawCollada(const CSR_Collada* pCollada,
+                    const void*        pShader,
+                    const CSR_Array*   pMatrixArray,
+                          size_t       animSetIndex,
+                          size_t       frameIndex,
+                    const CSR_fOnGetID fOnGetID)
+{
+    #ifdef CSR_USE_OPENGL
+        csrOpenGLDrawCollada(pCollada,
+                             (CSR_OpenGLShader*)pShader,
+                             pMatrixArray,
+                             animSetIndex,
+                             frameIndex,
+                             fOnGetID);
+    #elif defined(CSR_USE_METAL)
+        csrMetalDrawCollada(pCollada,
+                            pShader,
+                            pMatrixArray,
+                            animSetIndex,
+                            frameIndex,
+                            fOnGetID);
+    #else
+        #warning "csrDrawCollada() isn't implemented and will not work on this platform"
+    #endif
+}
+//---------------------------------------------------------------------------
 // State functions
 //---------------------------------------------------------------------------
 void csrStateEnableDepthMask(int value)

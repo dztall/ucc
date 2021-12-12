@@ -1,7 +1,7 @@
-/****************************************************************************
- * ==> CSR_X ---------------------------------------------------------------*
+﻿/****************************************************************************
+ * ==> CSR_Collada ---------------------------------------------------------*
  ****************************************************************************
- * Description : This module provides a DirectX (.x) reader                 *
+ * Description : This module provides a Collada (.dae) reader               *
  * Developer   : Jean-Milost Reymond                                        *
  * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
@@ -13,8 +13,8 @@
  *               DIRECTLY OR NOT.                                           *
  ****************************************************************************/
 
-#ifndef CSR_XH
-#define CSR_XH
+#ifndef CSR_ColladaH
+#define CSR_ColladaH
 
 // compactStar engine
 #include "CSR_Common.h"
@@ -28,8 +28,7 @@
 //---------------------------------------------------------------------------
 
 /**
-* DirectX (.x) model
-*@note Each mesh is connected to its own weights count and skeleton, sorted in the same order in each list
+* Collada (.dae) model
 */
 typedef struct
 {
@@ -44,19 +43,19 @@ typedef struct
     size_t                  m_AnimationSetCount;   // animation set count
     int                     m_MeshOnly;            // if activated, only the mesh will be drawn. All other data will be ignored
     int                     m_PoseOnly;            // if activated, the model will take the default pose but will not be animated
-} CSR_X;
+} CSR_Collada;
 
 #ifdef __cplusplus
     extern "C"
     {
 #endif
         //-------------------------------------------------------------------
-        // X model functions
+        // Collada functions
         //-------------------------------------------------------------------
 
         /**
-        * Creates a X model from a buffer
-        *@param pBuffer - buffer containing the X data to read
+        * Creates a Collada model from a buffer
+        *@param pBuffer - buffer containing the Collada data to read
         *@param pVertFormat - model vertex format, if 0 the default format will be used
         *@param pVertCulling - model vertex culling, if 0 the default culling will be used
         *@param pMaterial - mesh material, if 0 the default material will be used
@@ -66,23 +65,23 @@ typedef struct
         *@param fOnLoadTexture - called when a texture should be loaded
         *@param fOnApplySkin - called when a skin should be applied to the model
         *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
-        *@return the newly created X model, 0 on error
-        *@note The X model must be released when no longer used, see csrXModelRelease()
+        *@return the newly created Collada model, 0 on error
+        *@note The Collada model must be released when no longer used, see csrColladaRelease()
         */
-        CSR_X* csrXCreate(const CSR_Buffer*           pBuffer,
-                          const CSR_VertexFormat*     pVertFormat,
-                          const CSR_VertexCulling*    pVertCulling,
-                          const CSR_Material*         pMaterial,
-                                int                   meshOnly,
-                                int                   poseOnly,
-                          const CSR_fOnGetVertexColor fOnGetVertexColor,
-                          const CSR_fOnLoadTexture    fOnLoadTexture,
-                          const CSR_fOnApplySkin      fOnApplySkin,
-                          const CSR_fOnDeleteTexture  fOnDeleteTexture);
+        CSR_Collada* csrColladaCreate(const CSR_Buffer*           pBuffer,
+                                      const CSR_VertexFormat*     pVertFormat,
+                                      const CSR_VertexCulling*    pVertCulling,
+                                      const CSR_Material*         pMaterial,
+                                            int                   meshOnly,
+                                            int                   poseOnly,
+                                      const CSR_fOnGetVertexColor fOnGetVertexColor,
+                                      const CSR_fOnLoadTexture    fOnLoadTexture,
+                                      const CSR_fOnApplySkin      fOnApplySkin,
+                                      const CSR_fOnDeleteTexture  fOnDeleteTexture);
 
         /**
-        * Opens a X model from a file
-        *@param pFileName - X model file name
+        * Opens a Collada model from a file
+        *@param pFileName - Collada model file name
         *@param pVertFormat - model vertex format, if 0 the default format will be used
         *@param pVertCulling - model vertex culling, if 0 the default culling will be used
         *@param pMaterial - mesh material, if 0 the default material will be used
@@ -92,32 +91,32 @@ typedef struct
         *@param fOnLoadTexture - called when a texture should be loaded
         *@param fOnApplySkin - called when a skin should be applied to the model
         *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
-        *@return the newly created X model, 0 on error
-        *@note The X model must be released when no longer used, see csrXModelRelease()
+        *@return the newly created Collada model, 0 on error
+        *@note The Collada model must be released when no longer used, see csrColladaRelease()
         */
-        CSR_X* csrXOpen(const char*                 pFileName,
-                        const CSR_VertexFormat*     pVertFormat,
-                        const CSR_VertexCulling*    pVertCulling,
-                        const CSR_Material*         pMaterial,
-                              int                   meshOnly,
-                              int                   poseOnly,
-                        const CSR_fOnGetVertexColor fOnGetVertexColor,
-                        const CSR_fOnLoadTexture    fOnLoadTexture,
-                        const CSR_fOnApplySkin      fOnApplySkin,
-                        const CSR_fOnDeleteTexture  fOnDeleteTexture);
+        CSR_Collada* csrColladaOpen(const char*                 pFileName,
+                                    const CSR_VertexFormat*     pVertFormat,
+                                    const CSR_VertexCulling*    pVertCulling,
+                                    const CSR_Material*         pMaterial,
+                                          int                   meshOnly,
+                                          int                   poseOnly,
+                                    const CSR_fOnGetVertexColor fOnGetVertexColor,
+                                    const CSR_fOnLoadTexture    fOnLoadTexture,
+                                    const CSR_fOnApplySkin      fOnApplySkin,
+                                    const CSR_fOnDeleteTexture  fOnDeleteTexture);
 
         /**
-        * Initializes a X model structure
-        *@param[in, out] pX - X model to initialize
+        * Initializes a Collada model structure
+        *@param[in, out] pCollada - Collada model to initialize
         */
-        void csrXInit(CSR_X* pX);
+        void csrColladaInit(CSR_Collada* pCollada);
 
         /**
-        * Releases a X model
-        *@param[in, out] pX - X model to release
+        * Releases a Collada model
+        *@param[in, out] pCollada - Collada model to release
         *@param fOnDeleteTexture - callback function to notify the GPU that a texture should be deleted
         */
-        void csrXRelease(CSR_X* pX, const CSR_fOnDeleteTexture fOnDeleteTexture);
+        void csrColladaRelease(CSR_Collada* pCollada, const CSR_fOnDeleteTexture fOnDeleteTexture);
 
 #ifdef __cplusplus
     }
@@ -129,7 +128,7 @@ typedef struct
 
 // needed in mobile c compiler to link the .h file with the .c
 #if defined(_OS_IOS_) || defined(_OS_ANDROID_) || defined(_OS_WINDOWS_)
-    #include "CSR_X.c"
+    #include "CSR_Collada.c"
 #endif
 
 #endif

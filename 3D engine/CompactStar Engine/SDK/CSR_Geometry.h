@@ -205,7 +205,7 @@ typedef struct
 /**
 * Capsule
 */
-typedef struct 
+typedef struct
 {
     CSR_Vector3 m_Top;
     CSR_Vector3 m_Bottom;
