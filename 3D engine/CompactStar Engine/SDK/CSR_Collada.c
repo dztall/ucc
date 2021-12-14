@@ -778,6 +778,7 @@ int csrColladaFloatArrayRead(XMLNode* pNode, CSR_Collada_Float_Array* pColladaFl
 {
     size_t i;
     size_t len;
+    size_t lineLen;
     size_t offset  = 0;
     size_t index   = 0;
     char*  pNumber = 0;
@@ -842,20 +843,33 @@ int csrColladaFloatArrayRead(XMLNode* pNode, CSR_Collada_Float_Array* pColladaFl
     if (!pColladaFloatArray->m_pData)
         return 0;
 
+    // reserve memory to copy the numbers to convert. Assume 64, because
+    // no number should be longer than 64 digits
+    pNumber = (char*)malloc(64 * sizeof(char));
+
+    // succeeded?
+    if (!pNumber)
+        return 0;
+
+    // measure the source line length
+    lineLen = strlen(pNode->text);
+
     // iterate through source array chars
-    for (i = 0; i < strlen(pNode->text); ++i)
+    for (i = 0; i < lineLen; ++i)
     {
         // found a separator?
         if (pNode->text[i] != ' ')
             continue;
 
         // calculate next number length, and allocate memory to read it
-        len     = (i - offset);
-        pNumber = (char*)malloc((len + 1) * sizeof(char));
+        len = (i - offset);
 
-        // succeeded?
-        if (!pNumber)
+        // 64 digits max
+        if (len >= 64)
+        {
+            free(pNumber);
             return 0;
+        }
 
         // read the next number to convert
         memcpy(pNumber, &pNode->text[offset], len);
@@ -863,8 +877,6 @@ int csrColladaFloatArrayRead(XMLNode* pNode, CSR_Collada_Float_Array* pColladaFl
 
         // convert it and write it in the array
         pColladaFloatArray->m_pData[index] = (float)atof(pNumber);
-
-        free(pNumber);
 
         // start to read the next number
         ++index;
@@ -877,12 +889,14 @@ int csrColladaFloatArrayRead(XMLNode* pNode, CSR_Collada_Float_Array* pColladaFl
         ++offset;
 
     // calculate last number length, and allocate memory to read it
-    len     = (strlen(pNode->text) - offset);
-    pNumber = (char*)malloc((len + 1) * sizeof(char));
+    len = (strlen(pNode->text) - offset);
 
-    // succeeded?
-    if (!pNumber)
+    // 64 digits max
+    if (len >= 64)
+    {
+        free(pNumber);
         return 0;
+    }
 
     // read the last number to convert
     memcpy(pNumber, &pNode->text[offset], len);
@@ -919,6 +933,7 @@ int csrColladaIntArrayRead(XMLNode* pNode, CSR_Collada_Int_Array* pColladaIntArr
 {
     size_t i;
     size_t len;
+    size_t lineLen;
     size_t offset  = 0;
     size_t index   = 0;
     char*  pNumber = 0;
@@ -942,8 +957,19 @@ int csrColladaIntArrayRead(XMLNode* pNode, CSR_Collada_Int_Array* pColladaIntArr
     if (!pColladaIntArray->m_pData)
         return 0;
 
+    // reserve memory to copy the numbers to convert. Assume 64, because
+    // no number should be longer than 64 digits
+    pNumber = (char*)malloc(64 * sizeof(char));
+
+    // succeeded?
+    if (!pNumber)
+        return 0;
+
+    // measure the source line length
+    lineLen = strlen(pNode->text);
+
     // iterate through source array chars
-    for (i = 0; i < strlen(pNode->text); ++i)
+    for (i = 0; i < lineLen; ++i)
     {
         // found a separator?
         if (pNode->text[i] != ' ')
@@ -951,15 +977,20 @@ int csrColladaIntArrayRead(XMLNode* pNode, CSR_Collada_Int_Array* pColladaIntArr
 
         // to prevent that bad things happens...
         if (index >= count)
+        {
+            free(pNumber);
             return 0;
+        }
 
         // calculate next number length, and allocate memory to read it
-        len     = (i - offset);
-        pNumber = (char*)malloc((len + 1) * sizeof(char));
+        len = (i - offset);
 
-        // succeeded?
-        if (!pNumber)
+        // 64 digits max
+        if (len >= 64)
+        {
+            free(pNumber);
             return 0;
+        }
 
         // read the next number to convert
         memcpy(pNumber, &pNode->text[offset], len);
@@ -967,8 +998,6 @@ int csrColladaIntArrayRead(XMLNode* pNode, CSR_Collada_Int_Array* pColladaIntArr
 
         // convert it and write it in the array
         pColladaIntArray->m_pData[index] = atoi(pNumber);
-
-        free(pNumber);
 
         // start to read the next number
         ++index;
@@ -985,12 +1014,14 @@ int csrColladaIntArrayRead(XMLNode* pNode, CSR_Collada_Int_Array* pColladaIntArr
         ++offset;
 
     // calculate last number length, and allocate memory to read it
-    len     = (strlen(pNode->text) - offset);
-    pNumber = (char*)malloc((len + 1) * sizeof(char));
+    len = (strlen(pNode->text) - offset);
 
-    // succeeded?
-    if (!pNumber)
+    // 64 digits max
+    if (len >= 64)
+    {
+        free(pNumber);
         return 0;
+    }
 
     // read the last number to convert
     memcpy(pNumber, &pNode->text[offset], len);
@@ -1027,6 +1058,7 @@ int csrColladaUnsignedArrayRead(XMLNode* pNode, CSR_Collada_Unsigned_Array* pCol
 {
     size_t i;
     size_t len;
+    size_t lineLen;
     size_t offset  = 0;
     size_t index   = 0;
     char*  pNumber = 0;
@@ -1050,8 +1082,19 @@ int csrColladaUnsignedArrayRead(XMLNode* pNode, CSR_Collada_Unsigned_Array* pCol
     if (!pColladaUnsignedArray->m_pData)
         return 0;
 
+    // reserve memory to copy the numbers to convert. Assume 64, because
+    // no number should be longer than 64 digits
+    pNumber = (char*)malloc(64 * sizeof(char));
+
+    // succeeded?
+    if (!pNumber)
+        return 0;
+
+    // measure the source line length
+    lineLen = strlen(pNode->text);
+
     // iterate through source array chars
-    for (i = 0; i < strlen(pNode->text); ++i)
+    for (i = 0; i < lineLen; ++i)
     {
         // found a separator?
         if (pNode->text[i] != ' ')
@@ -1062,12 +1105,14 @@ int csrColladaUnsignedArrayRead(XMLNode* pNode, CSR_Collada_Unsigned_Array* pCol
             return 0;
 
         // calculate next number length, and allocate memory to read it
-        len     = (i - offset);
-        pNumber = (char*)malloc((len + 1) * sizeof(char));
+        len = (i - offset);
 
-        // succeeded?
-        if (!pNumber)
+        // 64 digits max
+        if (len >= 64)
+        {
+            free(pNumber);
             return 0;
+        }
 
         // read the next number to convert
         memcpy(pNumber, &pNode->text[offset], len);
@@ -1079,8 +1124,6 @@ int csrColladaUnsignedArrayRead(XMLNode* pNode, CSR_Collada_Unsigned_Array* pCol
         //                        use it instead
         // convert it and write it in the array
         pColladaUnsignedArray->m_pData[index] = (size_t)atoll(pNumber);
-
-        free(pNumber);
 
         // start to read the next number
         ++index;
@@ -1097,12 +1140,14 @@ int csrColladaUnsignedArrayRead(XMLNode* pNode, CSR_Collada_Unsigned_Array* pCol
         ++offset;
 
     // calculate last number length, and allocate memory to read it
-    len     = (strlen(pNode->text) - offset);
-    pNumber = (char*)malloc((len + 1) * sizeof(char));
+    len = (strlen(pNode->text) - offset);
 
-    // succeeded?
-    if (!pNumber)
+    // 64 digits max
+    if (len >= 64)
+    {
+        free(pNumber);
         return 0;
+    }
 
     // read the last number to convert
     memcpy(pNumber, &pNode->text[offset], len);
@@ -2456,9 +2501,11 @@ int csrColladaBuildSkeleton(CSR_Collada_Node* pNode, CSR_Bone* pBone)
     if (!pBone)
         return 0;
 
+    // copy bone matrix from collada node
     if (pNode->m_pMatrix)
         pBone->m_Matrix = pNode->m_pMatrix->m_Matrix;
 
+    // copy bone name from collada node
     if (pNode->m_pId)
     {
         const size_t idLength = strlen(pNode->m_pId);
@@ -2472,9 +2519,10 @@ int csrColladaBuildSkeleton(CSR_Collada_Node* pNode, CSR_Bone* pBone)
         pBone->m_pName[idLength] = 0x0;
     }
 
+    // is a leaf?
     if (pNode->m_NodeCount)
     {
-        // allocate memory for new bones
+        // allocate memory for children bones
         CSR_Bone* pChildren = (CSR_Bone*)csrMemoryAlloc(pBone->m_pChildren,
                                                         sizeof(CSR_Bone),
                                                         pNode->m_NodeCount);
@@ -2487,15 +2535,19 @@ int csrColladaBuildSkeleton(CSR_Collada_Node* pNode, CSR_Bone* pBone)
         pBone->m_pChildren     = pChildren;
         pBone->m_ChildrenCount = pNode->m_NodeCount;
 
+        // iterate through children bones to create
         for (i = 0; i < pNode->m_NodeCount; ++i)
         {
+            // get next child bone
             CSR_Bone* pChild = &pBone->m_pChildren[i];
 
-            // initialize newly added bone
+            // initialize it
             csrBoneInit(pChild);
 
+            // set its parent
             pChild->m_pParent = pBone;
 
+            // populate it
             csrColladaBuildSkeleton(&pNode->m_pNodes[i], pChild);
         }
     }
@@ -2631,6 +2683,7 @@ int csrColladaParse(const CSR_Buffer* pBuffer, CSR_Collada* pCollada)
         }
     }
 
+    // todo FIXME finalize
     pCollada->m_pSkeleton = (CSR_Bone*)malloc(sizeof(CSR_Bone));
     csrBoneInit(pCollada->m_pSkeleton);
 
