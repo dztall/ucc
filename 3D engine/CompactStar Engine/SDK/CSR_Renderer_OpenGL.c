@@ -163,7 +163,7 @@ GLuint csrOpenGLCubemapLoad(const char** pFileNames)
                 for (x = 0; x < pPixelBuffer->m_Width; ++x)
                     for (c = 0; c < 3; ++c)
                     {
-                        const size_t index = 3 * (pPixelBuffer->m_Width * y + x) + c;
+                        const size_t index = 3 * ((size_t)pPixelBuffer->m_Width * y + x) + c;
 
                         if (index >= bufferLength)
                             continue;
@@ -1769,7 +1769,7 @@ void csrOpenGLDrawCollada(const CSR_Collada*      pCollada,
         return;
 
     // do draw only the mesh and ignore all other data like bones?
-    if (pCollada->m_MeshOnly)
+    if (pCollada->m_MeshOnly || !pCollada->m_pMeshWeights)
     {
         // iterate through the meshes to draw
         for (i = 0; i < pCollada->m_MeshCount; ++i)
