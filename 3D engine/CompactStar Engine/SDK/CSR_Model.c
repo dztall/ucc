@@ -1680,7 +1680,7 @@ void csrBoneRelease(CSR_Bone* pBone, int contentOnly, int releaseCustomData)
         free(pBone->m_pName);
 
     // release the custom data
-    if (releaseCustomData)
+    if (releaseCustomData && pBone->m_pCustomData)
         free(pBone->m_pCustomData);
 
     // release the bone itself
@@ -1816,6 +1816,50 @@ void csrBoneGetAnimMatrix(const CSR_Bone*              pBone,
         // stack the previously calculated matrix with the initial one
         csrMat4Multiply(&localMatrix, pInitialMatrix, pMatrix);
     }
+}
+//---------------------------------------------------------------------------
+// Skeleton functions
+//---------------------------------------------------------------------------
+CSR_Skeleton* csrSkeletonCreate(void)
+{
+    // create a new skin weights structure
+    CSR_Skeleton* pSkeleton = (CSR_Skeleton*)malloc(sizeof(CSR_Skeleton));
+
+    // succeeded?
+    if (!pSkeleton)
+        return 0;
+
+    // initialize the skeleton content
+    csrSkeletonInit(pSkeleton);
+
+    return pSkeleton;
+}
+//---------------------------------------------------------------------------
+void csrSkeletonRelease(CSR_Skeleton* pSkeleton, int contentOnly)
+{
+    if (!pSkeleton)
+        return;
+
+    if (pSkeleton->m_pId)
+        free(pSkeleton->m_pId);
+
+    if (pSkeleton->m_pTarget)
+        free(pSkeleton->m_pTarget);
+
+    if (pSkeleton->m_pRoot)
+        csrBoneRelease(pSkeleton->m_pRoot, 0, 1);
+}
+//---------------------------------------------------------------------------
+void csrSkeletonInit(CSR_Skeleton* pSkeleton)
+{
+    if (!pSkeleton)
+        return;
+
+    pSkeleton->m_pId     = 0;
+    pSkeleton->m_pTarget = 0;
+    pSkeleton->m_pRoot   = 0;
+
+    csrMat4Identity(&pSkeleton->m_InitialMatrix);
 }
 //---------------------------------------------------------------------------
 // Skin weights functions

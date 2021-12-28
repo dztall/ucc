@@ -130,6 +130,8 @@ void csrDebugDrawSkeletonCollada(const CSR_Collada*      pCollada,
                                        size_t            animSetIndex,
                                        size_t            frameIndex)
 {
+    size_t i;
+
     if (!pCollada)
         return;
 
@@ -138,11 +140,12 @@ void csrDebugDrawSkeletonCollada(const CSR_Collada*      pCollada,
 
     csrShaderEnable(pShader);
 
-    csrDebugDrawBone(pCollada->m_pSkeleton,
-                     pShader,
-                     pCollada->m_pAnimationSet,
-                     animSetIndex,
-                     frameIndex,
-                     pCollada->m_PoseOnly);
+    for (i = 0; i < pCollada->m_SkeletonCount; ++i)
+        csrDebugDrawBone(pCollada->m_pSkeletons[i].m_pRoot,
+                         pShader,
+                         pCollada->m_pAnimationSet,
+                         animSetIndex,
+                         frameIndex,
+                         pCollada->m_PoseOnly);
 }
 //---------------------------------------------------------------------------

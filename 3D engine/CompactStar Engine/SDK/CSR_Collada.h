@@ -23,6 +23,19 @@
 #include "CSR_Vertex.h"
 #include "CSR_Model.h"
 
+// IMPORTANT NOTE
+// This Collada reader is partially implemented and planned to read simple files
+// exported from Blender. For that reason there are several known limitations,
+// which are (among others):
+// - Only one skeleton is supported per scene
+// - In geometries, only one set of triangles is supported per mesh
+// - Only triangles are supported in meshes, i.e no <trifans>, <tristrips>, ...
+// - Triangles always begin with VERTEX as input, and coords are always [x, y, z]
+// - Only textures are read in materials
+// ...
+// If one of the above condition is not respected, the Collada model may fail to
+// be read
+
 //---------------------------------------------------------------------------
 // Structures
 //---------------------------------------------------------------------------
@@ -38,8 +51,8 @@ typedef struct
     size_t                  m_MeshWeightsCount;    // mesh skin weights item count
     CSR_Bone_Mesh_Binding*  m_pMeshToBoneDict;     // mesh to bone dictionary
     size_t                  m_MeshToBoneDictCount; // mesh to bone dictionary item count
-    CSR_Bone*               m_pSkeleton;           // model skeleton
-    CSR_Matrix4             m_InitialMatrix;       // initial matrix
+    CSR_Skeleton*           m_pSkeletons;          // model skeletons
+    size_t                  m_SkeletonCount;       // skeleton count
     CSR_AnimationSet_Bone*  m_pAnimationSet;       // set of animations to apply to bones
     size_t                  m_AnimationSetCount;   // animation set count
     int                     m_MeshOnly;            // if activated, only the mesh will be drawn. All other data will be ignored

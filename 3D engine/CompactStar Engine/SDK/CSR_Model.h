@@ -43,7 +43,7 @@ typedef enum
 //---------------------------------------------------------------------------
 
 /**
-* Bone, it's a hierarchical local transformation to apply to a mesh
+* Bone, it's a local transformation to apply to a mesh and belonging to a skeleton
 */
 typedef struct CSR_tagBone
 {
@@ -52,8 +52,19 @@ typedef struct CSR_tagBone
     struct CSR_tagBone* m_pParent;       // bone parent, root bone if 0
     struct CSR_tagBone* m_pChildren;     // bone children
            size_t       m_ChildrenCount; // bone children count
-           void*        m_pCustomData;   // additional custom data. Be careful, this data isn't released internally
+           void*        m_pCustomData;   // additional custom data. Be careful, this data may not be released internally
 } CSR_Bone;
+
+/**
+* Skeleton, it's a set of local transformations named bones
+*/
+typedef struct
+{
+    char*       m_pId;           // skeleton identifier
+    char*       m_pTarget;       // target weights identifier
+    CSR_Bone*   m_pRoot;         // root bone
+    CSR_Matrix4 m_InitialMatrix; // initial matrix
+} CSR_Skeleton;
 
 /**
 * Binding between a bone and a mesh
@@ -435,6 +446,30 @@ typedef void (*CSR_fOnApplySkin)(size_t index, const CSR_Skin* pSkin, int* pCanR
                                         size_t                 frameIndex,
                                         CSR_Matrix4*           pInitialMatrix,
                                         CSR_Matrix4*           pMatrix);
+
+        //-------------------------------------------------------------------
+        // Skeleton functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Creates a skeleton
+        *@return newly created skeleton, 0 on error
+        *@note The skeleton must be released when no longer used, see csrSkeletonRelease()
+        */
+        CSR_Skeleton* csrSkeletonCreate(void);
+
+        /**
+        * Releases a skeleton
+        *@param[in, out] pSkeleton - skeleton to release
+        *@param contentOnly - if 1, the skeleton content will be released, but not the skeleton itself
+        */
+        void csrSkeletonRelease(CSR_Skeleton* pSkeleton, int contentOnly);
+
+        /**
+        * Initializes a skeleton structure
+        *@param[in, out] pSkeleton - skeleton to initialize
+        */
+        void csrSkeletonInit(CSR_Skeleton* pSkeleton);
 
         //-------------------------------------------------------------------
         // Skin weights functions

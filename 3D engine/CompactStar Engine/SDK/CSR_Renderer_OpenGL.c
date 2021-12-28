@@ -1789,7 +1789,7 @@ void csrOpenGLDrawCollada(const CSR_Collada*      pCollada,
         CSR_Array* pLocalMatrixArray;
 
         // if mesh has no skeleton, perform a simple draw
-        if (!pCollada->m_pSkeleton)
+        if (!pCollada->m_pSkeletons)
         {
             // draw the model mesh
             csrOpenGLDrawMesh(&pCollada->m_pMesh[i], pShader, pMatrixArray, fOnGetID);
@@ -1934,7 +1934,10 @@ void csrOpenGLDrawCollada(const CSR_Collada*      pCollada,
         useLocalMatrixArray = 0;
 
         // has matrix array to transform, and model contain mesh bones?
-        if (pMatrixArray && pMatrixArray->m_Count && pCollada->m_pMeshToBoneDict[i].m_pBone)
+        if (pMatrixArray                &&
+            pMatrixArray->m_Count       &&
+            pCollada->m_pMeshToBoneDict &&
+            pCollada->m_pMeshToBoneDict[i].m_pBone)
         {
             // create a new local matrix array
             pLocalMatrixArray = (CSR_Array*)malloc(sizeof(CSR_Array));
