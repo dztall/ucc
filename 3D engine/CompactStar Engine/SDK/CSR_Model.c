@@ -1798,7 +1798,7 @@ void csrBoneGetAnimMatrix(const CSR_Bone*              pBone,
 
         // get the animated bone matrix matching with frame. If not found use the identity one
         if (!csrBoneAnimGetAnimMatrix(pAnimSet, pBone, frameIndex, &animMatrix))
-            csrMat4Identity(&animMatrix);
+            animMatrix = pBone->m_Matrix;
 
         // stack the previously calculated matrix with the current bone one
         csrMat4Multiply(&localMatrix, &animMatrix, pMatrix);
@@ -1843,6 +1843,9 @@ void csrSkeletonRelease(CSR_Skeleton* pSkeleton, int contentOnly)
     if (pSkeleton->m_pId)
         free(pSkeleton->m_pId);
 
+    if (pSkeleton->m_pParentId)
+        free(pSkeleton->m_pParentId);
+
     if (pSkeleton->m_pTarget)
         free(pSkeleton->m_pTarget);
 
@@ -1855,9 +1858,10 @@ void csrSkeletonInit(CSR_Skeleton* pSkeleton)
     if (!pSkeleton)
         return;
 
-    pSkeleton->m_pId     = 0;
-    pSkeleton->m_pTarget = 0;
-    pSkeleton->m_pRoot   = 0;
+    pSkeleton->m_pId       = 0;
+    pSkeleton->m_pParentId = 0;
+    pSkeleton->m_pTarget   = 0;
+    pSkeleton->m_pRoot     = 0;
 
     csrMat4Identity(&pSkeleton->m_InitialMatrix);
 }
@@ -2023,9 +2027,10 @@ void csrAnimKeysInit(CSR_AnimationKeys* pAnimationKeys)
         return;
 
     // initialize the animation keys content
-    pAnimationKeys->m_Type  = CSR_KT_Unknown;
-    pAnimationKeys->m_pKey  = 0;
-    pAnimationKeys->m_Count = 0;
+    pAnimationKeys->m_Type       = CSR_KT_Unknown;
+    pAnimationKeys->m_pKey       = 0;
+    pAnimationKeys->m_Count      = 0;
+    pAnimationKeys->m_ColOverRow = 0;
 }
 //---------------------------------------------------------------------------
 // Frame animation functions
@@ -2310,16 +2315,22 @@ int csrBoneAnimGetAnimMatrix(const CSR_AnimationSet_Bone* pAnimSet,
 
                     continue;
 
-                case CSR_KT_MatrixKeys:
+                case CSR_KT_Matrix:
+                {
                     if (pAnimSet->m_pAnimation[i].m_pKeys[j].m_pKey[keyIndex].m_Count != 16)
                         return 0;
 
                     // get the key matrix
                     for (k = 0; k < 16; ++k)
-                        pMatrix->m_Table[k / 4][k % 4] =
-                                pAnimSet->m_pAnimation[i].m_pKeys[j].m_pKey[keyIndex].m_pValues[k];
+                        if (pAnimSet->m_pAnimation[i].m_pKeys[j].m_ColOverRow)
+                            pMatrix->m_Table[k % 4][k / 4] =
+                                    pAnimSet->m_pAnimation[i].m_pKeys[j].m_pKey[keyIndex].m_pValues[k];
+                        else
+                            pMatrix->m_Table[k / 4][k % 4] =
+                                    pAnimSet->m_pAnimation[i].m_pKeys[j].m_pKey[keyIndex].m_pValues[k];
 
                     return 1;
+                }
 
                 default:
                     continue;

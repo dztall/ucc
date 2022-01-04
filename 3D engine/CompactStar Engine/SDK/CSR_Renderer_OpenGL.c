@@ -1861,12 +1861,14 @@ void csrOpenGLDrawCollada(const CSR_Collada*      pCollada,
 
                 // get the bone matrix
                 if (pCollada->m_PoseOnly)
-                    csrBoneGetMatrix(pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pBone, 0, &boneMatrix);
+                    csrBoneGetMatrix(pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pBone,
+                                    &pCollada->m_pSkeletons->m_InitialMatrix,
+                                    &boneMatrix);
                 else
                     csrBoneGetAnimMatrix(pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pBone,
                                         &pCollada->m_pAnimationSet[animSetIndex],
                                          frameIndex,
-                                         0,
+                                        &pCollada->m_pSkeletons->m_InitialMatrix,
                                         &boneMatrix);
 
                 // get the final matrix after bones transform

@@ -31,11 +31,11 @@
 */
 typedef enum
 {
-    CSR_KT_Unknown    = -1,
-    CSR_KT_Rotation   =  0,
-    CSR_KT_Scale      =  1,
-    CSR_KT_Position   =  2,
-    CSR_KT_MatrixKeys =  4
+    CSR_KT_Unknown  = -1,
+    CSR_KT_Rotation =  0,
+    CSR_KT_Scale    =  1,
+    CSR_KT_Position =  2,
+    CSR_KT_Matrix   =  4
 } CSR_EAnimKeyType;
 
 //---------------------------------------------------------------------------
@@ -61,6 +61,7 @@ typedef struct CSR_tagBone
 typedef struct
 {
     char*       m_pId;           // skeleton identifier
+    char*       m_pParentId;     // skeleton parent identifier
     char*       m_pTarget;       // target weights identifier
     CSR_Bone*   m_pRoot;         // root bone
     CSR_Matrix4 m_InitialMatrix; // initial matrix
@@ -127,6 +128,7 @@ typedef struct
     CSR_EAnimKeyType  m_Type;
     CSR_AnimationKey* m_pKey;
     size_t            m_Count;
+    int               m_ColOverRow;
 } CSR_AnimationKeys;
 
 /**

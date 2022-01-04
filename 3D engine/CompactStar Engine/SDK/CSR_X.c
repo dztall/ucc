@@ -1026,25 +1026,21 @@ int csrXBuildVertex(const CSR_Item_X*                 pItem,
                     const CSR_fOnGetVertexColor       fOnGetVertexColor)
 {
     #ifdef _MSC_VER
-        size_t       i;
-        size_t       j;
-        size_t       vbIndex;
-        size_t       weightIndex;
-        CSR_Vector3  vertex  = {0};
-        CSR_Vector3  normal  = {0};
-        CSR_Vector2  uv      = {0};
-        CSR_Vector3* pNormal =  0;
-        CSR_Vector2* pUV     =  0;
+        size_t      i;
+        size_t      j;
+        size_t      vbIndex;
+        size_t      weightIndex;
+        CSR_Vector3 vertex  = {0};
+        CSR_Vector3 normal  = {0};
+        CSR_Vector2 uv      = {0};
     #else
-        size_t       i;
-        size_t       j;
-        size_t       vbIndex;
-        size_t       weightIndex;
-        CSR_Vector3  vertex;
-        CSR_Vector3  normal;
-        CSR_Vector2  uv;
-        CSR_Vector3* pNormal = 0;
-        CSR_Vector2* pUV     = 0;
+        size_t      i;
+        size_t      j;
+        size_t      vbIndex;
+        size_t      weightIndex;
+        CSR_Vector3 vertex;
+        CSR_Vector3 normal;
+        CSR_Vector2 uv;
     #endif
 
     // calculate the vertex index from the indices table
@@ -1073,8 +1069,12 @@ int csrXBuildVertex(const CSR_Item_X*                 pItem,
         normal.m_X = pNormalsDataset->m_pVertices[nIndiceIndex];
         normal.m_Y = pNormalsDataset->m_pVertices[nIndiceIndex + 1];
         normal.m_Z = pNormalsDataset->m_pVertices[nIndiceIndex + 2];
-
-        pNormal = &normal;
+    }
+    else
+    {
+        normal.m_X = 0.0f;
+        normal.m_Y = 0.0f;
+        normal.m_Z = 0.0f;
     }
 
     // mesh contains texture coordinates?
@@ -1096,8 +1096,11 @@ int csrXBuildVertex(const CSR_Item_X*                 pItem,
             uv.m_X = fabsf(pUVDataset->m_pUV[uvIndex]);
             uv.m_Y = fabsf(pUVDataset->m_pUV[uvIndex + 1]);
         #endif
-
-        pUV = &uv;
+    }
+    else
+    {
+        uv.m_X = 0.0f;
+        uv.m_Y = 0.0f;
     }
 
     // do apply a material to the vertex?
@@ -1140,8 +1143,8 @@ int csrXBuildVertex(const CSR_Item_X*                 pItem,
 
     // add the next vertex to the buffer
     if (!csrVertexBufferAdd(&vertex,
-                             pNormal,
-                             pUV,
+                            &normal,
+                            &uv,
                              0,
                              fOnGetVertexColor,
                              pX->m_pMesh[meshIndex].m_pVB))
@@ -1712,7 +1715,8 @@ int csrXBuildAnimationSet(const CSR_Item_X* pItem, CSR_X* pX)
                 return 0;
 
             // update the animation key type
-            pX->m_pAnimationSet[index].m_pAnimation[i].m_pKeys[j].m_Type = pData->m_Type;
+            pX->m_pAnimationSet[index].m_pAnimation[i].m_pKeys[j].m_Type       = pData->m_Type;
+            pX->m_pAnimationSet[index].m_pAnimation[i].m_pKeys[j].m_ColOverRow = 0;
 
             // iterate through keys
             for (k = 0; k < pData->m_KeyCount; ++k)

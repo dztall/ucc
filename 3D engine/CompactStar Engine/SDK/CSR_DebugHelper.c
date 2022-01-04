@@ -21,6 +21,7 @@
 void csrDebugDrawBone(const CSR_Bone*              pBone,
                       const CSR_OpenGLShader*      pShader,
                       const CSR_AnimationSet_Bone* pAnimationSet,
+                      const CSR_Matrix4*           pInitialMatrix,
                             size_t                 animSetIndex,
                             size_t                 frameIndex,
                             int                    poseOnly)
@@ -57,7 +58,7 @@ void csrDebugDrawBone(const CSR_Bone*              pBone,
             csrBoneGetAnimMatrix(pBone,
                                  &pAnimationSet[animSetIndex],
                                  frameIndex,
-                                 0,
+                                 pInitialMatrix,
                                  &topMatrix);
 
         // get the bone bottom matrix
@@ -67,7 +68,7 @@ void csrDebugDrawBone(const CSR_Bone*              pBone,
             csrBoneGetAnimMatrix(pChild,
                                  &pAnimationSet[animSetIndex],
                                  frameIndex,
-                                 0,
+                                 pInitialMatrix,
                                  &bottomMatrix);
 
         boneLine.m_Start.m_X = topMatrix.m_Table[3][0];
@@ -96,7 +97,7 @@ void csrDebugDrawBone(const CSR_Bone*              pBone,
         csrDrawLine(&boneLine, pShader);
         glEnable(GL_DEPTH_TEST);
 
-        csrDebugDrawBone(pChild, pShader, pAnimationSet, animSetIndex, frameIndex, poseOnly);
+        csrDebugDrawBone(pChild, pShader, pAnimationSet, pInitialMatrix, animSetIndex, frameIndex, poseOnly);
     }
 }
 //---------------------------------------------------------------------------
@@ -107,6 +108,9 @@ void csrDebugDrawSkeletonX(const CSR_X*            pX,
                                  size_t            animSetIndex,
                                  size_t            frameIndex)
 {
+    CSR_Matrix4 initialMatrix;
+    csrMat4Identity(&initialMatrix);
+
     if (!pX)
         return;
 
@@ -118,6 +122,7 @@ void csrDebugDrawSkeletonX(const CSR_X*            pX,
     csrDebugDrawBone(pX->m_pSkeleton,
                      pShader,
                      pX->m_pAnimationSet,
+                     &initialMatrix,
                      animSetIndex,
                      frameIndex,
                      pX->m_PoseOnly);
@@ -144,6 +149,7 @@ void csrDebugDrawSkeletonCollada(const CSR_Collada*      pCollada,
         csrDebugDrawBone(pCollada->m_pSkeletons[i].m_pRoot,
                          pShader,
                          pCollada->m_pAnimationSet,
+                        &pCollada->m_pSkeletons[i].m_InitialMatrix,
                          animSetIndex,
                          frameIndex,
                          pCollada->m_PoseOnly);
