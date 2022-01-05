@@ -61,7 +61,6 @@ typedef struct CSR_tagBone
 typedef struct
 {
     char*       m_pId;           // skeleton identifier
-    char*       m_pParentId;     // skeleton parent identifier
     char*       m_pTarget;       // target weights identifier
     CSR_Bone*   m_pRoot;         // root bone
     CSR_Matrix4 m_InitialMatrix; // initial matrix

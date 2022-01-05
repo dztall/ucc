@@ -1843,9 +1843,6 @@ void csrSkeletonRelease(CSR_Skeleton* pSkeleton, int contentOnly)
     if (pSkeleton->m_pId)
         free(pSkeleton->m_pId);
 
-    if (pSkeleton->m_pParentId)
-        free(pSkeleton->m_pParentId);
-
     if (pSkeleton->m_pTarget)
         free(pSkeleton->m_pTarget);
 
@@ -1861,10 +1858,9 @@ void csrSkeletonInit(CSR_Skeleton* pSkeleton)
     if (!pSkeleton)
         return;
 
-    pSkeleton->m_pId       = 0;
-    pSkeleton->m_pParentId = 0;
-    pSkeleton->m_pTarget   = 0;
-    pSkeleton->m_pRoot     = 0;
+    pSkeleton->m_pId     = 0;
+    pSkeleton->m_pTarget = 0;
+    pSkeleton->m_pRoot   = 0;
 
     csrMat4Identity(&pSkeleton->m_InitialMatrix);
 }

@@ -5916,27 +5916,6 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
                 }
             }
 
-            // parent bone?
-            if (pRootBones[j]->m_pParent && pRootBones[j]->m_pParent->m_pId)
-            {
-                // measure the parent source id length
-                parentIdLen = strlen(pRootBones[j]->m_pParent->m_pId);
-
-                // set the skeleton parent identifier
-                if (parentIdLen)
-                {
-                    // reserve memory for the identifier
-                    pCollada->m_pSkeletons[index].m_pParentId = (char*)malloc((parentIdLen + 1) * sizeof(char));
-
-                    // copy the value
-                    if (pCollada->m_pSkeletons[index].m_pParentId)
-                    {
-                        memcpy(pCollada->m_pSkeletons[index].m_pParentId, pRootBones[j]->m_pParent->m_pId, parentIdLen);
-                        pCollada->m_pSkeletons[index].m_pParentId[parentIdLen] = 0x0;
-                    }
-                }
-            }
-
             // create a new skeleton
             pCollada->m_pSkeletons[index].m_pRoot = (CSR_Bone*)malloc(sizeof(CSR_Bone));
             csrBoneInit(pCollada->m_pSkeletons[index].m_pRoot);
