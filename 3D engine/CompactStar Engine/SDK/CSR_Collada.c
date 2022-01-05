@@ -5214,7 +5214,6 @@ int csrColladaAnimationBuild(CSR_Collada_Animation* pAnimation,
     size_t              l;
     CSR_Animation_Bone* pAnimatedBones = 0;
     CSR_Animation_Bone* pAnimatedBone  = 0;
-    CSR_Skeleton*       pSkeleton      = 0;
 
     if (!pAnimation)
         return 0;
@@ -5223,27 +5222,6 @@ int csrColladaAnimationBuild(CSR_Collada_Animation* pAnimation,
         return 0;
 
     if (!pCollada)
-        return 0;
-
-    // iterate through existing skeletons
-    for (i = 0; i < pCollada->m_SkeletonCount; ++i)
-    {
-        if (!pCollada->m_pSkeletons[i].m_pParentId)
-            continue;
-
-        // measure skeleton target length
-        const size_t len = strlen(pCollada->m_pSkeletons[i].m_pParentId);
-
-        // found the skeleton linked with the animations to process?
-        if (len && len == strlen(pAnimation->m_pName) &&
-            strcmp(pCollada->m_pSkeletons[i].m_pParentId, pAnimation->m_pName) == 0)
-        {
-            pSkeleton = &pCollada->m_pSkeletons[i];
-            break;
-        }
-    }
-
-    if (!pSkeleton)
         return 0;
 
     // reserve memory for boned animations
@@ -5325,6 +5303,7 @@ int csrColladaAnimationBuild(CSR_Collada_Animation* pAnimation,
         {
                   size_t targetEnd   = 0;
                   char*  pTargetName = 0;
+                  int    found       = 0;
             const size_t targetLen   = strlen(pAnimation->m_pAnimations[i].m_pChannels[j].m_pTarget);
 
             // extract bone name from target link
@@ -5348,22 +5327,31 @@ int csrColladaAnimationBuild(CSR_Collada_Animation* pAnimation,
             memcpy(pTargetName, pAnimation->m_pAnimations[i].m_pChannels[j].m_pTarget, targetEnd);
             pTargetName[targetEnd] = 0x0;
 
-            // search for matching bone
-            if (csrColladaFindBone(pTargetName,
-                                   pSkeleton->m_pRoot,
-                                  &pAnimatedBone->m_pBone))
+            // iterate through existing skeletons
+            for (k = 0; k < pCollada->m_SkeletonCount; ++k)
             {
-                // found it?
-                if (!pAnimatedBone->m_pBone)
+                // search for matching bone
+                if (csrColladaFindBone(pTargetName,
+                                       pCollada->m_pSkeletons[k].m_pRoot,
+                                       &pAnimatedBone->m_pBone))
                 {
-                    free(pTargetName);
-                    return 0;
-                }
+                    // found it?
+                    if (!pAnimatedBone->m_pBone)
+                    {
+                        free(pTargetName);
+                        return 0;
+                    }
 
-                // set target bone name
-                pAnimatedBone->m_pBoneName = pTargetName;
-                break;
+                    // set target bone name
+                    pAnimatedBone->m_pBoneName = pTargetName;
+
+                    found = 1;
+                    break;
+                }
             }
+
+            if (found)
+                break;
 
             free(pTargetName);
         }
