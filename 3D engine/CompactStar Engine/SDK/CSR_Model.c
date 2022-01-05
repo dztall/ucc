@@ -1851,6 +1851,9 @@ void csrSkeletonRelease(CSR_Skeleton* pSkeleton, int contentOnly)
 
     if (pSkeleton->m_pRoot)
         csrBoneRelease(pSkeleton->m_pRoot, 0, 1);
+
+    if (!contentOnly)
+        free(pSkeleton);
 }
 //---------------------------------------------------------------------------
 void csrSkeletonInit(CSR_Skeleton* pSkeleton)

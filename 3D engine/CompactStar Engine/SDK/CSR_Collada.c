@@ -4372,7 +4372,6 @@ void csrColladaNodeFindSkeletons(CSR_Collada_Node*       pColladaNode,
             if (!pSkeletonArray)
                 return;
 
-            // set new mesh array in the geometry
             *pSkeletons          = pSkeletonArray;
             (*pSkeletons)[index] = &pColladaNode->m_pInstanceCtrls[i].m_pSkeletons[j];
 
@@ -4383,8 +4382,7 @@ void csrColladaNodeFindSkeletons(CSR_Collada_Node*       pColladaNode,
             if (!pUrlArray)
                 return;
 
-            // set new mesh array in the geometry
-            *pUrls = pUrlArray;
+            *pUrls          = pUrlArray;
             (*pUrls)[index] = pColladaNode->m_pInstanceCtrls[i].m_pUrl;
 
             ++(*pCount);
@@ -4399,37 +4397,54 @@ void csrColladaNodeFindSkeletons(CSR_Collada_Node*       pColladaNode,
                                      pCount);
 }
 //---------------------------------------------------------------------------
-int csrColladaNodeFindRootBone(CSR_Collada_Node*  pColladaNode,
-                               const char*        pID,
-                               CSR_Collada_Node** pRootBone)
+void csrColladaNodeFindRootBones(CSR_Collada_Node*   pColladaNode,
+                                 const char*         pID,
+                                 CSR_Collada_Node*** pRootBones,
+                                 size_t*             pCount)
 {
     size_t i;
     size_t len;
 
     if (!pID)
-        return 0;
+        return;
 
-    if (!pRootBone)
-        return 0;
+    if (!pRootBones)
+        return;
 
     if (!pColladaNode)
-        return 0;
+        return;
+
+    if (!pCount)
+        return;
 
     len = strlen(pID);
 
     // found the matching bone node?
     if (len > 1 && pID[0] == '#' && memcmp(&pID[1], pColladaNode->m_pId, len - 1) == 0)
     {
-        *pRootBone = pColladaNode;
-        return 1;
+        CSR_Collada_Node** pRootBoneArray;
+        const size_t       index = *pCount;
+
+        // add a new root bone in the array
+        pRootBoneArray =
+                (CSR_Collada_Node**)csrMemoryAlloc(*pRootBones,
+                                                    sizeof(CSR_Collada_Node*),
+                                                    index + 1);
+
+        // succeeded?
+        if (!pRootBoneArray)
+            return;
+
+        *pRootBones          = pRootBoneArray;
+        (*pRootBones)[index] = pColladaNode;
+
+        ++(*pCount);
+        return;
     }
 
     // search in the node children
     for (i = 0; i < pColladaNode->m_NodeCount; ++i)
-        if (csrColladaNodeFindRootBone(&pColladaNode->m_pNodes[i], pID, pRootBone))
-            return 1;
-
-    return 0;
+        csrColladaNodeFindRootBones(&pColladaNode->m_pNodes[i], pID, pRootBones, pCount);
 }
 //---------------------------------------------------------------------------
 void csrColladaVisualSceneInit(CSR_Collada_Visual_Scene* pColladaVisualScene)
@@ -5231,6 +5246,7 @@ int csrColladaAnimationBuild(CSR_Collada_Animation* pAnimation,
     if (!pSkeleton)
         return 0;
 
+    // reserve memory for boned animations
     pAnimatedBones =
             (CSR_Animation_Bone*)csrMemoryAlloc(pAnimSetBone->m_pAnimation,
                                                 sizeof(CSR_Animation_Bone),
@@ -5239,9 +5255,11 @@ int csrColladaAnimationBuild(CSR_Collada_Animation* pAnimation,
     if (!pAnimatedBones)
         return 0;
 
+    // set animations in the animation set
     pAnimSetBone->m_pAnimation = pAnimatedBones;
     pAnimSetBone->m_Count      = pAnimation->m_AnimationCount;
 
+    // iterate through animations to populate
     for (i = 0; i < pAnimation->m_AnimationCount; ++i)
     {
         CSR_Collada_Source* pInput         = 0;
@@ -5250,11 +5268,12 @@ int csrColladaAnimationBuild(CSR_Collada_Animation* pAnimation,
         size_t              stride         = 0;
         size_t              keyCount       = 0;
 
+
+        // iterate through animation children and find input, output and interpolation sources
         for (j = 0; j < pAnimation->m_pAnimations[i].m_SamplerCount; ++j)
             for (k = 0; k < pAnimation->m_pAnimations[i].m_pSamplers[j].m_InputCount; ++k)
                 if (strcmp(pAnimation->m_pAnimations[i].m_pSamplers[j].m_pInputs[k].m_pSemantic,
                            M_Collada_Semantic_Input) == 0)
-                {
                     for (l = 0; l < pAnimation->m_pAnimations[i].m_SourceCount; ++l)
                     {
                         const size_t len = strlen(pAnimation->m_pAnimations[i].m_pSources[l].m_pId);
@@ -5264,11 +5283,9 @@ int csrColladaAnimationBuild(CSR_Collada_Animation* pAnimation,
                                    pAnimation->m_pAnimations[i].m_pSamplers[j].m_pInputs[k].m_pSource + 1) == 0)
                             pInput = &pAnimation->m_pAnimations[i].m_pSources[l];
                     }
-                }
                 else
                 if (strcmp(pAnimation->m_pAnimations[i].m_pSamplers[j].m_pInputs[k].m_pSemantic,
                             M_Collada_Semantic_Output) == 0)
-                {
                     for (l = 0; l < pAnimation->m_pAnimations[i].m_SourceCount; ++l)
                     {
                         const size_t len = strlen(pAnimation->m_pAnimations[i].m_pSources[l].m_pId);
@@ -5278,7 +5295,6 @@ int csrColladaAnimationBuild(CSR_Collada_Animation* pAnimation,
                                    pAnimation->m_pAnimations[i].m_pSamplers[j].m_pInputs[k].m_pSource + 1) == 0)
                             pOutput = &pAnimation->m_pAnimations[i].m_pSources[l];
                     }
-                }
                 else
                 if (strcmp(pAnimation->m_pAnimations[i].m_pSamplers[j].m_pInputs[k].m_pSemantic,
                             M_Collada_Semantic_Interpolation) == 0)
@@ -5295,19 +5311,23 @@ int csrColladaAnimationBuild(CSR_Collada_Animation* pAnimation,
         if (!pInput || !pOutput || !pInterpolation)
             return 0;
 
+        // get animated bone to populate
         pAnimatedBone = &pAnimSetBone->m_pAnimation[i];
 
+        // initialize it
         pAnimatedBone->m_pBone     = 0;
         pAnimatedBone->m_pBoneName = 0;
         pAnimatedBone->m_pKeys     = 0;
         pAnimatedBone->m_Count     = 0;
 
+        // iterate through animation channels
         for (j = 0; j < pAnimation->m_pAnimations[i].m_ChannelCount; ++j)
         {
                   size_t targetEnd   = 0;
                   char*  pTargetName = 0;
             const size_t targetLen   = strlen(pAnimation->m_pAnimations[i].m_pChannels[j].m_pTarget);
 
+            // extract bone name from target link
             for (k = 0; k < targetLen; ++k)
                 if (pAnimation->m_pAnimations[i].m_pChannels[j].m_pTarget[k] == '/')
                 {
@@ -5318,24 +5338,29 @@ int csrColladaAnimationBuild(CSR_Collada_Animation* pAnimation,
             if (!targetEnd)
                 return 0;
 
+            // reserve memory for target bone name
             pTargetName = (char*)malloc((targetEnd + 1) * sizeof(char));
 
             if (!pTargetName)
                 return 0;
 
+            // get target bone name
             memcpy(pTargetName, pAnimation->m_pAnimations[i].m_pChannels[j].m_pTarget, targetEnd);
             pTargetName[targetEnd] = 0x0;
 
+            // search for matching bone
             if (csrColladaFindBone(pTargetName,
                                    pSkeleton->m_pRoot,
                                   &pAnimatedBone->m_pBone))
             {
+                // found it?
                 if (!pAnimatedBone->m_pBone)
                 {
                     free(pTargetName);
                     return 0;
                 }
 
+                // set target bone name
                 pAnimatedBone->m_pBoneName = pTargetName;
                 break;
             }
@@ -5343,9 +5368,11 @@ int csrColladaAnimationBuild(CSR_Collada_Animation* pAnimation,
             free(pTargetName);
         }
 
+        // found matching bone?
         if (!pAnimatedBone->m_pBone)
             return 0;
 
+        // get the stride and accessor from tech common info
         if (pOutput->m_pTechCommon && pOutput->m_pTechCommon->m_pAccessor)
         {
             stride   = pOutput->m_pTechCommon->m_pAccessor->m_Stride;
@@ -5358,24 +5385,32 @@ int csrColladaAnimationBuild(CSR_Collada_Animation* pAnimation,
         if (!keyCount)
             return 0;
 
-        // FIXME certify matrices
+        // for now, only animated matrix list is supported
+        if (stride != 16)
+            return 0;
+
+        // allocate memory for animation keys array
         pAnimatedBone->m_pKeys = (CSR_AnimationKeys*)malloc(sizeof(CSR_AnimationKeys));
         pAnimatedBone->m_Count = 1;
 
         if (!pAnimatedBone->m_pKeys)
             return 0;
 
+        // allocate memory for animation keys
         pAnimatedBone->m_pKeys->m_Type       = CSR_KT_Matrix;
         pAnimatedBone->m_pKeys->m_pKey       = (CSR_AnimationKey*)malloc(keyCount * sizeof(CSR_AnimationKey));
         pAnimatedBone->m_pKeys->m_Count      = keyCount;
         pAnimatedBone->m_pKeys->m_ColOverRow = 1;
 
+        // iterate through keys to populate
         for (j = 0; j < keyCount; ++j)
         {
+            // set key frame and count, and reserve memory for data
             pAnimatedBone->m_pKeys->m_pKey[j].m_Frame   = j;
             pAnimatedBone->m_pKeys->m_pKey[j].m_Count   = stride;
             pAnimatedBone->m_pKeys->m_pKey[j].m_pValues = (float*)malloc(stride * sizeof(float));
 
+            // copy key matrix data
             memcpy(pAnimatedBone->m_pKeys->m_pKey[j].m_pValues,
                   &pOutput->m_pFloatArray->m_pData[j * stride],
                    stride * sizeof(float));
@@ -5775,10 +5810,11 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
     for (i = 0; i < visualSceneCount; ++i)
     {
         CSR_Collada_Skeleton** pSrcSkeletons = 0;
-        CSR_Collada_Node*      pRootBone     = 0;
+        CSR_Collada_Node**     pRootBones    = 0;
         CSR_Skeleton*          pSkeletons    = 0;
         char**                 pUrls         = 0;
         size_t                 count         = 0;
+        size_t                 rootCount     = 0;
 
         // find the skeletons contained in the scene
         for (j = 0; j < pVisualScenes[i].m_VisualSceneCount; ++j)
@@ -5788,38 +5824,26 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
                                             &pUrls,
                                             &count);
 
-        // find the skeleton root node
+        // find the skeleton root nodes
         for (j = 0; j < pVisualScenes[i].m_VisualSceneCount; ++j)
-        {
-            int foundRoot = 0;
-
             for (k = 0; k < pVisualScenes[i].m_pVisualScenes[j].m_NodeCount; ++k)
-            {
                 for (l = 0; l < count; ++l)
-                    if (csrColladaNodeFindRootBone(&pVisualScenes[i].m_pVisualScenes[j].m_pNodes[k],
-                                                   pSrcSkeletons[l]->m_pId,
-                                                   &pRootBone))
-                    {
-                        foundRoot = 1;
-                        break;
-                    }
-
-                if (foundRoot)
-                    break;
-            }
-
-            if (foundRoot)
-                break;
-        }
+                    csrColladaNodeFindRootBones(&pVisualScenes[i].m_pVisualScenes[j].m_pNodes[k],
+                                                 pSrcSkeletons[l]->m_pId,
+                                                &pRootBones,
+                                                &rootCount);
 
         // not found?
-        if (!pRootBone)
+        if (!pRootBones || rootCount != count)
         {
             if (pSrcSkeletons)
                 free(pSrcSkeletons);
 
             if (pUrls)
                 free(pUrls);
+
+            if (pRootBones)
+                free(pRootBones);
 
             // release collada objects
             csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
@@ -5867,6 +5891,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
 
                 if (pUrls)
                     free(pUrls);
+
+                if (pRootBones)
+                    free(pRootBones);
 
                 // release collada objects
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
@@ -5919,10 +5946,10 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             }
 
             // parent bone?
-            if (pRootBone->m_pParent && pRootBone->m_pParent->m_pId)
+            if (pRootBones[j]->m_pParent && pRootBones[j]->m_pParent->m_pId)
             {
                 // measure the parent source id length
-                parentIdLen = strlen(pRootBone->m_pParent->m_pId);
+                parentIdLen = strlen(pRootBones[j]->m_pParent->m_pId);
 
                 // set the skeleton parent identifier
                 if (parentIdLen)
@@ -5933,7 +5960,7 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
                     // copy the value
                     if (pCollada->m_pSkeletons[index].m_pParentId)
                     {
-                        memcpy(pCollada->m_pSkeletons[index].m_pParentId, pRootBone->m_pParent->m_pId, parentIdLen);
+                        memcpy(pCollada->m_pSkeletons[index].m_pParentId, pRootBones[j]->m_pParent->m_pId, parentIdLen);
                         pCollada->m_pSkeletons[index].m_pParentId[parentIdLen] = 0x0;
                     }
                 }
@@ -5944,11 +5971,11 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             csrBoneInit(pCollada->m_pSkeletons[index].m_pRoot);
 
             // get the initial matrix, if exists. NOTE assume that only one initial matrix exists
-            if (pRootBone->m_pParent && pRootBone->m_pParent->m_MatrixCount)
-                pCollada->m_pSkeletons[index].m_InitialMatrix = pRootBone->m_pParent->m_pMatrices[0].m_Matrix;
+            if (pRootBones[j]->m_pParent && pRootBones[j]->m_pParent->m_MatrixCount)
+                pCollada->m_pSkeletons[index].m_InitialMatrix = pRootBones[j]->m_pParent->m_pMatrices[0].m_Matrix;
 
             // build it
-            csrColladaBuildSkeleton(pRootBone, pCollada->m_pSkeletons[index].m_pRoot);
+            csrColladaBuildSkeleton(pRootBones[j], pCollada->m_pSkeletons[index].m_pRoot);
         }
 
         if (pSrcSkeletons)
@@ -5956,6 +5983,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
 
         if (pUrls)
             free(pUrls);
+
+        if (pRootBones)
+            free(pRootBones);
     }
 
     // is model supporting skin weights?
