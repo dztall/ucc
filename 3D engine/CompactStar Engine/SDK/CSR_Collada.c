@@ -4934,7 +4934,6 @@ int csrColladaMeshWeightsBuild(CSR_Collada_Geometry*   pGeometry,
     size_t                       weightPos         = 0;
     size_t                       inputCount        = 0;
     size_t                       stride            = 0;
-    CSR_Skeleton*                pSkeleton         = 0;
     CSR_Collada_Skin*            pSkin             = 0;
     CSR_Collada_Source*          pJoints           = 0;
     CSR_Collada_Source*          pBindMatrices     = 0;
@@ -4951,24 +4950,6 @@ int csrColladaMeshWeightsBuild(CSR_Collada_Geometry*   pGeometry,
         return 0;
 
     if (!pCollada)
-        return 0;
-
-    // iterate through existing skeletons
-    for (i = 0; i < pCollada->m_SkeletonCount; ++i)
-    {
-        // measure skeleton target length
-        const size_t len = strlen(pCollada->m_pSkeletons[i].m_pTarget);
-
-        // found the skeleton linked with the weights to process?
-        if (len && (len - 1) == strlen(pController->m_pId) &&
-            strcmp(pCollada->m_pSkeletons[i].m_pTarget + 1, pController->m_pId) == 0)
-        {
-            pSkeleton = &pCollada->m_pSkeletons[i];
-            break;
-        }
-    }
-
-    if (!pSkeleton)
         return 0;
 
     pSkin = pController->m_pSkin;
@@ -5041,13 +5022,15 @@ int csrColladaMeshWeightsBuild(CSR_Collada_Geometry*   pGeometry,
     if (!pSkinWeightsGroup)
         return 0;
 
-    // populate the skin weights group
-    if (!csrColladaBuildWeightsFromSkeleton(pSkeleton->m_pRoot,
-                                            meshIndex,
-                                            pSkinWeightsGroup,
-                                            pJoints,
-                                            pBindMatrices))
-        return 0;
+    // iterate through existing skeletons
+    for (i = 0; i < pCollada->m_SkeletonCount; ++i)
+        // populate the skin weights group
+        if (!csrColladaBuildWeightsFromSkeleton(pCollada->m_pSkeletons[i].m_pRoot,
+                                                meshIndex,
+                                                pSkinWeightsGroup,
+                                                pJoints,
+                                                pBindMatrices))
+            return 0;
 
     // iterate through weights count items
     for (i = 0; i < pSkin->m_pVertexWeights->m_pVertexToBoneCountArray->m_Count; ++i)
