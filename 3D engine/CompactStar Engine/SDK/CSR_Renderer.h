@@ -52,6 +52,11 @@
 * Called when a resource identifier should be get from a key
 *@param pKey - key for which the resource identifier should be get
 *@return identifier, 0 on error or if not found
+*@note For Collada and DirectX models, the key cannot be used directly to
+*      retrieve the associated resource, because it is get from a local copy
+*      of the source mesh. In this case, the key should be casted to a
+*      CSR_Texture object, and the m_pFileName parameter content should be
+*      used instead as a key
 */
 typedef void* (*CSR_fOnGetID)(const void* pKey);
 

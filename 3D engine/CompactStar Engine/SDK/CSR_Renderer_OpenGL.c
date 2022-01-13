@@ -1617,6 +1617,19 @@ void csrOpenGLDrawX(const CSR_X*            pX,
                 continue;
             }
 
+            // do copy the texture file name? NOTE the texture file name may be used as a key
+            // to retrieve the associated texture in the resources
+           if (pMesh->m_Skin.m_Texture.m_pFileName)
+            {
+                // measure the file name length and allocate memory for file name in local mesh
+                const size_t fileNameLen                 = strlen(pMesh->m_Skin.m_Texture.m_pFileName);
+                pLocalMesh->m_Skin.m_Texture.m_pFileName = (char*)calloc(fileNameLen + 1, sizeof(char));
+
+                // copy the file name
+                if (pLocalMesh->m_Skin.m_Texture.m_pFileName)
+                    memcpy(pLocalMesh->m_Skin.m_Texture.m_pFileName, pMesh->m_Skin.m_Texture.m_pFileName, fileNameLen);
+            }
+
             // iterate through mesh skin weights
             for (j = 0; j < pX->m_pMeshWeights[i].m_Count; ++j)
             {
@@ -1743,6 +1756,10 @@ void csrOpenGLDrawX(const CSR_X*            pX,
             free(pLocalMesh->m_pVB);
         }
 
+        // delete the local mesh texture file name
+        if (pLocalMesh->m_Skin.m_Texture.m_pFileName)
+            free(pLocalMesh->m_Skin.m_Texture.m_pFileName);
+
         // delete the local mesh
         free(pLocalMesh);
 
@@ -1851,6 +1868,19 @@ void csrOpenGLDrawCollada(const CSR_Collada*      pCollada,
                 free(pLocalMesh->m_pVB);
                 free(pLocalMesh);
                 continue;
+            }
+
+            // do copy the texture file name? NOTE the texture file name may be used as a key
+            // to retrieve the associated texture in the resources
+           if (pMesh->m_Skin.m_Texture.m_pFileName)
+            {
+                // measure the file name length and allocate memory for file name in local mesh
+                const size_t fileNameLen                 = strlen(pMesh->m_Skin.m_Texture.m_pFileName);
+                pLocalMesh->m_Skin.m_Texture.m_pFileName = (char*)calloc(fileNameLen + 1, sizeof(char));
+
+                // copy the file name
+                if (pLocalMesh->m_Skin.m_Texture.m_pFileName)
+                    memcpy(pLocalMesh->m_Skin.m_Texture.m_pFileName, pMesh->m_Skin.m_Texture.m_pFileName, fileNameLen);
             }
 
             // iterate through mesh skin weights
@@ -1983,6 +2013,10 @@ void csrOpenGLDrawCollada(const CSR_Collada*      pCollada,
             free(pLocalMesh->m_pVB->m_pData);
             free(pLocalMesh->m_pVB);
         }
+
+        // delete the local mesh texture file name
+        if (pLocalMesh->m_Skin.m_Texture.m_pFileName)
+            free(pLocalMesh->m_Skin.m_Texture.m_pFileName);
 
         // delete the local mesh
         free(pLocalMesh);

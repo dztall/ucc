@@ -39,12 +39,24 @@
 // Global defines
 //---------------------------------------------------------------------------
 #define M_Collada_Root_Tag                 "COLLADA"
+#define M_Collada_Images_Tag               "library_images"
+#define M_Collada_Image_Tag                "image"
+#define M_Collada_Materials_Tag            "library_materials"
+#define M_Collada_Material_Tag             "material"
+#define M_Collada_Effects_Tag              "library_effects"
+#define M_Collada_Effect_Tag               "effect"
 #define M_Collada_Geometries_Tag           "library_geometries"
 #define M_Collada_Geometry_Tag             "geometry"
 #define M_Collada_Controllers_Tag          "library_controllers"
 #define M_Collada_Controller_Tag           "controller"
 #define M_Collada_Animations_Tag           "library_animations"
 #define M_Collada_Animation_Tag            "animation"
+#define M_Collada_Profile_Common_Tag       "profile_COMMON"
+#define M_Collada_New_Param_Tag            "newparam"
+#define M_Collada_Surface_Tag              "surface"
+#define M_Collada_Init_From_Tag            "init_from"
+#define M_Collada_Format_Tag               "format"
+#define M_Collada_Instance_Effect_Tag      "instance_effect"
 #define M_Collada_Mesh_Tag                 "mesh"
 #define M_Collada_Skin_Tag                 "skin"
 #define M_Collada_Source_Tag               "source"
@@ -58,6 +70,8 @@
 #define M_Collada_Vertex_Weights_Tag       "vertex_weights"
 #define M_Collada_Technique_Tag            "technique"
 #define M_Collada_Technique_Common_Tag     "technique_common"
+#define M_Collada_Bind_Material_Tag        "bind_material"
+#define M_Collada_Instance_Material_Tag    "instance_material"
 #define M_Collada_Accessor_Tag             "accessor"
 #define M_Collada_Param_Tag                "param"
 #define M_Collada_Input_Tag                "input"
@@ -76,6 +90,7 @@
 #define M_Collada_Name_Attribute           "name"
 #define M_Collada_Type_Attribute           "type"
 #define M_Collada_Source_Attribute         "source"
+#define M_Collada_Symbol_Attribute         "symbol"
 #define M_Collada_Target_Attribute         "target"
 #define M_Collada_Count_Attribute          "count"
 #define M_Collada_Stride_Attribute         "stride"
@@ -83,6 +98,7 @@
 #define M_Collada_Offset_Attribute         "offset"
 #define M_Collada_Set_Attribute            "set"
 #define M_Collada_Url_Attribute            "url"
+#define M_Collada_Material_Attribute       "material"
 #define M_Collada_Semantic_Position        "POSITION"
 #define M_Collada_Semantic_Vertex          "VERTEX"
 #define M_Collada_Semantic_Normal          "NORMAL"
@@ -155,6 +171,98 @@ typedef struct
 } CSR_Collada_Name_Array;
 
 /**
+* Collada (.dae) image tag
+*/
+typedef struct
+{
+    char* m_pId;       // image identifier
+    char* m_pFileName; // image file name
+} CSR_Collada_Image;
+
+/**
+* Collada (.dae) images tag
+*/
+typedef struct
+{
+    CSR_Collada_Image* m_pImages; // image array
+    size_t             m_Count;   // image count
+} CSR_Collada_Images;
+
+/**
+* Collada (.dae) instance effect tag
+*/
+typedef struct
+{
+    char* m_pUrl; // effect url
+} CSR_Collada_Instance_Effect;
+
+/**
+* Collada (.dae) material tag
+*/
+typedef struct
+{
+    char*                        m_pId;             // material identifier
+    char*                        m_pName;           // material name
+    CSR_Collada_Instance_Effect* m_pInstanceEffect; // instance effect
+} CSR_Collada_Material;
+
+/**
+* Collada (.dae) materials tag
+*/
+typedef struct
+{
+    CSR_Collada_Material* m_pMaterials; // material array
+    size_t                m_Count;      // material count
+} CSR_Collada_Materials;
+
+/**
+* Collada (.dae) surface tag
+*/
+typedef struct
+{
+    char* m_pType;     // surface type
+    char* m_pInitFrom; // init from target identifier
+    char* m_pFormat;   // format
+} CSR_Collada_Surface;
+
+/**
+* Collada (.dae) new param tag
+*/
+typedef struct
+{
+    char*                m_pSid;     // new param identifier
+    CSR_Collada_Surface* m_pSurface; // surface
+} CSR_Collada_New_Param;
+
+/**
+* Collada (.dae) profile common tag
+*/
+typedef struct
+{
+    CSR_Collada_New_Param* m_pNewParams; // new params array
+    size_t                 m_Count;      // new param count
+} CSR_Collada_Profile_Common;
+
+/**
+* Collada (.dae) effect tag
+*/
+typedef struct
+{
+    char*                       m_pId;            // effect identifier
+    char*                       m_pName;          // effect name
+    CSR_Collada_Profile_Common* m_pProfileCommon; // effect profile common
+} CSR_Collada_Effect;
+
+/**
+* Collada (.dae) effects tag
+*/
+typedef struct
+{
+    CSR_Collada_Effect* m_pEffects; // effect array
+    size_t              m_Count;    // effect count
+} CSR_Collada_Effects;
+
+/**
 * Collada (.dae) accessor tag
 */
 typedef struct
@@ -167,12 +275,31 @@ typedef struct
 } CSR_Collada_Accessor;
 
 /**
+* Collada (.dae) instance material tag
+*/
+typedef struct
+{
+    char* m_pSymbol; // symbol
+    char* m_pTarget; // target
+} CSR_Collada_Instance_Material;
+
+/**
 * Collada (.dae) technique common tag
 */
 typedef struct
 {
-    CSR_Collada_Accessor* m_pAccessor; // accessor
+    CSR_Collada_Accessor*          m_pAccessor;             // accessor
+    CSR_Collada_Instance_Material* m_pInstanceMaterials;    // instance material
+    size_t                         m_InstanceMaterialCount; // instance material count
 } CSR_Collada_Technique_Common;
+
+/**
+* Collada (.dae) bind material tag
+*/
+typedef struct
+{
+    CSR_Collada_Technique_Common* m_pTechCommon; // technique common
+} CSR_Collada_Bind_Material;
 
 /**
 * Collada (.dae) source
@@ -211,6 +338,7 @@ typedef struct
 */
 typedef struct
 {
+    char*                       m_pMaterial;       // material name
     size_t                      m_Count;           // triangle count
     CSR_Collada_Input*          m_pInputs;         // input array
     size_t                      m_InputCount;      // input count
@@ -360,9 +488,10 @@ typedef struct
 */
 typedef struct
 {
-    char*                 m_pUrl;          // animation target identifier
-    CSR_Collada_Skeleton* m_pSkeletons;    // skeleton array
-    size_t                m_SkeletonCount; // skeleton count
+    char*                      m_pUrl;          // animation target identifier
+    CSR_Collada_Skeleton*      m_pSkeletons;    // skeleton array
+    size_t                     m_SkeletonCount; // skeleton count
+    CSR_Collada_Bind_Material* m_pBindMaterial; // bind material
 } CSR_Collada_Instance_Controller;
 
 /**
@@ -408,6 +537,8 @@ typedef struct
 //---------------------------------------------------------------------------
 int csrColladaReadAttribValue(XMLAttribute* pAttribute, char** pText)
 {
+    size_t valueLen;
+
     if (!pAttribute)
         return 0;
 
@@ -415,7 +546,7 @@ int csrColladaReadAttribValue(XMLAttribute* pAttribute, char** pText)
         return 0;
 
     // found name, read it
-    const size_t valueLen = strlen(pAttribute->value);
+    valueLen = strlen(pAttribute->value);
 
     // allocate memory for new mesh id
     *pText = (char*)malloc((valueLen + 1) * sizeof(char));
@@ -547,7 +678,11 @@ int csrColladaMatrixRead(XMLNode* pNode, CSR_Collada_Matrix* pColladaMatrix)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -698,7 +833,11 @@ int csrColladaFloatArrayRead(XMLNode* pNode, CSR_Collada_Float_Array* pColladaFl
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -1065,7 +1204,11 @@ int csrColladaUnsignedArrayRead(XMLNode* pNode, CSR_Collada_Unsigned_Array* pCol
         //                        platforms. If a better function exists,
         //                        use it instead
         // convert it and write it in the array
-        pColladaUnsignedArray->m_pData[index] = (size_t)atoll(pNumber);
+        #ifdef __CODEGEARC__
+            pColladaUnsignedArray->m_pData[index] = (size_t)atol(pNumber);
+        #else
+            pColladaUnsignedArray->m_pData[index] = (size_t)atoll(pNumber);
+        #endif
 
         // start to read the next number
         ++index;
@@ -1105,7 +1248,11 @@ int csrColladaUnsignedArrayRead(XMLNode* pNode, CSR_Collada_Unsigned_Array* pCol
     //                        platforms. If a better function exists,
     //                        use it instead
     // convert it and write it in the array
-    pColladaUnsignedArray->m_pData[index] = (size_t)atoll(pNumber);
+    #ifdef __CODEGEARC__
+        pColladaUnsignedArray->m_pData[index] = (size_t)atol(pNumber);
+    #else
+        pColladaUnsignedArray->m_pData[index] = (size_t)atoll(pNumber);
+    #endif
 
     free(pNumber);
 
@@ -1150,9 +1297,8 @@ int csrColladaNameArrayRead(XMLNode* pNode, CSR_Collada_Name_Array* pColladaName
     size_t i;
     size_t len;
     size_t lineLen;
-    size_t offset  = 0;
-    size_t index   = 0;
-    char*  pNumber = 0;
+    size_t offset = 0;
+    size_t index  = 0;
 
     if (!pNode)
         return 0;
@@ -1163,7 +1309,11 @@ int csrColladaNameArrayRead(XMLNode* pNode, CSR_Collada_Name_Array* pColladaName
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -1280,6 +1430,964 @@ int csrColladaNameArrayRead(XMLNode* pNode, CSR_Collada_Name_Array* pColladaName
     return 1;
 }
 //---------------------------------------------------------------------------
+void csrColladaImageInit(CSR_Collada_Image* pColladaImage)
+{
+    if (!pColladaImage)
+        return;
+
+    pColladaImage->m_pId       = 0;
+    pColladaImage->m_pFileName = 0;
+}
+//---------------------------------------------------------------------------
+void csrColladaImageRelease(CSR_Collada_Image* pColladaImage)
+{
+    if (!pColladaImage)
+        return;
+
+    // free the identifier
+    if (pColladaImage->m_pId)
+        free(pColladaImage->m_pId);
+
+    // free the file name
+    if (pColladaImage->m_pFileName)
+        free(pColladaImage->m_pFileName);
+}
+//---------------------------------------------------------------------------
+int csrColladaImageRead(XMLNode* pNode, CSR_Collada_Image* pColladaImage)
+{
+    size_t i;
+    size_t len;
+
+    if (!pNode)
+        return 0;
+
+    if (!pColladaImage)
+        return 0;
+
+    // node contains attributes?
+    if ((size_t)pNode->n_attributes)
+    {
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
+        XMLAttribute* pAttributes;
+
+        // get attribute list
+        pAttributes = pNode->attributes;
+
+        // found it?
+        if (!pAttributes)
+            return 0;
+
+        // iterate through attributes
+        for (i = 0; i < (size_t)pNode->n_attributes; ++i)
+        {
+            // measure attribute name length
+            len = strlen(pAttributes[i].name);
+
+            // search for attribute to read
+            if (len == strlen(M_Collada_ID_Attribute) &&
+                memcmp(pAttributes[i].name, M_Collada_ID_Attribute, len) == 0)
+                csrColladaReadAttribValue(&pAttributes[i], &pColladaImage->m_pId);
+        }
+    }
+
+    // iterate through node children
+    for (i = 0; i < (size_t)pNode->n_children; ++i)
+    {
+        // get next child
+        XMLNode* pChild = pNode->children[i];
+
+        if (!pChild)
+            return 0;
+
+        // measure tag name length
+        len = strlen(pChild->tag);
+
+        // search for tag to read
+        if (len == strlen(M_Collada_Init_From_Tag) &&
+            memcmp(pChild->tag, M_Collada_Init_From_Tag, len) == 0)
+        {
+            const size_t nameLen = strlen(pChild->text);
+
+            // allocate memory for file name
+            pColladaImage->m_pFileName = (char*)malloc((nameLen + 1) * sizeof(char));
+
+            if (!pColladaImage->m_pFileName)
+                return 0;
+
+            // read the file name
+            memcpy(pColladaImage->m_pFileName, pChild->text, nameLen);
+            pColladaImage->m_pFileName[nameLen] = 0x0;
+        }
+    }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
+void csrColladaImagesInit(CSR_Collada_Images* pColladaImages)
+{
+    if (!pColladaImages)
+        return;
+
+    pColladaImages->m_pImages = 0;
+    pColladaImages->m_Count   = 0;
+}
+//---------------------------------------------------------------------------
+void csrColladaImagesRelease(CSR_Collada_Images* pColladaImages)
+{
+    if (!pColladaImages)
+        return;
+
+    // free the images
+    if (pColladaImages->m_pImages)
+    {
+        size_t i;
+
+        // iterate through images to free
+        for (i = 0; i < pColladaImages->m_Count; ++i)
+            // free the image content
+            csrColladaImageRelease(&pColladaImages->m_pImages[i]);
+
+        // free the images container
+        free(pColladaImages->m_pImages);
+    }
+}
+//---------------------------------------------------------------------------
+int csrColladaImagesRead(XMLNode* pNode, CSR_Collada_Images* pColladaImages)
+{
+    size_t i;
+    size_t len;
+
+    if (!pNode)
+        return 0;
+
+    if (!pColladaImages)
+        return 0;
+
+    // iterate through node children
+    for (i = 0; i < (size_t)pNode->n_children; ++i)
+    {
+        // get next child
+        XMLNode* pChild = pNode->children[i];
+
+        if (!pChild)
+            return 0;
+
+        // measure tag name length
+        len = strlen(pChild->tag);
+
+        // search for tag to read
+        if (len == strlen(M_Collada_Image_Tag) &&
+            memcmp(pChild->tag, M_Collada_Image_Tag, len) == 0)
+        {
+            const size_t index = pColladaImages->m_Count;
+
+            // add a new image in the array
+            CSR_Collada_Image* pImages =
+                    (CSR_Collada_Image*)csrMemoryAlloc(pColladaImages->m_pImages,
+                                                       sizeof(CSR_Collada_Image),
+                                                       pColladaImages->m_Count + 1);
+
+            // succeeded?
+            if (!pImages)
+                return 0;
+
+            // set new image array in the images
+            pColladaImages->m_pImages = pImages;
+            ++pColladaImages->m_Count;
+
+            // initialize newly added image
+            csrColladaImageInit(&pColladaImages->m_pImages[index]);
+
+            // read it
+            if (!csrColladaImageRead(pChild, &pColladaImages->m_pImages[index]))
+                return 0;
+        }
+    }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
+void csrColladaInstanceEffectInit(CSR_Collada_Instance_Effect* pInstanceEffect)
+{
+    if (!pInstanceEffect)
+        return;
+
+    pInstanceEffect->m_pUrl = 0;
+}
+//---------------------------------------------------------------------------
+void csrColladaInstanceEffectRelease(CSR_Collada_Instance_Effect* pInstanceEffect)
+{
+    if (!pInstanceEffect)
+        return;
+
+    // free the url
+    if (pInstanceEffect->m_pUrl)
+        free(pInstanceEffect->m_pUrl);
+}
+//---------------------------------------------------------------------------
+int csrColladaInstanceEffectRead(XMLNode* pNode, CSR_Collada_Instance_Effect* pInstanceEffect)
+{
+    size_t i;
+    size_t len;
+
+    if (!pNode)
+        return 0;
+
+    if (!pInstanceEffect)
+        return 0;
+
+    // node contains attributes?
+    if ((size_t)pNode->n_attributes)
+    {
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
+        XMLAttribute* pAttributes;
+
+        // get attribute list
+        pAttributes = pNode->attributes;
+
+        // found it?
+        if (!pAttributes)
+            return 0;
+
+        // iterate through attributes
+        for (i = 0; i < (size_t)pNode->n_attributes; ++i)
+        {
+            // measure attribute name length
+            len = strlen(pAttributes[i].name);
+
+            // search for attribute to read
+            if (len == strlen(M_Collada_Url_Attribute) &&
+                memcmp(pAttributes[i].name, M_Collada_Url_Attribute, len) == 0)
+                csrColladaReadAttribValue(&pAttributes[i], &pInstanceEffect->m_pUrl);
+        }
+    }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
+void csrColladaMaterialInit(CSR_Collada_Material* pMaterial)
+{
+    if (!pMaterial)
+        return;
+
+    pMaterial->m_pId             = 0;
+    pMaterial->m_pName           = 0;
+    pMaterial->m_pInstanceEffect = 0;
+}
+//---------------------------------------------------------------------------
+void csrColladaMaterialRelease(CSR_Collada_Material* pMaterial)
+{
+    if (!pMaterial)
+        return;
+
+    // free the identifier
+    if (pMaterial->m_pId)
+        free(pMaterial->m_pId);
+
+    // free the name
+    if (pMaterial->m_pName)
+        free(pMaterial->m_pName);
+
+    // free the instance effect
+    if (pMaterial->m_pInstanceEffect)
+    {
+        // free the instance effect content
+        csrColladaInstanceEffectRelease(pMaterial->m_pInstanceEffect);
+
+        // free the instance effect container
+        free(pMaterial->m_pInstanceEffect);
+    }
+}
+//---------------------------------------------------------------------------
+int csrColladaMaterialRead(XMLNode* pNode, CSR_Collada_Material* pMaterial)
+{
+    size_t i;
+    size_t len;
+
+    if (!pNode)
+        return 0;
+
+    if (!pMaterial)
+        return 0;
+
+    // node contains attributes?
+    if ((size_t)pNode->n_attributes)
+    {
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
+        XMLAttribute* pAttributes;
+
+        // get attribute list
+        pAttributes = pNode->attributes;
+
+        // found it?
+        if (!pAttributes)
+            return 0;
+
+        // iterate through attributes
+        for (i = 0; i < (size_t)pNode->n_attributes; ++i)
+        {
+            // measure attribute name length
+            len = strlen(pAttributes[i].name);
+
+            // search for attribute to read
+            if (len == strlen(M_Collada_ID_Attribute) &&
+                memcmp(pAttributes[i].name, M_Collada_ID_Attribute, len) == 0)
+                csrColladaReadAttribValue(&pAttributes[i], &pMaterial->m_pId);
+            else
+            if (len == strlen(M_Collada_Name_Attribute) &&
+                memcmp(pAttributes[i].name, M_Collada_Name_Attribute, len) == 0)
+                csrColladaReadAttribValue(&pAttributes[i], &pMaterial->m_pName);
+        }
+    }
+
+    // iterate through node children
+    for (i = 0; i < (size_t)pNode->n_children; ++i)
+    {
+        // get next child
+        XMLNode* pChild = pNode->children[i];
+
+        if (!pChild)
+            return 0;
+
+        // measure tag name length
+        len = strlen(pChild->tag);
+
+        // search for tag to read
+        if (len == strlen(M_Collada_Instance_Effect_Tag) &&
+            memcmp(pChild->tag, M_Collada_Instance_Effect_Tag, len) == 0)
+        {
+            // only one instance effect is allowed by material
+            if (pMaterial->m_pInstanceEffect)
+                return 0;
+
+            pMaterial->m_pInstanceEffect = (CSR_Collada_Instance_Effect*)malloc(sizeof(CSR_Collada_Instance_Effect));
+
+            // succeeded?
+            if (!pMaterial->m_pInstanceEffect)
+                return 0;
+
+            // initialize newly added instance effect
+            csrColladaInstanceEffectInit(pMaterial->m_pInstanceEffect);
+
+            // read it
+            if (!csrColladaInstanceEffectRead(pChild, pMaterial->m_pInstanceEffect))
+                return 0;
+        }
+    }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
+void csrColladaMaterialsInit(CSR_Collada_Materials* pMaterials)
+{
+    if (!pMaterials)
+        return;
+
+    pMaterials->m_pMaterials = 0;
+    pMaterials->m_Count      = 0;
+}
+//---------------------------------------------------------------------------
+void csrColladaMaterialsRelease(CSR_Collada_Materials* pMaterials)
+{
+    if (!pMaterials)
+        return;
+
+    // free the material array
+    if (pMaterials->m_pMaterials)
+    {
+        size_t i;
+
+        // iterate through materials to free
+        for (i = 0; i < pMaterials->m_Count; ++i)
+            // free the material content
+            csrColladaMaterialRelease(&pMaterials->m_pMaterials[i]);
+
+        // free the material container
+        free(pMaterials->m_pMaterials);
+    }
+}
+//---------------------------------------------------------------------------
+int csrColladaMaterialsRead(XMLNode* pNode, CSR_Collada_Materials* pMaterials)
+{
+    size_t i;
+    size_t len;
+
+    if (!pNode)
+        return 0;
+
+    if (!pMaterials)
+        return 0;
+
+    // iterate through node children
+    for (i = 0; i < (size_t)pNode->n_children; ++i)
+    {
+        // get next child
+        XMLNode* pChild = pNode->children[i];
+
+        if (!pChild)
+            return 0;
+
+        // measure tag name length
+        len = strlen(pChild->tag);
+
+        // search for tag to read
+        if (len == strlen(M_Collada_Material_Tag) &&
+            memcmp(pChild->tag, M_Collada_Material_Tag, len) == 0)
+        {
+            const size_t index = pMaterials->m_Count;
+
+            // add a new material in the array
+            CSR_Collada_Material* pMaterialArray =
+                    (CSR_Collada_Material*)csrMemoryAlloc(pMaterials->m_pMaterials,
+                                                          sizeof(CSR_Collada_Material),
+                                                          pMaterials->m_Count + 1);
+
+            // succeeded?
+            if (!pMaterialArray)
+                return 0;
+
+            // set new material array in the materials container
+            pMaterials->m_pMaterials = pMaterialArray;
+            ++pMaterials->m_Count;
+
+            // initialize newly added material
+            csrColladaMaterialInit(&pMaterials->m_pMaterials[index]);
+
+            // read it
+            if (!csrColladaMaterialRead(pChild, &pMaterials->m_pMaterials[index]))
+                return 0;
+        }
+    }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
+void csrColladaSurfaceInit(CSR_Collada_Surface* pColladaSurface)
+{
+    if (!pColladaSurface)
+        return;
+
+    pColladaSurface->m_pType     = 0;
+    pColladaSurface->m_pInitFrom = 0;
+    pColladaSurface->m_pFormat   = 0;
+}
+//---------------------------------------------------------------------------
+void csrColladaSurfaceRelease(CSR_Collada_Surface* pColladaSurface)
+{
+    if (!pColladaSurface)
+        return;
+
+    // free the type
+    if (pColladaSurface->m_pType)
+        free(pColladaSurface->m_pType);
+
+    // free the init from target link
+    if (pColladaSurface->m_pInitFrom)
+        free(pColladaSurface->m_pInitFrom);
+
+    // free the format
+    if (pColladaSurface->m_pFormat)
+        free(pColladaSurface->m_pFormat);
+}
+//---------------------------------------------------------------------------
+int csrColladaSurfaceRead(XMLNode* pNode, CSR_Collada_Surface* pColladaSurface)
+{
+    size_t i;
+    size_t len;
+
+    if (!pNode)
+        return 0;
+
+    if (!pColladaSurface)
+        return 0;
+
+    // node contains attributes?
+    if ((size_t)pNode->n_attributes)
+    {
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
+        XMLAttribute* pAttributes;
+
+        // get attribute list
+        pAttributes = pNode->attributes;
+
+        // found it?
+        if (!pAttributes)
+            return 0;
+
+        // iterate through attributes
+        for (i = 0; i < (size_t)pNode->n_attributes; ++i)
+        {
+            // measure attribute name length
+            len = strlen(pAttributes[i].name);
+
+            // search for attribute to read
+            if (len == strlen(M_Collada_Type_Attribute) &&
+                memcmp(pAttributes[i].name, M_Collada_Type_Attribute, len) == 0)
+                csrColladaReadAttribValue(&pAttributes[i], &pColladaSurface->m_pType);
+        }
+    }
+
+    // iterate through node children
+    for (i = 0; i < (size_t)pNode->n_children; ++i)
+    {
+        // get next child
+        XMLNode* pChild = pNode->children[i];
+
+        if (!pChild)
+            return 0;
+
+        // measure tag name length
+        len = strlen(pChild->tag);
+
+        // search for tag to read
+        if (len == strlen(M_Collada_Init_From_Tag) &&
+            memcmp(pChild->tag, M_Collada_Init_From_Tag, len) == 0)
+        {
+            const size_t textLen = strlen(pChild->text);
+
+            // allocate memory for init from target link
+            pColladaSurface->m_pInitFrom = (char*)malloc((textLen + 1) * sizeof(char));
+
+            if (!pColladaSurface->m_pInitFrom)
+                return 0;
+
+            // read the init from target link
+            memcpy(pColladaSurface->m_pInitFrom, pChild->text, textLen);
+            pColladaSurface->m_pInitFrom[textLen] = 0x0;
+        }
+        else
+        if (len == strlen(M_Collada_Format_Tag) &&
+            memcmp(pChild->tag, M_Collada_Format_Tag, len) == 0)
+        {
+            const size_t textLen = strlen(pChild->text);
+
+            // allocate memory for format description
+            pColladaSurface->m_pFormat = (char*)malloc((textLen + 1) * sizeof(char));
+
+            if (!pColladaSurface->m_pFormat)
+                return 0;
+
+            // read the format description
+            memcpy(pColladaSurface->m_pFormat, pChild->text, textLen);
+            pColladaSurface->m_pFormat[textLen] = 0x0;
+        }
+    }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
+void csrColladaNewParamInit(CSR_Collada_New_Param* pColladaNewParam)
+{
+    if (!pColladaNewParam)
+        return;
+
+    pColladaNewParam->m_pSid     = 0;
+    pColladaNewParam->m_pSurface = 0;
+}
+//---------------------------------------------------------------------------
+void csrColladaNewParamRelease(CSR_Collada_New_Param* pColladaNewParam)
+{
+    if (!pColladaNewParam)
+        return;
+
+    // free the identifier
+    if (pColladaNewParam->m_pSid)
+        free(pColladaNewParam->m_pSid);
+
+    // free the surface
+    if (pColladaNewParam->m_pSurface)
+    {
+        // free the surface content
+        csrColladaSurfaceRelease(pColladaNewParam->m_pSurface);
+
+        // free the surface container
+        free(pColladaNewParam->m_pSurface);
+    }
+}
+//---------------------------------------------------------------------------
+int csrColladaNewParamRead(XMLNode* pNode, CSR_Collada_New_Param* pColladaNewParam)
+{
+    size_t i;
+    size_t len;
+
+    if (!pNode)
+        return 0;
+
+    if (!pColladaNewParam)
+        return 0;
+
+    // node contains attributes?
+    if ((size_t)pNode->n_attributes)
+    {
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
+        XMLAttribute* pAttributes;
+
+        // get attribute list
+        pAttributes = pNode->attributes;
+
+        // found it?
+        if (!pAttributes)
+            return 0;
+
+        // iterate through attributes
+        for (i = 0; i < (size_t)pNode->n_attributes; ++i)
+        {
+            // measure attribute name length
+            len = strlen(pAttributes[i].name);
+
+            // search for attribute to read
+            if (len == strlen(M_Collada_SID_Attribute) &&
+                memcmp(pAttributes[i].name, M_Collada_SID_Attribute, len) == 0)
+                csrColladaReadAttribValue(&pAttributes[i], &pColladaNewParam->m_pSid);
+        }
+    }
+
+    // iterate through node children
+    for (i = 0; i < (size_t)pNode->n_children; ++i)
+    {
+        // get next child
+        XMLNode* pChild = pNode->children[i];
+
+        if (!pChild)
+            return 0;
+
+        // measure tag name length
+        len = strlen(pChild->tag);
+
+        // search for tag to read
+        if (len == strlen(M_Collada_Surface_Tag) &&
+            memcmp(pChild->tag, M_Collada_Surface_Tag, len) == 0)
+        {
+            // only one surface may be created per new param
+            if (pColladaNewParam->m_pSurface)
+                return 0;
+
+            // create a new surface
+            pColladaNewParam->m_pSurface = (CSR_Collada_Surface*)malloc(sizeof(CSR_Collada_Surface));
+
+            // succeeded?
+            if (!pColladaNewParam->m_pSurface)
+                return 0;
+
+            // initialize newly created surface
+            csrColladaSurfaceInit(pColladaNewParam->m_pSurface);
+
+            // read it
+            if (!csrColladaSurfaceRead(pChild, pColladaNewParam->m_pSurface))
+                return 0;
+        }
+    }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
+void csrColladaProfileCommonInit(CSR_Collada_Profile_Common* pColladaProfileCommon)
+{
+    if (!pColladaProfileCommon)
+        return;
+
+    pColladaProfileCommon->m_pNewParams = 0;
+    pColladaProfileCommon->m_Count      = 0;
+}
+//---------------------------------------------------------------------------
+void csrColladaProfileCommonRelease(CSR_Collada_Profile_Common* pColladaProfileCommon)
+{
+    if (!pColladaProfileCommon)
+        return;
+
+    // free the new parameter array
+    if (pColladaProfileCommon->m_pNewParams)
+    {
+        size_t i;
+
+        // iterate through new parameters to free
+        for (i = 0; i < pColladaProfileCommon->m_Count; ++i)
+            // free the new parameters content
+            csrColladaNewParamRelease(&pColladaProfileCommon->m_pNewParams[i]);
+
+        // free the new parameters container
+        free(pColladaProfileCommon->m_pNewParams);
+    }
+}
+//---------------------------------------------------------------------------
+int csrColladaProfileCommonRead(XMLNode* pNode, CSR_Collada_Profile_Common* pColladaProfileCommon)
+{
+    size_t i;
+    size_t len;
+
+    if (!pNode)
+        return 0;
+
+    if (!pColladaProfileCommon)
+        return 0;
+
+    // iterate through node children
+    for (i = 0; i < (size_t)pNode->n_children; ++i)
+    {
+        // get next child
+        XMLNode* pChild = pNode->children[i];
+
+        if (!pChild)
+            return 0;
+
+        // measure tag name length
+        len = strlen(pChild->tag);
+
+        // search for tag to read
+        if (len == strlen(M_Collada_New_Param_Tag) &&
+            memcmp(pChild->tag, M_Collada_New_Param_Tag, len) == 0)
+        {
+            const size_t index = pColladaProfileCommon->m_Count;
+
+            // add a new parameter in the array
+            CSR_Collada_New_Param* pNewParams =
+                    (CSR_Collada_New_Param*)csrMemoryAlloc(pColladaProfileCommon->m_pNewParams,
+                                                           sizeof(CSR_Collada_New_Param),
+                                                           pColladaProfileCommon->m_Count + 1);
+
+            // succeeded?
+            if (!pNewParams)
+                return 0;
+
+            // set new parameter array in the accessor
+            pColladaProfileCommon->m_pNewParams = pNewParams;
+            ++pColladaProfileCommon->m_Count;
+
+            // initialize newly added parameter
+            csrColladaNewParamInit(&pColladaProfileCommon->m_pNewParams[index]);
+
+            // read it
+            if (!csrColladaNewParamRead(pChild, &pColladaProfileCommon->m_pNewParams[index]))
+                return 0;
+        }
+    }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
+void csrColladaEffectInit(CSR_Collada_Effect* pColladaEffect)
+{
+    if (!pColladaEffect)
+        return;
+
+    pColladaEffect->m_pId            = 0;
+    pColladaEffect->m_pName          = 0;
+    pColladaEffect->m_pProfileCommon = 0;
+}
+//---------------------------------------------------------------------------
+void csrColladaEffectRelease(CSR_Collada_Effect* pColladaEffect)
+{
+    if (!pColladaEffect)
+        return;
+
+    // free the identifier
+    if (pColladaEffect->m_pId)
+        free(pColladaEffect->m_pId);
+
+    // free the name
+    if (pColladaEffect->m_pName)
+        free(pColladaEffect->m_pName);
+
+    // free the profile common
+    if (pColladaEffect->m_pProfileCommon)
+    {
+        // free the profile common content
+        csrColladaProfileCommonRelease(pColladaEffect->m_pProfileCommon);
+
+        // free the profile common container
+        free(pColladaEffect->m_pProfileCommon);
+    }
+}
+//---------------------------------------------------------------------------
+int csrColladaEffectRead(XMLNode* pNode, CSR_Collada_Effect* pColladaEffect)
+{
+    size_t i;
+    size_t len;
+
+    if (!pNode)
+        return 0;
+
+    if (!pColladaEffect)
+        return 0;
+
+    // node contains attributes?
+    if ((size_t)pNode->n_attributes)
+    {
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
+        XMLAttribute* pAttributes;
+
+        // get attribute list
+        pAttributes = pNode->attributes;
+
+        // found it?
+        if (!pAttributes)
+            return 0;
+
+        // iterate through attributes
+        for (i = 0; i < (size_t)pNode->n_attributes; ++i)
+        {
+            // measure attribute name length
+            len = strlen(pAttributes[i].name);
+
+            // search for attribute to read
+            if (len == strlen(M_Collada_ID_Attribute) &&
+                memcmp(pAttributes[i].name, M_Collada_ID_Attribute, len) == 0)
+                csrColladaReadAttribValue(&pAttributes[i], &pColladaEffect->m_pId);
+            else
+            if (len == strlen(M_Collada_Name_Attribute) &&
+                memcmp(pAttributes[i].name, M_Collada_Name_Attribute, len) == 0)
+                csrColladaReadAttribValue(&pAttributes[i], &pColladaEffect->m_pName);
+        }
+    }
+
+    // iterate through node children
+    for (i = 0; i < (size_t)pNode->n_children; ++i)
+    {
+        // get next child
+        XMLNode* pChild = pNode->children[i];
+
+        if (!pChild)
+            return 0;
+
+        // measure tag name length
+        len = strlen(pChild->tag);
+
+        // search for tag to read
+        if (len == strlen(M_Collada_Profile_Common_Tag) &&
+            memcmp(pChild->tag, M_Collada_Profile_Common_Tag, len) == 0)
+        {
+            // only one profile common can exist per effect
+            if (pColladaEffect->m_pProfileCommon)
+                return 0;
+
+            // create a new profile common
+            pColladaEffect->m_pProfileCommon =
+                    (CSR_Collada_Profile_Common*)malloc(sizeof(CSR_Collada_Profile_Common));
+
+            // succeeded?
+            if (!pColladaEffect->m_pProfileCommon)
+                return 0;
+
+            // initialize newly created profile common
+            csrColladaProfileCommonInit(pColladaEffect->m_pProfileCommon);
+
+            // read it
+            if (!csrColladaProfileCommonRead(pChild, pColladaEffect->m_pProfileCommon))
+                return 0;
+        }
+    }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
+void csrColladaEffectsInit(CSR_Collada_Effects* pColladaEffects)
+{
+    if (!pColladaEffects)
+        return;
+
+    pColladaEffects->m_pEffects = 0;
+    pColladaEffects->m_Count    = 0;
+}
+//---------------------------------------------------------------------------
+void csrColladaEffectsRelease(CSR_Collada_Effects* pColladaEffects)
+{
+    if (!pColladaEffects)
+        return;
+
+    // free the effect array
+    if (pColladaEffects->m_pEffects)
+    {
+        size_t i;
+
+        // iterate through effects to free
+        for (i = 0; i < pColladaEffects->m_Count; ++i)
+            // free the effect content
+            csrColladaEffectRelease(&pColladaEffects->m_pEffects[i]);
+
+        // free the effects container
+        free(pColladaEffects->m_pEffects);
+    }
+}
+//---------------------------------------------------------------------------
+int csrColladaEffectsRead(XMLNode* pNode, CSR_Collada_Effects* pColladaEffects)
+{
+    size_t i;
+    size_t len;
+
+    if (!pNode)
+        return 0;
+
+    if (!pColladaEffects)
+        return 0;
+
+    // iterate through node children
+    for (i = 0; i < (size_t)pNode->n_children; ++i)
+    {
+        // get next child
+        XMLNode* pChild = pNode->children[i];
+
+        if (!pChild)
+            return 0;
+
+        // measure tag name length
+        len = strlen(pChild->tag);
+
+        // search for tag to read
+        if (len == strlen(M_Collada_Effect_Tag) &&
+            memcmp(pChild->tag, M_Collada_Effect_Tag, len) == 0)
+        {
+            const size_t index = pColladaEffects->m_Count;
+
+            // add a new effect in the array
+            CSR_Collada_Effect* pEffects =
+                    (CSR_Collada_Effect*)csrMemoryAlloc(pColladaEffects->m_pEffects,
+                                                        sizeof(CSR_Collada_Effect),
+                                                        pColladaEffects->m_Count + 1);
+
+            // succeeded?
+            if (!pEffects)
+                return 0;
+
+            // set new effect array in the accessor
+            pColladaEffects->m_pEffects = pEffects;
+            ++pColladaEffects->m_Count;
+
+            // initialize newly added effect
+            csrColladaEffectInit(&pColladaEffects->m_pEffects[index]);
+
+            // read it
+            if (!csrColladaEffectRead(pChild, &pColladaEffects->m_pEffects[index]))
+                return 0;
+        }
+    }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
 void csrColladaAccessorInit(CSR_Collada_Accessor* pColladaAccessor)
 {
     if (!pColladaAccessor)
@@ -1306,12 +2414,12 @@ void csrColladaAccessorRelease(CSR_Collada_Accessor* pColladaAccessor)
     {
         size_t i;
 
-        // iterate through mesh infos to free
+        // iterate through parameters to free
         for (i = 0; i < pColladaAccessor->m_ParamCount; ++i)
-            // free the parameter content
+            // free the accessor content
             csrColladaParamRelease(&pColladaAccessor->m_pParams[i]);
 
-        // free the name array container
+        // free the parameter container
         free(pColladaAccessor->m_pParams);
     }
 }
@@ -1330,7 +2438,11 @@ int csrColladaAccessorRead(XMLNode* pNode, CSR_Collada_Accessor* pColladaAccesso
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -1433,12 +2545,85 @@ int csrColladaAccessorRead(XMLNode* pNode, CSR_Collada_Accessor* pColladaAccesso
     return 1;
 }
 //---------------------------------------------------------------------------
+void csrColladaInstMaterialInit(CSR_Collada_Instance_Material* pColladaInstMaterial)
+{
+    if (!pColladaInstMaterial)
+        return;
+
+    pColladaInstMaterial->m_pSymbol = 0;
+    pColladaInstMaterial->m_pTarget = 0;
+}
+//---------------------------------------------------------------------------
+void csrColladaInstMaterialRelease(CSR_Collada_Instance_Material* pColladaInstMaterial)
+{
+    if (!pColladaInstMaterial)
+        return;
+
+    // free the symbol
+    if (pColladaInstMaterial->m_pSymbol)
+        free(pColladaInstMaterial->m_pSymbol);
+
+    // free the target
+    if (pColladaInstMaterial->m_pTarget)
+        free(pColladaInstMaterial->m_pTarget);
+}
+//---------------------------------------------------------------------------
+int csrColladaInstMaterialRead(XMLNode* pNode, CSR_Collada_Instance_Material* pColladaInstMaterial)
+{
+    size_t i;
+    size_t len;
+
+    if (!pNode)
+        return 0;
+
+    if (!pColladaInstMaterial)
+        return 0;
+
+    // node contains attributes?
+    if ((size_t)pNode->n_attributes)
+    {
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
+        XMLAttribute* pAttributes;
+
+        // get attribute list
+        pAttributes = pNode->attributes;
+
+        // found it?
+        if (!pAttributes)
+            return 0;
+
+        // iterate through attributes
+        for (i = 0; i < (size_t)pNode->n_attributes; ++i)
+        {
+            // measure attribute name length
+            len = strlen(pAttributes[i].name);
+
+            // search for attribute to read
+            if (len == strlen(M_Collada_Symbol_Attribute) &&
+                memcmp(pAttributes[i].name, M_Collada_Symbol_Attribute, len) == 0)
+                csrColladaReadAttribValue(&pAttributes[i], &pColladaInstMaterial->m_pSymbol);
+            else
+            if (len == strlen(M_Collada_Target_Attribute) &&
+                memcmp(pAttributes[i].name, M_Collada_Target_Attribute, len) == 0)
+                csrColladaReadAttribValue(&pAttributes[i], &pColladaInstMaterial->m_pTarget);
+        }
+    }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
 void csrColladaTechCommonInit(CSR_Collada_Technique_Common* pColladaTechCommon)
 {
     if (!pColladaTechCommon)
         return;
 
-    pColladaTechCommon->m_pAccessor = 0;
+    pColladaTechCommon->m_pAccessor             = 0;
+    pColladaTechCommon->m_pInstanceMaterials    = 0;
+    pColladaTechCommon->m_InstanceMaterialCount = 0;
 }
 //---------------------------------------------------------------------------
 void csrColladaTechCommonRelease(CSR_Collada_Technique_Common* pColladaTechCommon)
@@ -1451,6 +2636,20 @@ void csrColladaTechCommonRelease(CSR_Collada_Technique_Common* pColladaTechCommo
     {
         csrColladaAccessorRelease(pColladaTechCommon->m_pAccessor);
         free(pColladaTechCommon->m_pAccessor);
+    }
+
+    // free the instance material
+    if (pColladaTechCommon->m_pInstanceMaterials)
+    {
+        size_t i;
+
+        // iterate through instance materials to free
+        for (i = 0; i < pColladaTechCommon->m_InstanceMaterialCount; ++i)
+            // free the instance material content
+            csrColladaInstMaterialRelease(&pColladaTechCommon->m_pInstanceMaterials[i]);
+
+        // free the instance material container
+        free(pColladaTechCommon->m_pInstanceMaterials);
     }
 }
 //---------------------------------------------------------------------------
@@ -1497,6 +2696,105 @@ int csrColladaTechCommonRead(XMLNode* pNode, CSR_Collada_Technique_Common* pColl
 
             // read it
             if (!csrColladaAccessorRead(pChild, pColladaTechCommon->m_pAccessor))
+                return 0;
+        }
+        else
+        if (len == strlen(M_Collada_Instance_Material_Tag) &&
+            memcmp(pChild->tag, M_Collada_Instance_Material_Tag, len) == 0)
+        {
+            const size_t index = pColladaTechCommon->m_InstanceMaterialCount;
+
+            // add a new instance material in the array
+            CSR_Collada_Instance_Material* pInstanceMaterials =
+                    (CSR_Collada_Instance_Material*)csrMemoryAlloc(pColladaTechCommon->m_pInstanceMaterials,
+                                                                   sizeof(CSR_Collada_Instance_Material),
+                                                                   pColladaTechCommon->m_InstanceMaterialCount + 1);
+
+            // succeeded?
+            if (!pInstanceMaterials)
+                return 0;
+
+            // set new instance material in the technique common
+            pColladaTechCommon->m_pInstanceMaterials = pInstanceMaterials;
+            ++pColladaTechCommon->m_InstanceMaterialCount;
+
+            // initialize newly added instance material
+            csrColladaInstMaterialInit(&pColladaTechCommon->m_pInstanceMaterials[index]);
+
+            // read it
+            if (!csrColladaInstMaterialRead(pChild, &pColladaTechCommon->m_pInstanceMaterials[index]))
+                return 0;
+        }
+    }
+
+    return 1;
+}
+//---------------------------------------------------------------------------
+void csrColladaBindMaterialInit(CSR_Collada_Bind_Material* pColladaBindMaterial)
+{
+    if (!pColladaBindMaterial)
+        return;
+
+    pColladaBindMaterial->m_pTechCommon = 0;
+}
+//---------------------------------------------------------------------------
+void csrColladaBindMaterialRelease(CSR_Collada_Bind_Material* pColladaBindMaterial)
+{
+    if (!pColladaBindMaterial)
+        return;
+
+    // free the technique common
+    if (pColladaBindMaterial->m_pTechCommon)
+    {
+        csrColladaTechCommonRelease(pColladaBindMaterial->m_pTechCommon);
+        free(pColladaBindMaterial->m_pTechCommon);
+    }
+}
+//---------------------------------------------------------------------------
+int csrColladaBindMaterialRead(XMLNode* pNode, CSR_Collada_Bind_Material* pColladaBindMaterial)
+{
+    size_t i;
+    size_t len;
+
+    if (!pNode)
+        return 0;
+
+    if (!pColladaBindMaterial)
+        return 0;
+
+    // iterate through node children
+    for (i = 0; i < (size_t)pNode->n_children; ++i)
+    {
+        // get next child
+        XMLNode* pChild = pNode->children[i];
+
+        if (!pChild)
+            return 0;
+
+        // measure tag name length
+        len = strlen(pChild->tag);
+
+        // search for tag to read
+        if (len == strlen(M_Collada_Technique_Common_Tag) &&
+            memcmp(pChild->tag, M_Collada_Technique_Common_Tag, len) == 0)
+        {
+            // only one technique common is allowed
+            if (pColladaBindMaterial->m_pTechCommon)
+                return 0;
+
+            // add a new technique common in the array
+            pColladaBindMaterial->m_pTechCommon =
+                    (CSR_Collada_Technique_Common*)malloc(sizeof(CSR_Collada_Technique_Common));
+
+            // succeeded?
+            if (!pColladaBindMaterial->m_pTechCommon)
+                return 0;
+
+            // initialize newly added technique common
+            csrColladaTechCommonInit(pColladaBindMaterial->m_pTechCommon);
+
+            // read it
+            if (!csrColladaTechCommonRead(pChild, pColladaBindMaterial->m_pTechCommon))
                 return 0;
         }
     }
@@ -1561,7 +2859,11 @@ int csrColladaSourceRead(XMLNode* pNode, CSR_Collada_Source* pColladaSource)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -1706,7 +3008,11 @@ int csrColladaInputRead(XMLNode* pNode, CSR_Collada_Input* pColladaInput)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -1819,7 +3125,11 @@ int csrColladaVerticesRead(XMLNode* pNode, CSR_Collada_Vertices* pColladaVertice
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -1891,6 +3201,7 @@ void csrColladaTrianglesInit(CSR_Collada_Triangles* pColladaTriangles)
     if (!pColladaTriangles)
         return;
 
+    pColladaTriangles->m_pMaterial       = 0;
     pColladaTriangles->m_Count           = 0;
     pColladaTriangles->m_pInputs         = 0;
     pColladaTriangles->m_InputCount      = 0;
@@ -1899,14 +3210,18 @@ void csrColladaTrianglesInit(CSR_Collada_Triangles* pColladaTriangles)
 //---------------------------------------------------------------------------
 void csrColladaTrianglesRelease(CSR_Collada_Triangles* pColladaTriangles)
 {
-    size_t i;
-
     if (!pColladaTriangles)
         return;
+
+    // free the material name
+    if (pColladaTriangles->m_pMaterial)
+        free(pColladaTriangles->m_pMaterial);
 
     // free the source array
     if (pColladaTriangles->m_pInputs)
     {
+        size_t i;
+
         // iterate through sources to free
         for (i = 0; i < pColladaTriangles->m_InputCount; ++i)
             csrColladaInputRelease(&pColladaTriangles->m_pInputs[i]);
@@ -1937,7 +3252,11 @@ int csrColladaTrianglesRead(XMLNode* pNode, CSR_Collada_Triangles* pColladaTrian
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -1954,6 +3273,10 @@ int csrColladaTrianglesRead(XMLNode* pNode, CSR_Collada_Triangles* pColladaTrian
             len = strlen(pAttributes[i].name);
 
             // search for attribute to read
+            if (len == strlen(M_Collada_Material_Attribute) &&
+                memcmp(pAttributes[i].name, M_Collada_Material_Attribute, len) == 0)
+                csrColladaReadAttribValue(&pAttributes[i], &pColladaTriangles->m_pMaterial);
+            else
             if (len == strlen(M_Collada_Count_Attribute) &&
                 memcmp(pAttributes[i].name, M_Collada_Count_Attribute, len) == 0)
             {
@@ -2098,10 +3421,15 @@ void csrColladaMeshRelease(CSR_Collada_Mesh* pColladaMesh)
 //---------------------------------------------------------------------------
 int csrColladaMeshRead(XMLNode* pNode, CSR_Collada_Mesh* pColladaMesh)
 {
-    size_t              i;
-    size_t              len;
-    size_t              index    = 0;
-    CSR_Collada_Source* pSources = 0;
+    size_t                  i;
+    size_t                  len;
+    #ifdef _MSC_VER
+        size_t              index    = 0;
+        CSR_Collada_Source* pSources = 0;
+    #else
+        size_t              index;
+        CSR_Collada_Source* pSources;
+    #endif
 
     if (!pNode)
         return 0;
@@ -2218,6 +3546,11 @@ int csrColladaMeshBuild(const CSR_VertexFormat*     pVertFormat,
     size_t                      j;
     size_t                      k;
     size_t                      stride       = 0;
+    #ifdef _MSC_VER
+        size_t                  inputCount   = 0;
+    #else
+        size_t                  inputCount;
+    #endif
     size_t                      indicesCount = 0;
     CSR_Collada_Vertices*       pVertices    = 0;
     CSR_Collada_Triangles*      pTriangles   = 0;
@@ -2517,7 +3850,7 @@ int csrColladaMeshBuild(const CSR_VertexFormat*     pVertFormat,
             CSR_Vector2 uv;
         #endif
 
-        index = pIndices->m_pData[i] * 3;
+        index = pIndices->m_pData[i] * pPositions->m_pTechCommon->m_pAccessor->m_Stride;
 
         // build the vertex
         vertex.m_X = pPositions->m_pFloatArray->m_pData[index];
@@ -2528,9 +3861,9 @@ int csrColladaMeshBuild(const CSR_VertexFormat*     pVertFormat,
         if (pMesh->m_pVB->m_Format.m_HasNormal && pNormals)
         {
             if (stride == 1)
-                index = pIndices->m_pData[i] * 3;
+                index = pIndices->m_pData[i] * pNormals->m_pTechCommon->m_pAccessor->m_Stride;
             else
-                index = pIndices->m_pData[i + 1] * 3;
+                index = pIndices->m_pData[i + 1] * pNormals->m_pTechCommon->m_pAccessor->m_Stride;
 
             // build the normal
             normal.m_X = pNormals->m_pFloatArray->m_pData[index];
@@ -2548,13 +3881,21 @@ int csrColladaMeshBuild(const CSR_VertexFormat*     pVertFormat,
         if (pMesh->m_pVB->m_Format.m_HasTexCoords && pTexCoords)
         {
             if (stride == 1)
-                index = pIndices->m_pData[i] * 2;
+                index = pIndices->m_pData[i] * pTexCoords->m_pTechCommon->m_pAccessor->m_Stride;
             else
-                index = pIndices->m_pData[i + 2] * 2;
+                index = pIndices->m_pData[i + 2] * pTexCoords->m_pTechCommon->m_pAccessor->m_Stride;
 
             // build the normal
             uv.m_X = pTexCoords->m_pFloatArray->m_pData[index];
             uv.m_Y = pTexCoords->m_pFloatArray->m_pData[index + 1];
+
+            // correct negative u value (considered as repeating from right)
+            if (uv.m_X < 0.0f)
+                uv.m_X = 1.0f + uv.m_X;
+
+            // correct negative v value (considered as repeating from bottom)
+            if (uv.m_Y < 0.0f)
+                uv.m_Y = 1.0f + uv.m_Y;
         }
         else
         {
@@ -2573,6 +3914,239 @@ int csrColladaMeshBuild(const CSR_VertexFormat*     pVertFormat,
     }
 
     return 1;
+}
+//---------------------------------------------------------------------------
+void csrColladaMeshLinkMaterials(CSR_Material*              pMaterial,
+                                 CSR_Collada_Mesh*          pColladaMesh,
+                                 CSR_Collada_Visual_Scenes* pColladaVisualScenes,
+                                 CSR_Collada_Materials*     pColladaMaterials,
+                                 CSR_Collada_Effects*       pColladaEffects,
+                                 CSR_Collada_Images*        pImages,
+                                 CSR_Mesh*                  pMesh,
+                           const CSR_fOnLoadTexture         fOnLoadTexture,
+                           const CSR_fOnApplySkin           fOnApplySkin,
+                           const CSR_fOnDeleteTexture       fOnDeleteTexture)
+{
+    size_t i;
+    size_t j;
+    size_t k;
+    size_t l;
+    size_t urlLen;
+
+    if (!pMaterial)
+        return;
+
+    if (!pColladaMesh)
+        return;
+
+    if (!pColladaVisualScenes)
+        return;
+
+    if (!pColladaMaterials)
+        return;
+
+    if (!pColladaEffects)
+        return;
+
+    if (!pImages)
+        return;
+
+    if (!pMesh)
+        return;
+
+    if (pMesh->m_pVB && !pMesh->m_pVB->m_Format.m_HasTexCoords)
+        return;
+
+    // iterate through mesh triangles
+    for (i = 0; i < pColladaMesh->m_TriangleCount; ++i)
+    {
+        size_t                         matLen;
+        size_t                         targetLen;
+        CSR_Collada_Instance_Material* pInstMaterial    = 0;
+        CSR_Collada_Material*          pColladaMaterial = 0;
+        CSR_Collada_Effect*            pColladaEffect   = 0;
+
+        // triangle should contain a material name
+        if (!pColladaMesh->m_pTriangles[i].m_pMaterial)
+            continue;
+
+        // get material name length
+        matLen = strlen(pColladaMesh->m_pTriangles[i].m_pMaterial);
+
+        // iterate through virtual scene items
+        for (j = 0; j < pColladaVisualScenes->m_VisualSceneCount; ++j)
+        {
+            // iterate through virtual scene node items
+            for (k = 0; k < pColladaVisualScenes->m_pVisualScenes[j].m_NodeCount; ++k)
+            {
+                if (!pColladaVisualScenes->m_pVisualScenes[j].m_pNodes[k].m_pInstanceCtrls)
+                    continue;
+
+                if (!pColladaVisualScenes->m_pVisualScenes[j].m_pNodes[k].m_pInstanceCtrls->m_pBindMaterial)
+                    continue;
+
+                if (!pColladaVisualScenes->m_pVisualScenes[j].m_pNodes[k].m_pInstanceCtrls->m_pBindMaterial->m_pTechCommon)
+                    continue;
+
+                // iterate through bind material items
+                for (l = 0; l < pColladaVisualScenes->m_pVisualScenes[j].m_pNodes[k].m_pInstanceCtrls->m_pBindMaterial->m_pTechCommon->m_InstanceMaterialCount; ++l)
+                {
+                    size_t symLen;
+
+                    if (!pColladaVisualScenes->m_pVisualScenes[j].m_pNodes[k].m_pInstanceCtrls->m_pBindMaterial->m_pTechCommon->m_pInstanceMaterials[l].m_pSymbol)
+                        continue;
+
+                    // get virtual scene material symbol name length
+                    symLen = strlen(pColladaVisualScenes->m_pVisualScenes[j].m_pNodes[k].m_pInstanceCtrls->m_pBindMaterial->m_pTechCommon->m_pInstanceMaterials[l].m_pSymbol);
+
+                    // found the instance material matching with the mesh?
+                    if (matLen == symLen &&
+                        strcmp(pColladaMesh->m_pTriangles[i].m_pMaterial,
+                               pColladaVisualScenes->m_pVisualScenes[j].m_pNodes[k].m_pInstanceCtrls->m_pBindMaterial->m_pTechCommon->m_pInstanceMaterials[l].m_pSymbol) == 0)
+                        // get it
+                        pInstMaterial = &pColladaVisualScenes->m_pVisualScenes[j].m_pNodes[k].m_pInstanceCtrls->m_pBindMaterial->m_pTechCommon->m_pInstanceMaterials[l];
+
+                    if (pInstMaterial)
+                        break;
+                }
+
+                if (pInstMaterial)
+                    break;
+            }
+
+            if (pInstMaterial)
+                break;
+        }
+
+        if (!pInstMaterial)
+            return;
+
+        // instance material should contain a defined target
+        if (!pInstMaterial->m_pTarget)
+            return;
+
+        // measure the target length
+        targetLen = strlen(pInstMaterial->m_pTarget);
+
+        // should at least contain a char (#)
+        if (targetLen < 2)
+            continue;
+
+        // iterate through materials
+        for (j = 0; j < pColladaMaterials->m_Count; ++j)
+        {
+            // measure the material identifier
+            const size_t idLen = strlen(pColladaMaterials->m_pMaterials[j].m_pId);
+
+            // found the material?
+            if (idLen == (targetLen - 1) &&
+                strcmp(pInstMaterial->m_pTarget + 1, pColladaMaterials->m_pMaterials[j].m_pId) == 0)
+            {
+                // get it
+                pColladaMaterial = &pColladaMaterials->m_pMaterials[j];
+                break;
+            }
+        }
+
+        if (!pColladaMaterial)
+            continue;
+
+        // material should contain a defined instance effect url
+        if (!pColladaMaterial->m_pInstanceEffect || !pColladaMaterial->m_pInstanceEffect->m_pUrl)
+            continue;
+
+        // measure the material identifier
+        urlLen = strlen(pColladaMaterial->m_pInstanceEffect->m_pUrl);
+
+        // should at least contain a char (#)
+        if (urlLen < 2)
+            continue;
+
+        // iterate through effects
+        for (j = 0; j < pColladaEffects->m_Count; ++j)
+        {
+            // measure the effect identifier
+            const size_t idLen = strlen(pColladaEffects->m_pEffects[j].m_pId);
+
+            // found the effect?
+            if (idLen == (urlLen - 1) &&
+                strcmp(pColladaMaterial->m_pInstanceEffect->m_pUrl + 1, pColladaEffects->m_pEffects[j].m_pId) == 0)
+            {
+                // get it
+                pColladaEffect = &pColladaEffects->m_pEffects[j];
+                break;
+            }
+        }
+
+        if (!pColladaEffect)
+            continue;
+
+        if (!pColladaEffect->m_pProfileCommon)
+            continue;
+
+        // iterate through effect profiles
+        for (j = 0; j < pColladaEffect->m_pProfileCommon->m_Count; ++j)
+        {
+            size_t initFromLen;
+
+            // should contain a surface
+            if (!pColladaEffect->m_pProfileCommon->m_pNewParams[j].m_pSurface)
+                continue;
+
+            // should contain an init from reference
+            if (!pColladaEffect->m_pProfileCommon->m_pNewParams[j].m_pSurface->m_pInitFrom)
+                continue;
+
+            // measure the init from reference
+            initFromLen =
+                    strlen(pColladaEffect->m_pProfileCommon->m_pNewParams[j].m_pSurface->m_pInitFrom);
+
+            // iterate through images
+            for (k = 0; k < pImages->m_Count; ++k)
+            {
+                // measure the image identifier
+                const size_t imgLen = strlen(pImages->m_pImages[k].m_pId);
+
+                // found the texture image to load?
+                if (initFromLen == imgLen &&
+                    strcmp(pColladaEffect->m_pProfileCommon->m_pNewParams[j].m_pSurface->m_pInitFrom,
+                            pImages->m_pImages[k].m_pId) == 0)
+                {
+                    // measure the image file name
+                    const size_t fileNameLen = strlen(pImages->m_pImages[k].m_pFileName);
+                          int    canRelease  = 0;
+
+                    // allocate memory for file name
+                    pMesh->m_Skin.m_Texture.m_pFileName = (char*)malloc((fileNameLen + 1) * sizeof(char));
+
+                    // succeeded?
+                    if (!pMesh->m_Skin.m_Texture.m_pFileName)
+                        continue;
+
+                    // copy the texture file name
+                    memcpy(pMesh->m_Skin.m_Texture.m_pFileName, pImages->m_pImages[k].m_pFileName, fileNameLen);
+                    pMesh->m_Skin.m_Texture.m_pFileName[fileNameLen] = 0x0;
+
+                    // load the texture
+                    if (fOnLoadTexture)
+                        pMesh->m_Skin.m_Texture.m_pBuffer = fOnLoadTexture(pMesh->m_Skin.m_Texture.m_pFileName);
+
+                    // apply the skin
+                    if (fOnApplySkin)
+                        fOnApplySkin(0, &pMesh->m_Skin, &canRelease);
+
+                    // can release the texture buffer?
+                    if (canRelease)
+                    {
+                        csrPixelBufferRelease(pMesh->m_Skin.m_Texture.m_pBuffer);
+                        pMesh->m_Skin.m_Texture.m_pBuffer = 0;
+                    }
+
+                    return;
+                }
+            }
+        }
+    }
 }
 //---------------------------------------------------------------------------
 void csrColladaGeometryInit(CSR_Collada_Geometry* pColladaGeometry)
@@ -2621,7 +4195,11 @@ int csrColladaGeometryRead(XMLNode* pNode, CSR_Collada_Geometry* pColladaGeometr
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -2911,7 +4489,11 @@ int csrColladaVertexWeightsRead(XMLNode* pNode, CSR_Collada_Vertex_Weights* pCol
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -3122,7 +4704,11 @@ int csrColladaSkinRead(XMLNode* pNode, CSR_Collada_Skin* pColladaSkin)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -3290,7 +4876,11 @@ int csrColladaControllerRead(XMLNode* pNode, CSR_Collada_Controller* pColladaCon
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -3487,7 +5077,11 @@ int csrColladaSamplerRead(XMLNode* pNode, CSR_Collada_Sampler* pColladaSampler)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -3592,7 +5186,11 @@ int csrColladaChannelRead(XMLNode* pNode, CSR_Collada_Channel* pColladaChannel)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -3714,7 +5312,11 @@ int csrColladaAnimationRead(XMLNode* pNode, CSR_Collada_Animation* pColladaAnima
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -4005,6 +5607,7 @@ void csrColladaInstanceCtrlInit(CSR_Collada_Instance_Controller* pColladaInstCtr
     pColladaInstCtrl->m_pUrl          = 0;
     pColladaInstCtrl->m_pSkeletons    = 0;
     pColladaInstCtrl->m_SkeletonCount = 0;
+    pColladaInstCtrl->m_pBindMaterial = 0;
 }
 //---------------------------------------------------------------------------
 void csrColladaInstanceCtrlRelease(CSR_Collada_Instance_Controller* pColladaInstCtrl)
@@ -4027,6 +5630,13 @@ void csrColladaInstanceCtrlRelease(CSR_Collada_Instance_Controller* pColladaInst
 
         free(pColladaInstCtrl->m_pSkeletons);
     }
+
+    // free the bind material
+    if (pColladaInstCtrl->m_pBindMaterial)
+    {
+        csrColladaBindMaterialRelease(pColladaInstCtrl->m_pBindMaterial);
+        free(pColladaInstCtrl->m_pBindMaterial);
+    }
 }
 //---------------------------------------------------------------------------
 int csrColladaInstanceCtrlRead(XMLNode* pNode, CSR_Collada_Instance_Controller* pColladaInstCtrl)
@@ -4043,7 +5653,11 @@ int csrColladaInstanceCtrlRead(XMLNode* pNode, CSR_Collada_Instance_Controller* 
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -4103,6 +5717,29 @@ int csrColladaInstanceCtrlRead(XMLNode* pNode, CSR_Collada_Instance_Controller* 
 
             // read it
             if (!csrColladaSkeletonRead(pChild, &pColladaInstCtrl->m_pSkeletons[index]))
+                return 0;
+        }
+        else
+        if (len == strlen(M_Collada_Bind_Material_Tag) &&
+            memcmp(pChild->tag, M_Collada_Bind_Material_Tag, len) == 0)
+        {
+            // only one bind material is allowed
+            if (pColladaInstCtrl->m_pBindMaterial)
+                return 0;
+
+            // create a new bind material
+            pColladaInstCtrl->m_pBindMaterial =
+                    (CSR_Collada_Bind_Material*)malloc(sizeof(CSR_Collada_Bind_Material));
+
+            // succeeded?
+            if (!pColladaInstCtrl->m_pBindMaterial)
+                return 0;
+
+            // initialize newly added bind material
+            csrColladaBindMaterialInit(pColladaInstCtrl->m_pBindMaterial);
+
+            // read it
+            if (!csrColladaBindMaterialRead(pChild, pColladaInstCtrl->m_pBindMaterial))
                 return 0;
         }
     }
@@ -4195,7 +5832,11 @@ int csrColladaNodeRead(XMLNode* pNode, CSR_Collada_Node* pParent, CSR_Collada_No
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -4499,7 +6140,11 @@ int csrColladaVisualSceneRead(XMLNode* pNode, CSR_Collada_Visual_Scene* pCollada
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        size_t        index = 0;
+        #ifdef _MSC_VER
+            size_t    index = 0;
+        #else
+            size_t    index;
+        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -5042,18 +6687,15 @@ int csrColladaMeshWeightsBuild(CSR_Collada_Geometry*   pGeometry,
         // iterate through vertex to weights pair
         for (j = 0; j < count; ++j)
         {
+            char* pBoneName;
+
             // calculate the joint and weight index
             const size_t curOffset   = baseOffset + (j * pSkin->m_pVertexWeights->m_InputCount);
             const size_t jointIndex  = pSkin->m_pVertexWeights->m_pVertexToBoneArray->m_pData[curOffset + jointPos];
             const size_t weightIndex = pSkin->m_pVertexWeights->m_pVertexToBoneArray->m_pData[curOffset + weightPos];
 
-            // todo -cFeature -oJean: Collada standard may use negative index,
-            //                        but for now assume that this will not happen
-            if (jointIndex < 0 || weightIndex < 0)
-                return 0;
-
             // get the bone name for which the weights should be applied
-            char* pBoneName = pJoints->m_pNameArray->m_pData[jointIndex];
+            pBoneName = pJoints->m_pNameArray->m_pData[jointIndex];
 
             // found it?
             if (!pBoneName)
@@ -5391,6 +7033,45 @@ int csrColladaAnimationBuild(CSR_Collada_Animation* pAnimation,
     return 1;
 }
 //---------------------------------------------------------------------------
+void csrColladaImageLibraryRelease(CSR_Collada_Images* pImageLibrary, size_t count)
+{
+    size_t i;
+
+    if (!pImageLibrary)
+        return;
+
+    for (i = 0; i < count; ++i)
+        csrColladaImagesRelease(&pImageLibrary[i]);
+
+    free(pImageLibrary);
+}
+//---------------------------------------------------------------------------
+void csrColladaMaterialLibraryRelease(CSR_Collada_Materials* pMaterialLibrary, size_t count)
+{
+    size_t i;
+
+    if (!pMaterialLibrary)
+        return;
+
+    for (i = 0; i < count; ++i)
+        csrColladaMaterialsRelease(&pMaterialLibrary[i]);
+
+    free(pMaterialLibrary);
+}
+//---------------------------------------------------------------------------
+void csrColladaEffectLibraryRelease(CSR_Collada_Effects* pEffectLibrary, size_t count)
+{
+    size_t i;
+
+    if (!pEffectLibrary)
+        return;
+
+    for (i = 0; i < count; ++i)
+        csrColladaEffectsRelease(&pEffectLibrary[i]);
+
+    free(pEffectLibrary);
+}
+//---------------------------------------------------------------------------
 void csrColladaGeometryLibraryRelease(CSR_Collada_Geometries* pGeometryLibrary, size_t count)
 {
     size_t i;
@@ -5461,26 +7142,44 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
                     const CSR_VertexCulling*    pVertCulling,
                     const CSR_Material*         pMaterial,
                           CSR_Collada*          pCollada,
-                    const CSR_fOnGetVertexColor fOnGetVertexColor)
+                    const CSR_fOnGetVertexColor fOnGetVertexColor,
+                    const CSR_fOnLoadTexture    fOnLoadTexture,
+                    const CSR_fOnApplySkin      fOnApplySkin,
+                    const CSR_fOnDeleteTexture  fOnDeleteTexture)
 {
-    XMLDoc                     doc;
-    size_t                     i;
-    size_t                     j;
-    size_t                     k;
-    size_t                     l;
-    size_t                     index            = 0;
-    size_t                     len              = 0;
-    size_t                     count            = 0;
-    size_t                     geometryCount    = 0;
-    size_t                     controllerCount  = 0;
-    size_t                     animationCount   = 0;
-    size_t                     visualSceneCount = 0;
-    CSR_Collada_Geometries*    pGeometries      = 0;
-    CSR_Collada_Controllers*   pControllers     = 0;
-    CSR_Collada_Animations*    pAnimations      = 0;
-    CSR_Collada_Visual_Scenes* pVisualScenes    = 0;
-    CSR_Mesh*                  pMesh            = 0;
-    CSR_Skin_Weights_Group*    pMeshWeights     = 0;
+    XMLDoc                      doc;
+    size_t                      i;
+    size_t                      j;
+    size_t                      k;
+    size_t                      l;
+    size_t                      index            = 0;
+    size_t                      len              = 0;
+    #ifdef _MSC_VER
+        size_t                  count            = 0;
+    #else
+        size_t                  count;
+    #endif
+    size_t                      imageCount       = 0;
+    size_t                      materialCount    = 0;
+    size_t                      effectCount      = 0;
+    size_t                      geometryCount    = 0;
+    size_t                      controllerCount  = 0;
+    size_t                      animationCount   = 0;
+    size_t                      visualSceneCount = 0;
+    CSR_Collada_Images*         pImages          = 0;
+    CSR_Collada_Materials*      pMaterials       = 0;
+    CSR_Collada_Effects*        pEffects         = 0;
+    CSR_Collada_Geometries*     pGeometries      = 0;
+    CSR_Collada_Controllers*    pControllers     = 0;
+    CSR_Collada_Animations*     pAnimations      = 0;
+    CSR_Collada_Visual_Scenes*  pVisualScenes    = 0;
+    CSR_Mesh*                   pMesh            = 0;
+    #ifdef _MSC_VER
+        CSR_Skin_Weights_Group* pMeshWeights     = 0;
+    #else
+        CSR_Skin_Weights_Group* pMeshWeights;
+    #endif
+    XMLNode*                    pNode;
 
     if (!pBuffer)
         return 0;
@@ -5495,7 +7194,7 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
     XMLDoc_parse_buffer_DOM(pBuffer->m_pData, "collada_file", &doc);
 
     // get root node
-    XMLNode* pNode = XMLDoc_root(&doc);
+    pNode = XMLDoc_root(&doc);
 
     // measure tag name length
     len = strlen(pNode->tag);
@@ -5526,6 +7225,168 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
         len = strlen(pChild->tag);
 
         // search for tag to read
+        if (len == strlen(M_Collada_Images_Tag) &&
+            memcmp(pChild->tag, M_Collada_Images_Tag, len) == 0)
+        {
+            CSR_Collada_Images* pNewImages;
+            index = imageCount;
+
+            // add new images container
+            pNewImages =
+                    (CSR_Collada_Images*)csrMemoryAlloc(pImages,
+                                                        sizeof(CSR_Collada_Images),
+                                                        imageCount + 1);
+
+            // succeeded?
+            if (!pNewImages)
+            {
+                // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
+                csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
+                csrColladaControllerLibraryRelease(pControllers, controllerCount);
+                csrColladaAnimationLibraryRelease(pAnimations, animationCount);
+                csrColladaVisualSceneLibraryRelease(pVisualScenes, visualSceneCount);
+
+                // release xml document
+                XMLDoc_free(&doc);
+                return 0;
+            }
+
+            pImages = pNewImages;
+            ++imageCount;
+
+            // initialize images container
+            csrColladaImagesInit(&pImages[index]);
+
+            // read image library
+            if (!csrColladaImagesRead(pChild, &pImages[index]))
+            {
+                // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
+                csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
+                csrColladaControllerLibraryRelease(pControllers, controllerCount);
+                csrColladaAnimationLibraryRelease(pAnimations, animationCount);
+                csrColladaVisualSceneLibraryRelease(pVisualScenes, visualSceneCount);
+
+                // release xml document
+                XMLDoc_free(&doc);
+
+                return 0;
+            }
+        }
+        else
+        if (len == strlen(M_Collada_Materials_Tag) &&
+            memcmp(pChild->tag, M_Collada_Materials_Tag, len) == 0)
+        {
+            CSR_Collada_Materials* pNewMaterials;
+            index = materialCount;
+
+            // add new materials container
+            pNewMaterials =
+                    (CSR_Collada_Materials*)csrMemoryAlloc(pMaterials,
+                                                           sizeof(CSR_Collada_Materials),
+                                                           materialCount + 1);
+
+            // succeeded?
+            if (!pNewMaterials)
+            {
+                // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
+                csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
+                csrColladaControllerLibraryRelease(pControllers, controllerCount);
+                csrColladaAnimationLibraryRelease(pAnimations, animationCount);
+                csrColladaVisualSceneLibraryRelease(pVisualScenes, visualSceneCount);
+
+                // release xml document
+                XMLDoc_free(&doc);
+                return 0;
+            }
+
+            pMaterials = pNewMaterials;
+            ++materialCount;
+
+            // initialize materials container
+            csrColladaMaterialsInit(&pMaterials[index]);
+
+            // read material library
+            if (!csrColladaMaterialsRead(pChild, &pMaterials[index]))
+            {
+                // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
+                csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
+                csrColladaControllerLibraryRelease(pControllers, controllerCount);
+                csrColladaAnimationLibraryRelease(pAnimations, animationCount);
+                csrColladaVisualSceneLibraryRelease(pVisualScenes, visualSceneCount);
+
+                // release xml document
+                XMLDoc_free(&doc);
+
+                return 0;
+            }
+        }
+        else
+        if (len == strlen(M_Collada_Effects_Tag) &&
+            memcmp(pChild->tag, M_Collada_Effects_Tag, len) == 0)
+        {
+            CSR_Collada_Effects* pNewEffects;
+            index = effectCount;
+
+            // add new effects container
+            pNewEffects =
+                    (CSR_Collada_Effects*)csrMemoryAlloc(pEffects,
+                                                         sizeof(CSR_Collada_Effects),
+                                                         effectCount + 1);
+
+            // succeeded?
+            if (!pNewEffects)
+            {
+                // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
+                csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
+                csrColladaControllerLibraryRelease(pControllers, controllerCount);
+                csrColladaAnimationLibraryRelease(pAnimations, animationCount);
+                csrColladaVisualSceneLibraryRelease(pVisualScenes, visualSceneCount);
+
+                // release xml document
+                XMLDoc_free(&doc);
+                return 0;
+            }
+
+            pEffects = pNewEffects;
+            ++effectCount;
+
+            // initialize effects container
+            csrColladaEffectsInit(&pEffects[index]);
+
+            // read effect library
+            if (!csrColladaEffectsRead(pChild, &pEffects[index]))
+            {
+                // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
+                csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
+                csrColladaControllerLibraryRelease(pControllers, controllerCount);
+                csrColladaAnimationLibraryRelease(pAnimations, animationCount);
+                csrColladaVisualSceneLibraryRelease(pVisualScenes, visualSceneCount);
+
+                // release xml document
+                XMLDoc_free(&doc);
+
+                return 0;
+            }
+        }
+        else
         if (len == strlen(M_Collada_Geometries_Tag) &&
             memcmp(pChild->tag, M_Collada_Geometries_Tag, len) == 0)
         {
@@ -5542,6 +7403,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             if (!pNewGeometries)
             {
                 // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
                 csrColladaControllerLibraryRelease(pControllers, controllerCount);
                 csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -5562,6 +7426,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             if (!csrColladaGeometriesRead(pChild, &pGeometries[index]))
             {
                 // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
                 csrColladaControllerLibraryRelease(pControllers, controllerCount);
                 csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -5590,6 +7457,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             if (!pNewControllers)
             {
                 // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
                 csrColladaControllerLibraryRelease(pControllers, controllerCount);
                 csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -5610,6 +7480,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             if (!csrColladaControllersRead(pChild, &pControllers[index]))
             {
                 // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
                 csrColladaControllerLibraryRelease(pControllers, controllerCount);
                 csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -5638,6 +7511,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             if (!pNewAnimations)
             {
                 // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
                 csrColladaControllerLibraryRelease(pControllers, controllerCount);
                 csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -5658,6 +7534,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             if (!csrColladaAnimationsRead(pChild, &pAnimations[index]))
             {
                 // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
                 csrColladaControllerLibraryRelease(pControllers, controllerCount);
                 csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -5686,6 +7565,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             if (!pNewVisualScenes)
             {
                 // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
                 csrColladaControllerLibraryRelease(pControllers, controllerCount);
                 csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -5706,6 +7588,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             if (!csrColladaVisualScenesRead(pChild, &pVisualScenes[index]))
             {
                 // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
                 csrColladaControllerLibraryRelease(pControllers, controllerCount);
                 csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -5738,6 +7623,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             if (!pGeometries[i].m_pGeometries[j].m_pMesh)
             {
                 // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
                 csrColladaControllerLibraryRelease(pControllers, controllerCount);
                 csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -5755,6 +7643,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             if (!pMesh)
             {
                 // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
                 csrColladaControllerLibraryRelease(pControllers, controllerCount);
                 csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -5775,6 +7666,18 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
                                 pGeometries[i].m_pGeometries[j].m_pMesh,
                                &pCollada->m_pMesh[index],
                                 fOnGetVertexColor);
+
+            // link the materials to the mesh
+            csrColladaMeshLinkMaterials(&pCollada->m_pMesh[index].m_pVB->m_Material,
+                                         pGeometries[i].m_pGeometries[j].m_pMesh,
+                                         pVisualScenes,
+                                         pMaterials,
+                                         pEffects,
+                                         pImages,
+                                        &pCollada->m_pMesh[index],
+                                         fOnLoadTexture,
+                                         fOnApplySkin,
+                                         fOnDeleteTexture);
         }
 
     // iterate through visual scene libraries
@@ -5817,6 +7720,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
                 free(pRootBones);
 
             // release collada objects
+            csrColladaImageLibraryRelease(pImages, imageCount);
+            csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+            csrColladaEffectLibraryRelease(pEffects, effectCount);
             csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
             csrColladaControllerLibraryRelease(pControllers, controllerCount);
             csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -5828,11 +7734,15 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
         // iterate through source skeletons
         for (j = 0; j < count; ++j)
         {
-            int    skeletonExists = 0;
-            size_t index          = 0;
-            size_t idLen          = 0;
-            size_t parentIdLen    = 0;
-            size_t targetLen      = 0;
+            int    skeletonExists  = 0;
+            size_t index           = 0;
+            size_t idLen           = 0;
+            #ifdef _MSC_VER
+                size_t parentIdLen = 0;
+            #else
+                size_t parentIdLen;
+            #endif
+            size_t targetLen       = 0;
 
             // search if skeleton already exists
             for (k = 0; k < pCollada->m_SkeletonCount; ++k)
@@ -5867,6 +7777,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
                     free(pRootBones);
 
                 // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
                 csrColladaControllerLibraryRelease(pControllers, controllerCount);
                 csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -5939,7 +7852,7 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
     }
 
     // is model supporting skin weights?
-    if (!pCollada->m_MeshOnly && pCollada->m_MeshCount < 2)
+    if (!pCollada->m_MeshOnly)
     {
         // create as many mesh weights as meshes
         pCollada->m_pMeshWeights =
@@ -5951,6 +7864,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
         if (!pCollada->m_pMeshWeights)
         {
             // release collada objects
+            csrColladaImageLibraryRelease(pImages, imageCount);
+            csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+            csrColladaEffectLibraryRelease(pEffects, effectCount);
             csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
             csrColladaControllerLibraryRelease(pControllers, controllerCount);
             csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -5999,9 +7915,12 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             if (!pGeometry)
             {
                 // release collada objects
-                csrColladaGeometryLibraryRelease   (pGeometries,   geometryCount);
-                csrColladaControllerLibraryRelease (pControllers,  controllerCount);
-                csrColladaAnimationLibraryRelease  (pAnimations,   animationCount);
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
+                csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
+                csrColladaControllerLibraryRelease(pControllers, controllerCount);
+                csrColladaAnimationLibraryRelease(pAnimations, animationCount);
                 csrColladaVisualSceneLibraryRelease(pVisualScenes, visualSceneCount);
 
                 return 0;
@@ -6030,6 +7949,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             if (!pController)
             {
                 // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
                 csrColladaControllerLibraryRelease(pControllers, controllerCount);
                 csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -6042,6 +7964,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
             if (!csrColladaMeshWeightsBuild(pGeometry, pController, i, pCollada))
             {
                 // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
                 csrColladaControllerLibraryRelease(pControllers, controllerCount);
                 csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -6065,6 +7990,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
         if (!pCollada->m_pAnimationSet)
         {
             // release collada objects
+            csrColladaImageLibraryRelease(pImages, imageCount);
+            csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+            csrColladaEffectLibraryRelease(pEffects, effectCount);
             csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
             csrColladaControllerLibraryRelease(pControllers, controllerCount);
             csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -6089,6 +8017,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
                                            pCollada))
             {
                 // release collada objects
+                csrColladaImageLibraryRelease(pImages, imageCount);
+                csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+                csrColladaEffectLibraryRelease(pEffects, effectCount);
                 csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
                 csrColladaControllerLibraryRelease(pControllers, controllerCount);
                 csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -6100,6 +8031,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
     }
 
     // release collada objects
+    csrColladaImageLibraryRelease(pImages, imageCount);
+    csrColladaMaterialLibraryRelease(pMaterials, materialCount);
+    csrColladaEffectLibraryRelease(pEffects, effectCount);
     csrColladaGeometryLibraryRelease(pGeometries, geometryCount);
     csrColladaControllerLibraryRelease(pControllers, controllerCount);
     csrColladaAnimationLibraryRelease(pAnimations, animationCount);
@@ -6140,7 +8074,15 @@ CSR_Collada* csrColladaCreate(const CSR_Buffer*           pBuffer,
     pCollada->m_PoseOnly = poseOnly;
 
     // parse the file content
-    if (!csrColladaParse(pBuffer, pVertFormat, pVertCulling, pMaterial, pCollada, fOnGetVertexColor))
+    if (!csrColladaParse(pBuffer,
+                         pVertFormat,
+                         pVertCulling,
+                         pMaterial,
+                         pCollada,
+                         fOnGetVertexColor,
+                         fOnLoadTexture,
+                         fOnApplySkin,
+                         fOnDeleteTexture))
         return 0;
 
     return pCollada;
