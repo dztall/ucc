@@ -456,7 +456,7 @@ void on_GLES2_Size(int view_w, int view_h)
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
 {
-    // rebuild the bot matrix
+    // rebuild the model matrix
     BuildCharMatrix(&g_CharMatrix);
 
     // calculate next model indexes to show

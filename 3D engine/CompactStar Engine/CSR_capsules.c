@@ -159,7 +159,10 @@ void on_GLES2_Init(int view_w, int view_h)
 
     // succeeded?
     if (!g_pShader)
-        return false;
+    {
+    	printf("FAILED to compile shader\n");
+        return;
+    }
 
     csrShaderEnable(g_pShader);
 

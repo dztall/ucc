@@ -177,7 +177,7 @@ void OnDeleteTexture(const CSR_Texture* pTexture)
 void ApplyMatrix(float w, float h)
 {
     // calculate matrix items
-    const float zNear  = 0.01f;
+    const float zNear  = 0.1f;
     const float zFar   = 100.0f;
     const float fov    = 45.0f;
     const float aspect = w / h;
