@@ -588,11 +588,6 @@ int csrColladaParamRead(XMLNode* pNode, CSR_Collada_Param* pColladaParam)
 {
     size_t        i;
     size_t        len;
-    #ifdef _MSC_VER
-        size_t    index = 0;
-    #else
-        size_t    index;
-    #endif
     XMLAttribute* pAttributes;
 
     if (!pNode)
@@ -678,11 +673,6 @@ int csrColladaMatrixRead(XMLNode* pNode, CSR_Collada_Matrix* pColladaMatrix)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -833,11 +823,6 @@ int csrColladaFloatArrayRead(XMLNode* pNode, CSR_Collada_Float_Array* pColladaFl
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -1309,11 +1294,6 @@ int csrColladaNameArrayRead(XMLNode* pNode, CSR_Collada_Name_Array* pColladaName
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -1467,11 +1447,6 @@ int csrColladaImageRead(XMLNode* pNode, CSR_Collada_Image* pColladaImage)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -1643,11 +1618,6 @@ int csrColladaInstanceEffectRead(XMLNode* pNode, CSR_Collada_Instance_Effect* pI
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -1721,11 +1691,6 @@ int csrColladaMaterialRead(XMLNode* pNode, CSR_Collada_Material* pMaterial)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -1916,11 +1881,6 @@ int csrColladaSurfaceRead(XMLNode* pNode, CSR_Collada_Surface* pColladaSurface)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -2035,11 +1995,6 @@ int csrColladaNewParamRead(XMLNode* pNode, CSR_Collada_New_Param* pColladaNewPar
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -2233,11 +2188,6 @@ int csrColladaEffectRead(XMLNode* pNode, CSR_Collada_Effect* pColladaEffect)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -2438,11 +2388,6 @@ int csrColladaAccessorRead(XMLNode* pNode, CSR_Collada_Accessor* pColladaAccesso
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -2582,11 +2527,6 @@ int csrColladaInstMaterialRead(XMLNode* pNode, CSR_Collada_Instance_Material* pC
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -2859,11 +2799,6 @@ int csrColladaSourceRead(XMLNode* pNode, CSR_Collada_Source* pColladaSource)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -3008,11 +2943,6 @@ int csrColladaInputRead(XMLNode* pNode, CSR_Collada_Input* pColladaInput)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -3125,11 +3055,6 @@ int csrColladaVerticesRead(XMLNode* pNode, CSR_Collada_Vertices* pColladaVertice
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -3252,11 +3177,6 @@ int csrColladaTrianglesRead(XMLNode* pNode, CSR_Collada_Triangles* pColladaTrian
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -3421,15 +3341,8 @@ void csrColladaMeshRelease(CSR_Collada_Mesh* pColladaMesh)
 //---------------------------------------------------------------------------
 int csrColladaMeshRead(XMLNode* pNode, CSR_Collada_Mesh* pColladaMesh)
 {
-    size_t                  i;
-    size_t                  len;
-    #ifdef _MSC_VER
-        size_t              index    = 0;
-        CSR_Collada_Source* pSources = 0;
-    #else
-        size_t              index;
-        CSR_Collada_Source* pSources;
-    #endif
+    size_t i;
+    size_t len;
 
     if (!pNode)
         return 0;
@@ -3546,11 +3459,6 @@ int csrColladaMeshBuild(const CSR_VertexFormat*     pVertFormat,
     size_t                      j;
     size_t                      k;
     size_t                      stride       = 0;
-    #ifdef _MSC_VER
-        size_t                  inputCount   = 0;
-    #else
-        size_t                  inputCount;
-    #endif
     size_t                      indicesCount = 0;
     CSR_Collada_Vertices*       pVertices    = 0;
     CSR_Collada_Triangles*      pTriangles   = 0;
@@ -4195,11 +4103,6 @@ int csrColladaGeometryRead(XMLNode* pNode, CSR_Collada_Geometry* pColladaGeometr
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -4489,11 +4392,6 @@ int csrColladaVertexWeightsRead(XMLNode* pNode, CSR_Collada_Vertex_Weights* pCol
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -4704,11 +4602,6 @@ int csrColladaSkinRead(XMLNode* pNode, CSR_Collada_Skin* pColladaSkin)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -4876,11 +4769,6 @@ int csrColladaControllerRead(XMLNode* pNode, CSR_Collada_Controller* pColladaCon
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -5077,11 +4965,6 @@ int csrColladaSamplerRead(XMLNode* pNode, CSR_Collada_Sampler* pColladaSampler)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -5186,11 +5069,6 @@ int csrColladaChannelRead(XMLNode* pNode, CSR_Collada_Channel* pColladaChannel)
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -5312,11 +5190,6 @@ int csrColladaAnimationRead(XMLNode* pNode, CSR_Collada_Animation* pColladaAnima
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -5653,11 +5526,6 @@ int csrColladaInstanceCtrlRead(XMLNode* pNode, CSR_Collada_Instance_Controller* 
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -5832,11 +5700,6 @@ int csrColladaNodeRead(XMLNode* pNode, CSR_Collada_Node* pParent, CSR_Collada_No
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -6140,11 +6003,6 @@ int csrColladaVisualSceneRead(XMLNode* pNode, CSR_Collada_Visual_Scene* pCollada
     // node contains attributes?
     if ((size_t)pNode->n_attributes)
     {
-        #ifdef _MSC_VER
-            size_t    index = 0;
-        #else
-            size_t    index;
-        #endif
         XMLAttribute* pAttributes;
 
         // get attribute list
@@ -7147,39 +7005,29 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
                     const CSR_fOnApplySkin      fOnApplySkin,
                     const CSR_fOnDeleteTexture  fOnDeleteTexture)
 {
-    XMLDoc                      doc;
-    size_t                      i;
-    size_t                      j;
-    size_t                      k;
-    size_t                      l;
-    size_t                      index            = 0;
-    size_t                      len              = 0;
-    #ifdef _MSC_VER
-        size_t                  count            = 0;
-    #else
-        size_t                  count;
-    #endif
-    size_t                      imageCount       = 0;
-    size_t                      materialCount    = 0;
-    size_t                      effectCount      = 0;
-    size_t                      geometryCount    = 0;
-    size_t                      controllerCount  = 0;
-    size_t                      animationCount   = 0;
-    size_t                      visualSceneCount = 0;
-    CSR_Collada_Images*         pImages          = 0;
-    CSR_Collada_Materials*      pMaterials       = 0;
-    CSR_Collada_Effects*        pEffects         = 0;
-    CSR_Collada_Geometries*     pGeometries      = 0;
-    CSR_Collada_Controllers*    pControllers     = 0;
-    CSR_Collada_Animations*     pAnimations      = 0;
-    CSR_Collada_Visual_Scenes*  pVisualScenes    = 0;
-    CSR_Mesh*                   pMesh            = 0;
-    #ifdef _MSC_VER
-        CSR_Skin_Weights_Group* pMeshWeights     = 0;
-    #else
-        CSR_Skin_Weights_Group* pMeshWeights;
-    #endif
-    XMLNode*                    pNode;
+    XMLDoc                     doc;
+    size_t                     i;
+    size_t                     j;
+    size_t                     k;
+    size_t                     l;
+    size_t                     index            = 0;
+    size_t                     len              = 0;
+    size_t                     imageCount       = 0;
+    size_t                     materialCount    = 0;
+    size_t                     effectCount      = 0;
+    size_t                     geometryCount    = 0;
+    size_t                     controllerCount  = 0;
+    size_t                     animationCount   = 0;
+    size_t                     visualSceneCount = 0;
+    CSR_Collada_Images*        pImages          = 0;
+    CSR_Collada_Materials*     pMaterials       = 0;
+    CSR_Collada_Effects*       pEffects         = 0;
+    CSR_Collada_Geometries*    pGeometries      = 0;
+    CSR_Collada_Controllers*   pControllers     = 0;
+    CSR_Collada_Animations*    pAnimations      = 0;
+    CSR_Collada_Visual_Scenes* pVisualScenes    = 0;
+    CSR_Mesh*                  pMesh            = 0;
+    XMLNode*                   pNode;
 
     if (!pBuffer)
         return 0;
@@ -7734,15 +7582,10 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
         // iterate through source skeletons
         for (j = 0; j < count; ++j)
         {
-            int    skeletonExists  = 0;
-            size_t index           = 0;
-            size_t idLen           = 0;
-            #ifdef _MSC_VER
-                size_t parentIdLen = 0;
-            #else
-                size_t parentIdLen;
-            #endif
-            size_t targetLen       = 0;
+            int    skeletonExists = 0;
+            size_t index          = 0;
+            size_t idLen          = 0;
+            size_t targetLen      = 0;
 
             // search if skeleton already exists
             for (k = 0; k < pCollada->m_SkeletonCount; ++k)

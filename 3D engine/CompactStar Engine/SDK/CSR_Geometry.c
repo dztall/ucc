@@ -2616,7 +2616,7 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
 
                     // build a figure for the segment
                     segment.m_Type    = CSR_F3_Segment;
-                    segment.m_pFigure = &polygonPlane;
+                    segment.m_pFigure = &seg;
 
                     // build a figure for the plane
                     plane.m_Type    = CSR_F3_Plane;

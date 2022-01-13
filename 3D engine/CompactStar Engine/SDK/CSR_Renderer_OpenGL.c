@@ -479,7 +479,7 @@ int csrOpenGLShaderCompile(const CSR_Buffer* pSource, GLenum shaderType, CSR_Ope
     #ifdef __APPLE__
         glShaderSource(shaderID, 1, (const GLchar* const*)&pSource->m_pData, 0);
     #else
-        glShaderSource(shaderID, 1, (GLchar**)&pSource->m_pData, 0);
+        glShaderSource(shaderID, 1, (const GLchar**)&pSource->m_pData, 0);
     #endif
     glCompileShader(shaderID);
 
