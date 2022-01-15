@@ -21,6 +21,7 @@
 #include "CSR_Geometry.h"
 #include "CSR_Vertex.h"
 #include "CSR_Model.h"
+#include "CSR_Collada.h"
 #include "CSR_Mdl.h"
 #include "CSR_Wavefront.h"
 #include "CSR_X.h"
@@ -145,21 +146,38 @@
                              const CSR_fOnGetID _Nullable fOnGetID);
 
         /**
-         * Draws a X model in a scene
-         *@param pX - X model to draw
-         *@param pShader - shader to use to draw the model
-         *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
-         *                      matrix currently connected in the shader will be used
-         *@param animSetIndex - animation set index, ignored if model isn't animated
-         *@param frameIndex - frame index, ignored if model isn't animated
-         *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
-         */
+        * Draws a X model in a scene
+        *@param pX - X model to draw
+        *@param pShader - shader to use to draw the model
+        *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
+        *                      matrix currently connected in the shader will be used
+        *@param animSetIndex - animation set index, ignored if model isn't animated
+        *@param frameIndex - frame index, ignored if model isn't animated
+        *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
+        */
         void csrMetalDrawX(const CSR_X*       _Nullable pX,
                            const void*        _Nullable pShader,
                            const CSR_Array*   _Nullable pMatrixArray,
                                  size_t                 animSetIndex,
                                  size_t                 frameIndex,
                            const CSR_fOnGetID _Nullable fOnGetID);
+
+        /**
+        * Draws a Collada model in a scene
+        *@param pCollada - Collada model to draw
+        *@param pShader - shader to use to draw the model
+        *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
+        *                      matrix currently connected in the shader will be used
+        *@param animSetIndex - animation set index, ignored if model isn't animated
+        *@param frameIndex - frame index, ignored if model isn't animated
+        *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
+        */
+        void csrMetalDrawCollada(const CSR_Collada* _Nullable pCollada,
+                                 const void*        _Nullable pShader,
+                                 const CSR_Array*   _Nullable pMatrixArray,
+                                       size_t                 animSetIndex,
+                                       size_t                 frameIndex,
+                                 const CSR_fOnGetID _Nullable fOnGetID);
 
         //-------------------------------------------------------------------
         // State functions
@@ -353,12 +371,29 @@
     *@param frameIndex - frame index, ignored if model isn't animated
     *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
     */
-    - (void) csrMetalDrawX :(const CSR_X*  _Nullable)pX
+    - (void) csrMetalDrawX :(const CSR_X* _Nullable)pX
                            :(const void* _Nullable)pShader
                            :(const CSR_Array* _Nullable)pMatrixArray
                            :(size_t)animSetIndex
                            :(size_t)frameIndex
                            :(const CSR_fOnGetID _Nullable)fOnGetID;
+
+    /**
+    * Draws a Collada model in a scene
+    *@param pCollada - Collada model to draw
+    *@param pShader - shader to use to draw the model
+    *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
+    *                      matrix currently connected in the shader will be used
+    *@param animSetIndex - animation set index, ignored if model isn't animated
+    *@param frameIndex - frame index, ignored if model isn't animated
+    *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
+    */
+    - (void) csrMetalDrawCollada :(const CSR_Collada* _Nullable)pCollada
+                                 :(const void* _Nullable)pShader
+                                 :(const CSR_Array* _Nullable)pMatrixArray
+                                 :(size_t)animSetIndex
+                                 :(size_t)frameIndex
+                                 :(const CSR_fOnGetID _Nullable)fOnGetID;
 
     /**
     * Enables or disables the depth mask (i.e. the depth buffer writing)
@@ -368,15 +403,21 @@
 
     /**
     * Creates a metal buffer for a MDL model
+    *@param pMDL - MDL model for which the metal buffer should be created
+    */
+    - (void) CreateBufferFromMDL :(const CSR_MDL* _Nullable)pMDL;
+
+    /**
+    * Creates a metal buffer for a X model
     *@param pX - X model for which the metal buffer should be created
     */
     - (void) CreateBufferFromX :(const CSR_X* _Nullable)pX;
 
     /**
-    * Creates a metal buffer for a MDL model
-    *@param pMDL - MDL model for which the metal buffer should be created
+    * Creates a metal buffer for a Collada model
+    *@param pCollada - Collada model for which the metal buffer should be created
     */
-    - (void) CreateBufferFromMDL :(const CSR_MDL* _Nullable)pMDL;
+    - (void) CreateBufferFromCollada :(const CSR_Collada* _Nullable)pCollada;
 
     /**
     * Creates a metal buffer for a model

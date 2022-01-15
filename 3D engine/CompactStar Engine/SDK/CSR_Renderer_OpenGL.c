@@ -408,10 +408,12 @@ CSR_OpenGLShader* csrOpenGLShaderLoadFromBuffer(const CSR_Buffer*         pVerte
     if (!pShader)
         return 0;
 
-    // sometimes the OpenGL driver isn't compatible with Glew and this function isn't available.
-    // Stop here if it's the case
-    if (!glCreateProgram)
-        return 0;
+    #ifndef __APPLE__
+        // sometimes the OpenGL driver isn't compatible with Glew and this function isn't available.
+        // Stop here if it's the case
+        if (!glCreateProgram)
+            return 0;
+    #endif
 
     // create a new shader program
     pShader->m_ProgramID = glCreateProgram();

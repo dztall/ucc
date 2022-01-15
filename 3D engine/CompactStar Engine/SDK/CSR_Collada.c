@@ -7044,6 +7044,9 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
     // get root node
     pNode = XMLDoc_root(&doc);
 
+    if (!pNode)
+        return 0;
+    
     // measure tag name length
     len = strlen(pNode->tag);
 

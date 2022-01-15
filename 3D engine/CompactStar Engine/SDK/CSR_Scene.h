@@ -255,7 +255,7 @@ typedef void (*CSR_fOnGetXIndex)(const CSR_X* pX, size_t* pAnimSetIndex, size_t*
 *@param[in, out] pAnimSetIndex - animation set index
 *@param[in, out] pFrameIndex - frame index
 */
-typedef void (*CSR_fOnGetColladaIndex)(const CSR_Collada* pX, size_t* pAnimSetIndex, size_t* pFrameIndex);
+typedef void (*CSR_fOnGetColladaIndex)(const CSR_Collada* pCollada, size_t* pAnimSetIndex, size_t* pFrameIndex);
 
 /**
 * Called when a custom collision should be detected in a scene
