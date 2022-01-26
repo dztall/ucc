@@ -1,9 +1,9 @@
 /****************************************************************************
  * ==> CSR_Collision -------------------------------------------------------*
  ****************************************************************************
- * Description : This module provides the colision detection functions      *
+ * Description : This module provides the collision detection functions     *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -298,12 +298,21 @@ int csrAABBTreeResolve(const CSR_Ray3*           pRay,
                              size_t              deep,
                              CSR_Polygon3Buffer* pPolygons)
 {
-    unsigned      i;
-    int           leftResolved  = 0;
-    int           rightResolved = 0;
-    CSR_Polygon3* pPolygonBuffer;
-    CSR_Figure3   ray;
-    CSR_Figure3   box;
+    #ifdef _MSC_VER
+        unsigned      i;
+        int           leftResolved   = 0;
+        int           rightResolved  = 0;
+        CSR_Polygon3* pPolygonBuffer = 0;
+        CSR_Figure3   ray            = {0};
+        CSR_Figure3   box            = {0};
+    #else
+        unsigned      i;
+        int           leftResolved  = 0;
+        int           rightResolved = 0;
+        CSR_Polygon3* pPolygonBuffer;
+        CSR_Figure3   ray;
+        CSR_Figure3   box;
+    #endif
 
     // no ray?
     if (!pRay)
@@ -434,14 +443,25 @@ void csrSlidingPoint(const CSR_Plane*   pSlidingPlane,
                            float        radius,
                            CSR_Vector3* pR)
 {
-    float        distanceToPlane;
-    CSR_Plane    plane;
-    CSR_Vector3  planeRatio;
-    CSR_Vector3  pointBeyondPlane;
-    CSR_Vector3  pointOnPlane;
-    CSR_Segment3 segment;
-    CSR_Figure3  segmentFigure;
-    CSR_Figure3  planeFigure;
+    #ifdef _MSC_VER
+        float        distanceToPlane;
+        CSR_Plane    plane;
+        CSR_Vector3  planeRatio       = {0};
+        CSR_Vector3  pointBeyondPlane = {0};
+        CSR_Vector3  pointOnPlane     = {0};
+        CSR_Segment3 segment          = {0};
+        CSR_Figure3  segmentFigure    = {0};
+        CSR_Figure3  planeFigure      = {0};
+    #else
+        float        distanceToPlane;
+        CSR_Plane    plane;
+        CSR_Vector3  planeRatio;
+        CSR_Vector3  pointBeyondPlane;
+        CSR_Vector3  pointOnPlane;
+        CSR_Segment3 segment;
+        CSR_Figure3  segmentFigure;
+        CSR_Figure3  planeFigure;
+    #endif
 
     plane = *pSlidingPlane;
 
@@ -458,23 +478,23 @@ void csrSlidingPoint(const CSR_Plane*   pSlidingPlane,
         plane.m_D = -plane.m_D;
     }
 
-    // calculate the direction of the segment position - plane
+    // calculate the direction of the line segment position - plane
     planeRatio.m_X = radius * plane.m_A;
     planeRatio.m_Y = radius * plane.m_B;
     planeRatio.m_Z = radius * plane.m_C;
 
-    // calculate who the segment perpendicular to the plane, from the center
+    // calculate who the line segment perpendicular to the plane, from the center
     // of the sphere, cross the collision sphere. Normally this point is beyond
     // the plane
     pointBeyondPlane.m_X = pPosition->m_X - planeRatio.m_X;
     pointBeyondPlane.m_Y = pPosition->m_Y - planeRatio.m_Y;
     pointBeyondPlane.m_Z = pPosition->m_Z - planeRatio.m_Z;
 
-    // configure the segment to test
+    // configure the line segment to test
     segment.m_Start = *pPosition;
     segment.m_End   =  pointBeyondPlane;
 
-    // build a figure containing the segment
+    // build a figure containing the line segment
     segmentFigure.m_Type    =  CSR_F3_Segment;
     segmentFigure.m_pFigure = &segment;
 
@@ -486,8 +506,7 @@ void csrSlidingPoint(const CSR_Plane*   pSlidingPlane,
     // the plane" cross the collision plane
     csrIntersect3(&segmentFigure, &planeFigure, &pointOnPlane, 0, 0);
 
-    // from point calculated below, we add the radius of the sphere, and we
-    // returns the value
+    // from point calculated above, add the sphere radius and return the value
     pR->m_X = pointOnPlane.m_X + planeRatio.m_X;
     pR->m_Y = pointOnPlane.m_Y + planeRatio.m_Y;
     pR->m_Z = pointOnPlane.m_Z + planeRatio.m_Z;
@@ -500,10 +519,17 @@ int csrGroundCollision(const CSR_Sphere*   pSphere,
                        const CSR_Vector3*  pGroundDir,
                              CSR_Vector3*  pR)
 {
-    CSR_Ray3    ray;
-    CSR_Vector3 groundDir;
-    CSR_Figure3 rayToCheck;
-    CSR_Figure3 polygonToCheck;
+    #ifdef _MSC_VER
+        CSR_Ray3    ray;
+        CSR_Vector3 groundDir;
+        CSR_Figure3 rayToCheck     = {0};
+        CSR_Figure3 polygonToCheck = {0};
+    #else
+        CSR_Ray3    ray;
+        CSR_Vector3 groundDir;
+        CSR_Figure3 rayToCheck;
+        CSR_Figure3 polygonToCheck;
+    #endif
 
     // validate the inputs
     if (!pSphere || !pPolygon)

@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides the draw functions                    *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -20,6 +20,10 @@
 #include "CSR_Common.h"
 #include "CSR_Vertex.h"
 #include "CSR_Model.h"
+#include "CSR_Wavefront.h"
+#include "CSR_Mdl.h"
+#include "CSR_X.h"
+#include "CSR_Collada.h"
 
 // graphics library
 #if defined(_OS_IOS_) || defined(_OS_ANDROID_) || defined(_OS_WINDOWS_)
@@ -48,6 +52,11 @@
 * Called when a resource identifier should be get from a key
 *@param pKey - key for which the resource identifier should be get
 *@return identifier, 0 on error or if not found
+*@note For Collada and DirectX models, the key cannot be used directly to
+*      retrieve the associated resource, because it is get from a local copy
+*      of the source mesh. In this case, the key should be casted to a
+*      CSR_Texture object, and the m_pFileName parameter content should be
+*      used instead as a key
 */
 typedef void* (*CSR_fOnGetID)(const void* pKey);
 
@@ -176,6 +185,23 @@ typedef void* (*CSR_fOnGetID)(const void* pKey);
                             size_t       animSetIndex,
                             size_t       frameIndex,
                       const CSR_fOnGetID fOnGetID);
+
+        /**
+        * Draws a Collada model in a scene
+        *@param pCollada - Collada model to draw
+        *@param pShader - shader to use to draw the model
+        *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
+        *                      matrix currently connected in the shader will be used
+        *@param animSetIndex - animation set index, ignored if model isn't animated
+        *@param frameIndex - frame index, ignored if model isn't animated
+        *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
+        */
+        void csrDrawCollada(const CSR_Collada* pCollada,
+                            const void*        pShader,
+                            const CSR_Array*   pMatrixArray,
+                                  size_t       animSetIndex,
+                                  size_t       frameIndex,
+                            const CSR_fOnGetID fOnGetID);
 
         //-------------------------------------------------------------------
         // State functions

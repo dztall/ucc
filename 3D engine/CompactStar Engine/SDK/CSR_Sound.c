@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides the functions to play sound and music *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -176,11 +176,19 @@ CSR_Sound* csrSoundOpenWavBuffer(const ALCdevice*  pOpenALDevice,
                                  const ALCcontext* pOpenALContext,
                                  const CSR_Buffer* pBuffer)
 {
-    CSR_Buffer    dataBuffer;
-    CSR_Sound*    pSound;
-    size_t        offset;
-    unsigned char signature[4];
-    unsigned      sampleRate;
+    #ifdef _MSC_VER
+        CSR_Buffer    dataBuffer   = {0};
+        CSR_Sound*    pSound;
+        size_t        offset;
+        unsigned char signature[4] = {0};
+        unsigned      sampleRate;
+    #else
+        CSR_Buffer    dataBuffer;
+        CSR_Sound*    pSound;
+        size_t        offset;
+        unsigned char signature[4];
+        unsigned      sampleRate;
+    #endif
 
     // no buffer?
     if (!pBuffer)
@@ -343,7 +351,11 @@ int csrSoundChangeVolumeMax(CSR_Sound* pSound, float value)
 //---------------------------------------------------------------------------
 int csrSoundChangePosition(CSR_Sound* pSound, const CSR_Vector3* pPos)
 {
-    ALfloat position[3];
+    #ifdef _MSC_VER
+        ALfloat position[3] = {0};
+    #else
+        ALfloat position[3];
+    #endif
 
     if (!pSound || pSound->m_ID == M_OPENAL_ERROR_ID)
         return 0;

@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides the vertex functions and types        *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -44,6 +44,7 @@ void csrLineInit(CSR_Line* pLine)
     pLine->m_EndColor.m_A   =  1.0f;
     pLine->m_Width          =  1.0f;
     pLine->m_Smooth         =  1;
+    pLine->m_CustomModelMat =  0;
 }
 //---------------------------------------------------------------------------
 // Vertex format functions
@@ -497,11 +498,19 @@ int csrIndexedPolygonBufferAdd(const CSR_IndexedPolygon*       pIndexedPolygon,
 //---------------------------------------------------------------------------
 CSR_IndexedPolygonBuffer* csrIndexedPolygonBufferFromMesh(const CSR_Mesh* pMesh)
 {
-    size_t                    i;
-    size_t                    j;
-    size_t                    index;
-    CSR_IndexedPolygon        indexedPolygon;
-    CSR_IndexedPolygonBuffer* pIPB;
+    #ifdef _MSC_VER
+        size_t                    i;
+        size_t                    j;
+        size_t                    index;
+        CSR_IndexedPolygon        indexedPolygon = {0};
+        CSR_IndexedPolygonBuffer* pIPB           =  0;
+    #else
+        size_t                    i;
+        size_t                    j;
+        size_t                    index;
+        CSR_IndexedPolygon        indexedPolygon;
+        CSR_IndexedPolygonBuffer* pIPB;
+    #endif
 
     // validate the inputs
     if (!pMesh || !pMesh->m_pVB || !pMesh->m_Count)
@@ -537,8 +546,8 @@ CSR_IndexedPolygonBuffer* csrIndexedPolygonBufferFromMesh(const CSR_Mesh* pMesh)
                 {
                     // extract polygon from source vertex buffer and add it to polygon buffer
                     indexedPolygon.m_pIndex[0] = j;
-                    indexedPolygon.m_pIndex[1] = j +  pMesh->m_pVB[i].m_Format.m_Stride;
-                    indexedPolygon.m_pIndex[2] = j + (pMesh->m_pVB[i].m_Format.m_Stride * 2);
+                    indexedPolygon.m_pIndex[1] = j +  (size_t)pMesh->m_pVB[i].m_Format.m_Stride;
+                    indexedPolygon.m_pIndex[2] = j + ((size_t)pMesh->m_pVB[i].m_Format.m_Stride * 2);
                     csrIndexedPolygonBufferAdd(&indexedPolygon, pIPB);
                 }
 
@@ -550,7 +559,7 @@ CSR_IndexedPolygonBuffer* csrIndexedPolygonBufferFromMesh(const CSR_Mesh* pMesh)
                 // calculate length to read in triangle strip buffer
                 const unsigned stripLength =
                         (unsigned)(pMesh->m_pVB[i].m_Count -
-                                (pMesh->m_pVB[i].m_Format.m_Stride * 2));
+                                ((size_t)pMesh->m_pVB[i].m_Format.m_Stride * 2));
 
                 index = 0;
 
@@ -561,14 +570,14 @@ CSR_IndexedPolygonBuffer* csrIndexedPolygonBufferFromMesh(const CSR_Mesh* pMesh)
                     if (!index || !(index % 2))
                     {
                         indexedPolygon.m_pIndex[0] = j;
-                        indexedPolygon.m_pIndex[1] = j +  pMesh->m_pVB[i].m_Format.m_Stride;
-                        indexedPolygon.m_pIndex[2] = j + (pMesh->m_pVB[i].m_Format.m_Stride * 2);
+                        indexedPolygon.m_pIndex[1] = j +  (size_t)pMesh->m_pVB[i].m_Format.m_Stride;
+                        indexedPolygon.m_pIndex[2] = j + ((size_t)pMesh->m_pVB[i].m_Format.m_Stride * 2);
                     }
                     else
                     {
-                        indexedPolygon.m_pIndex[0] = j +  pMesh->m_pVB[i].m_Format.m_Stride;
+                        indexedPolygon.m_pIndex[0] = j +  (size_t)pMesh->m_pVB[i].m_Format.m_Stride;
                         indexedPolygon.m_pIndex[1] = j;
-                        indexedPolygon.m_pIndex[2] = j + (pMesh->m_pVB[i].m_Format.m_Stride * 2);
+                        indexedPolygon.m_pIndex[2] = j + ((size_t)pMesh->m_pVB[i].m_Format.m_Stride * 2);
                     }
 
                     csrIndexedPolygonBufferAdd(&indexedPolygon, pIPB);
@@ -609,9 +618,9 @@ CSR_IndexedPolygonBuffer* csrIndexedPolygonBufferFromMesh(const CSR_Mesh* pMesh)
                 {
                     // calculate vertices position
                     const unsigned v1 = (unsigned) j;
-                    const unsigned v2 = (unsigned)(j +  pMesh->m_pVB[i].m_Format.m_Stride);
-                    const unsigned v3 = (unsigned)(j + (pMesh->m_pVB[i].m_Format.m_Stride * 2));
-                    const unsigned v4 = (unsigned)(j + (pMesh->m_pVB[i].m_Format.m_Stride * 3));
+                    const unsigned v2 = (unsigned)(j +  (size_t)pMesh->m_pVB[i].m_Format.m_Stride);
+                    const unsigned v3 = (unsigned)(j + ((size_t)pMesh->m_pVB[i].m_Format.m_Stride * 2));
+                    const unsigned v4 = (unsigned)(j + ((size_t)pMesh->m_pVB[i].m_Format.m_Stride * 3));
 
                     // extract first polygon from source buffer
                     indexedPolygon.m_pIndex[0] = v1;
@@ -637,16 +646,16 @@ CSR_IndexedPolygonBuffer* csrIndexedPolygonBufferFromMesh(const CSR_Mesh* pMesh)
                 // calculate length to read in triangle strip buffer
                 const unsigned stripLength =
                         (unsigned)(pMesh->m_pVB[i].m_Count -
-                                (pMesh->m_pVB[i].m_Format.m_Stride * 2));
+                                ((size_t)pMesh->m_pVB[i].m_Format.m_Stride * 2));
 
                 // iterate through source vertices
                 for (j = 0; j < stripLength; j += step)
                 {
                     // calculate vertices position
                     const unsigned v1 = (unsigned) j;
-                    const unsigned v2 = (unsigned)(j +  pMesh->m_pVB[i].m_Format.m_Stride);
-                    const unsigned v3 = (unsigned)(j + (pMesh->m_pVB[i].m_Format.m_Stride * 2));
-                    const unsigned v4 = (unsigned)(j + (pMesh->m_pVB[i].m_Format.m_Stride * 3));
+                    const unsigned v2 = (unsigned)(j +  (size_t)pMesh->m_pVB[i].m_Format.m_Stride);
+                    const unsigned v3 = (unsigned)(j + ((size_t)pMesh->m_pVB[i].m_Format.m_Stride * 2));
+                    const unsigned v4 = (unsigned)(j + ((size_t)pMesh->m_pVB[i].m_Format.m_Stride * 3));
 
                     // extract first polygon from source buffer
                     indexedPolygon.m_pIndex[0] = v1;

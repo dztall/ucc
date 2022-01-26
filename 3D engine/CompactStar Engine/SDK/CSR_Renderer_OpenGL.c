@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides an OpenGL renderer                    *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -25,14 +25,14 @@
 GLuint csrOpenGLTextureFromPixelBuffer(const CSR_PixelBuffer* pPixelBuffer)
 {
     unsigned char* pPixels = 0;
-    unsigned       x;
-    unsigned       y;
-    unsigned char  c;
+    size_t         x;
+    size_t         y;
+    size_t         c;
     GLint          pixelType;
     GLuint         index;
 
     // validate the input
-    if (!pPixelBuffer || !pPixelBuffer->m_Width || !pPixelBuffer->m_Height)
+    if (!pPixelBuffer || !pPixelBuffer->m_Width || !pPixelBuffer->m_Height || !pPixelBuffer->m_pData)
         return M_CSR_Error_Code;
 
     // select the correct pixel type to use
@@ -58,18 +58,29 @@ GLuint csrOpenGLTextureFromPixelBuffer(const CSR_PixelBuffer* pPixelBuffer)
     // reorder the pixels if image is a bitmap
     if (pPixelBuffer->m_ImageType == CSR_IT_Bitmap)
     {
-        pPixels = (unsigned char*)malloc(sizeof(unsigned char)  *
-                                         pPixelBuffer->m_Width  *
-                                         pPixelBuffer->m_Height *
-                                         3);
+        const size_t bufferLength = sizeof(unsigned char)  *
+                                    pPixelBuffer->m_Width  *
+                                    pPixelBuffer->m_Height *
+                                    3;
 
-        // get bitmap data into right format
+        pPixels = (unsigned char*)malloc(bufferLength);
+
+        if (!pPixels || !pPixelBuffer->m_Stride)
+            return M_CSR_Error_Code;
+
+        // format bitmap data
         for (y = 0; y < pPixelBuffer->m_Height; ++y)
             for (x = 0; x < pPixelBuffer->m_Width; ++x)
                 for (c = 0; c < 3; ++c)
-                    pPixels[3 * (pPixelBuffer->m_Width * y + x) + c] =
-                            ((unsigned char*)pPixelBuffer->m_pData)
-                                    [pPixelBuffer->m_Stride * y + 3 * (pPixelBuffer->m_Width - x - 1) + (2 - c)];
+                {
+                    const size_t index = 3 * (pPixelBuffer->m_Width * y + x) + c;
+
+                    if (index >= bufferLength)
+                        continue;
+
+                    pPixels[index] = ((unsigned char*)pPixelBuffer->m_pData)
+                            [pPixelBuffer->m_Stride * y + 3 * (pPixelBuffer->m_Width - x - 1) + (2 - c)];
+                }
     }
     else
         pPixels = (unsigned char*)pPixelBuffer->m_pData;
@@ -135,20 +146,31 @@ GLuint csrOpenGLCubemapLoad(const char** pFileNames)
             size_t y;
             size_t c;
 
+            const size_t bufferLength = sizeof(unsigned char)  *
+                                        pPixelBuffer->m_Width  *
+                                        pPixelBuffer->m_Height *
+                                        3;
+
             doReleasePixels = 1;
 
-            pPixels = (unsigned char*)malloc(sizeof(unsigned char)  *
-                                             pPixelBuffer->m_Width  *
-                                             pPixelBuffer->m_Height *
-                                             3);
+            pPixels = (unsigned char*)malloc(bufferLength);
+
+            if (!pPixels || !pPixelBuffer->m_Stride)
+                continue;
 
             // get bitmap data into right format
             for (y = 0; y < pPixelBuffer->m_Height; ++y)
                 for (x = 0; x < pPixelBuffer->m_Width; ++x)
                     for (c = 0; c < 3; ++c)
-                        pPixels[3 * (pPixelBuffer->m_Width * y + x) + c] =
-                                ((unsigned char*)pPixelBuffer->m_pData)
-                                        [pPixelBuffer->m_Stride * y + 3 * (pPixelBuffer->m_Width - x - 1) + (2 - c)];
+                    {
+                        const size_t index = 3 * ((size_t)pPixelBuffer->m_Width * y + x) + c;
+
+                        if (index >= bufferLength)
+                            continue;
+
+                        pPixels[index] = ((unsigned char*)pPixelBuffer->m_pData)
+                                [pPixelBuffer->m_Stride * y + 3 * (pPixelBuffer->m_Width - x - 1) + (2 - c)];
+                    }
         }
         else
             pPixels = (unsigned char*)pPixelBuffer->m_pData;
@@ -338,15 +360,23 @@ CSR_OpenGLShader* csrOpenGLShaderLoadFromStr(const char*               pVertex,
     if (!pVS || !pFS)
         return 0;
 
-    // copy the vertex program to read
     pVS->m_Length = vertexLength;
     pVS->m_pData  = (unsigned char*)malloc(pVS->m_Length + 1);
+
+    if (!pVS->m_pData)
+        return 0;
+
+    // copy the vertex program to read
     memcpy(pVS->m_pData, pVertex, pVS->m_Length);
     ((unsigned char*)pVS->m_pData)[pVS->m_Length] = 0x0;
 
-    // copy the fragment program to read
     pFS->m_Length = fragmentLength;
     pFS->m_pData  = (unsigned char*)malloc(pFS->m_Length + 1);
+
+    if (!pFS->m_pData)
+        return 0;
+
+    // copy the fragment program to read
     memcpy(pFS->m_pData, pFragment, pFS->m_Length);
     ((unsigned char*)pFS->m_pData)[pFS->m_Length] = 0x0;
 
@@ -378,10 +408,12 @@ CSR_OpenGLShader* csrOpenGLShaderLoadFromBuffer(const CSR_Buffer*         pVerte
     if (!pShader)
         return 0;
 
-    // sometimes the OpenGL driver isn't compatible with Glew and this function isn't available.
-    // Stop here if it's the case
-    if (!glCreateProgram)
-        return 0;
+    #ifndef __APPLE__
+        // sometimes the OpenGL driver isn't compatible with Glew and this function isn't available.
+        // Stop here if it's the case
+        if (!glCreateProgram)
+            return 0;
+    #endif
 
     // create a new shader program
     pShader->m_ProgramID = glCreateProgram();
@@ -449,7 +481,7 @@ int csrOpenGLShaderCompile(const CSR_Buffer* pSource, GLenum shaderType, CSR_Ope
     #ifdef __APPLE__
         glShaderSource(shaderID, 1, (const GLchar* const*)&pSource->m_pData, 0);
     #else
-        glShaderSource(shaderID, 1, (GLchar**)&pSource->m_pData, 0);
+        glShaderSource(shaderID, 1, (const GLchar**)&pSource->m_pData, 0);
     #endif
     glCompileShader(shaderID);
 
@@ -1090,17 +1122,21 @@ void csrOpenGLDrawLine(const CSR_Line* pLine, const CSR_OpenGLShader* pShader)
     // bind shader program
     csrOpenGLShaderEnable(pShader);
 
-    // get the model matrix slot from shader
-    slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uModel");
-
-    // found it?
-    if (slot >= 0)
+    // do use a default model matrix?
+    if (!pLine->m_CustomModelMat)
     {
-        CSR_Matrix4 matrix;
-        csrMat4Identity(&matrix);
+        // get the model matrix slot from shader
+        slot = glGetUniformLocation(pShader->m_ProgramID, "csr_uModel");
 
-        // connect default model matrix to shader
-        glUniformMatrix4fv(slot, 1, GL_FALSE, &matrix.m_Table[0][0]);
+        // found it?
+        if (slot >= 0)
+        {
+            CSR_Matrix4 matrix;
+            csrMat4Identity(&matrix);
+
+            // connect default model matrix to shader
+            glUniformMatrix4fv(slot, 1, GL_FALSE, &matrix.m_Table[0][0]);
+        }
     }
 
     // generate the line vertex buffer
@@ -1250,7 +1286,7 @@ void csrOpenGLDrawVertexBuffer(const CSR_VertexBuffer* pVB,
     {
         // send normals to shader
         pNormals = &pVB->m_pData[offset];
-        glVertexAttribPointer(pShader->m_TexCoordSlot,
+        glVertexAttribPointer(pShader->m_NormalSlot,
                               3,
                               GL_FLOAT,
                               GL_FALSE,
@@ -1386,7 +1422,7 @@ void csrOpenGLDrawMesh(const CSR_Mesh*         pMesh,
                     glActiveTexture(GL_TEXTURE0);
                     glUniform1i(pShader->m_TextureSlot, GL_TEXTURE0);
 
-                    // bind the texure to use
+                    // bind the texture to use
                     glBindTexture(GL_TEXTURE_2D, pTextureID->m_ID);
                 }
 
@@ -1397,7 +1433,7 @@ void csrOpenGLDrawMesh(const CSR_Mesh*         pMesh,
                     glActiveTexture(GL_TEXTURE1);
                     glUniform1i(pShader->m_BumpMapSlot, GL_TEXTURE1);
 
-                    // bind the texure to use
+                    // bind the texture to use
                     glBindTexture(GL_TEXTURE_2D, pBumpmapID->m_ID);
                 }
             }
@@ -1412,7 +1448,7 @@ void csrOpenGLDrawMesh(const CSR_Mesh*         pMesh,
                 //glActiveTexture(GL_TEXTURE0);
                 //glUniform1i(pShader->m_CubemapSlot, GL_TEXTURE0);
 
-                // bind the cubemap texure to use
+                // bind the cubemap texture to use
                 glBindTexture(GL_TEXTURE_CUBE_MAP, pCubemapID->m_ID);
             }
         }
@@ -1473,7 +1509,7 @@ void csrOpenGLDrawMDL(const CSR_MDL*          pMDL,
             glActiveTexture(GL_TEXTURE0);
             glUniform1i(pShader->m_TextureSlot, GL_TEXTURE0);
 
-            // bind the texure to use
+            // bind the texture to use
             glBindTexture(GL_TEXTURE_2D, pTextureID->m_ID);
         }
     }
@@ -1512,12 +1548,13 @@ void csrOpenGLDrawX(const CSR_X*            pX,
     // iterate through the meshes to draw
     for (i = 0; i < pX->m_MeshCount; ++i)
     {
-        int               useLocalMatrixArray;
-        CSR_Mesh*         pMesh;
-        CSR_VertexBuffer* pSrcBuffer;
-        CSR_Array*        pLocalMatrixArray;
+        int        useLocalMatrixArray;
+        int        useSourceBuffer;
+        CSR_Mesh*  pMesh;
+        CSR_Mesh*  pLocalMesh;
+        CSR_Array* pLocalMatrixArray;
 
-        // if mesh has no skeletton, perform a simple draw
+        // if mesh has no skeleton, perform a simple draw
         if (!pX->m_pSkeleton)
         {
             // draw the model mesh
@@ -1538,15 +1575,61 @@ void csrOpenGLDrawX(const CSR_X*            pX,
             // exists, a custom version of this function should also be written for it)
             continue;
 
+        // create a local mesh to contain the processed frame to draw
+        pLocalMesh = csrMeshCreate();
+
+        if (!pLocalMesh)
+            continue;
+
+        // bind the source mesh to the local one. Don't need to take care of copy the pointers, because
+        // the source mesh will remain valid during the whole local mesh lifetime. Just don't delete
+        // them on the loop end
+        pLocalMesh->m_Skin = pMesh->m_Skin;
+        pLocalMesh->m_Time = pMesh->m_Time;
+
         // mesh contains skin weights?
         if (pX->m_pMeshWeights[i].m_pSkinWeights)
         {
-            // clear the previous print vertices (needs to be cleared to properly apply the weights)
-            for (j = 0; j < pMesh->m_pVB->m_Count; j += pMesh->m_pVB->m_Format.m_Stride)
+            useSourceBuffer = 0;
+
+            // allocate memory for the final vertex buffer to draw
+            pLocalMesh->m_pVB   = (CSR_VertexBuffer*)malloc(pMesh->m_Count * sizeof(CSR_VertexBuffer));
+            pLocalMesh->m_Count = pMesh->m_Count;
+
+            if (!pLocalMesh->m_pVB || !pLocalMesh->m_Count)
             {
-                pX->m_pPrint[i].m_pData[j]     = 0.0f;
-                pX->m_pPrint[i].m_pData[j + 1] = 0.0f;
-                pX->m_pPrint[i].m_pData[j + 2] = 0.0f;
+                free(pLocalMesh);
+                continue;
+            }
+
+            // bind the source vertex buffer to the local one
+            pLocalMesh->m_pVB->m_Format   = pMesh->m_pVB->m_Format;
+            pLocalMesh->m_pVB->m_Culling  = pMesh->m_pVB->m_Culling;
+            pLocalMesh->m_pVB->m_Material = pMesh->m_pVB->m_Material;
+            pLocalMesh->m_pVB->m_Time     = pMesh->m_pVB->m_Time;
+
+            // allocate memory for the vertex buffer data
+            pLocalMesh->m_pVB->m_pData = (float*)calloc(pMesh->m_pVB->m_Count, sizeof(float));
+            pLocalMesh->m_pVB->m_Count = pMesh->m_pVB->m_Count;
+
+            if (!pLocalMesh->m_pVB->m_pData || !pLocalMesh->m_pVB->m_Count)
+            {
+                free(pLocalMesh->m_pVB);
+                free(pLocalMesh);
+                continue;
+            }
+
+            // do copy the texture file name? NOTE the texture file name may be used as a key
+            // to retrieve the associated texture in the resources
+           if (pMesh->m_Skin.m_Texture.m_pFileName)
+            {
+                // measure the file name length and allocate memory for file name in local mesh
+                const size_t fileNameLen                 = strlen(pMesh->m_Skin.m_Texture.m_pFileName);
+                pLocalMesh->m_Skin.m_Texture.m_pFileName = (char*)calloc(fileNameLen + 1, sizeof(char));
+
+                // copy the file name
+                if (pLocalMesh->m_Skin.m_Texture.m_pFileName)
+                    memcpy(pLocalMesh->m_Skin.m_Texture.m_pFileName, pMesh->m_Skin.m_Texture.m_pFileName, fileNameLen);
             }
 
             // iterate through mesh skin weights
@@ -1602,16 +1685,30 @@ void csrOpenGLDrawX(const CSR_X*            pX,
                         csrMat4Transform(&finalMatrix, &inputVertex, &outputVertex);
 
                         // apply the skin weights and calculate the final output vertex
-                        pX->m_pPrint[i].m_pData[iX] += (outputVertex.m_X * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
-                        pX->m_pPrint[i].m_pData[iY] += (outputVertex.m_Y * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
-                        pX->m_pPrint[i].m_pData[iZ] += (outputVertex.m_Z * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+                        pLocalMesh->m_pVB->m_pData[iX] += (outputVertex.m_X * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+                        pLocalMesh->m_pVB->m_pData[iY] += (outputVertex.m_Y * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+                        pLocalMesh->m_pVB->m_pData[iZ] += (outputVertex.m_Z * pX->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+
+                        // copy the remaining vertex data
+                        if (pMesh->m_pVB->m_Format.m_Stride > 3)
+                        {
+                            const size_t copyIndex = iZ + 1;
+
+                            memcpy(&pLocalMesh->m_pVB->m_pData[copyIndex],
+                                   &pMesh->m_pVB->m_pData[copyIndex],
+                                    ((size_t)pMesh->m_pVB->m_Format.m_Stride - 3) * sizeof(float));
+                        }
                     }
             }
         }
+        else
+        {
+            useSourceBuffer = 1;
 
-        // use the model print as final vertex buffer
-        pSrcBuffer   = pMesh->m_pVB;
-        pMesh->m_pVB = &pX->m_pPrint[i];
+            // no weights, just use the existing vertex buffer
+            pLocalMesh->m_pVB   = pMesh->m_pVB;
+            pLocalMesh->m_Count = pMesh->m_Count;
+        }
 
         useLocalMatrixArray = 0;
 
@@ -1652,10 +1749,279 @@ void csrOpenGLDrawX(const CSR_X*            pX,
             pLocalMatrixArray = (CSR_Array*)pMatrixArray;
 
         // draw the model mesh
-        csrOpenGLDrawMesh(pMesh, pShader, pLocalMatrixArray, fOnGetID);
+        csrOpenGLDrawMesh(pLocalMesh, pShader, pLocalMatrixArray, fOnGetID);
 
-        // restore the correct mesh vertex buffer
-        pMesh->m_pVB = pSrcBuffer;
+        // delete the local vertex buffer
+        if (!useSourceBuffer)
+        {
+            free(pLocalMesh->m_pVB->m_pData);
+            free(pLocalMesh->m_pVB);
+        }
+
+        // delete the local mesh texture file name
+        if (pLocalMesh->m_Skin.m_Texture.m_pFileName)
+            free(pLocalMesh->m_Skin.m_Texture.m_pFileName);
+
+        // delete the local mesh
+        free(pLocalMesh);
+
+        // release the transformed matrix list
+        if (useLocalMatrixArray)
+            csrArrayRelease(pLocalMatrixArray);
+    }
+}
+//---------------------------------------------------------------------------
+void csrOpenGLDrawCollada(const CSR_Collada*      pCollada,
+                          const CSR_OpenGLShader* pShader,
+                          const CSR_Array*        pMatrixArray,
+                                size_t            animSetIndex,
+                                size_t            frameIndex,
+                          const CSR_fOnGetID      fOnGetID)
+{
+    size_t i;
+    size_t j;
+    size_t k;
+    size_t l;
+
+    // no model to draw?
+    if (!pCollada || !pCollada->m_MeshCount)
+        return;
+
+    // do draw only the mesh and ignore all other data like bones?
+    if (pCollada->m_MeshOnly || !pCollada->m_pMeshWeights)
+    {
+        // iterate through the meshes to draw
+        for (i = 0; i < pCollada->m_MeshCount; ++i)
+            // draw the model mesh
+            csrOpenGLDrawMesh(&pCollada->m_pMesh[i], pShader, pMatrixArray, fOnGetID);
+
+        return;
+    }
+
+    // iterate through the meshes to draw
+    for (i = 0; i < pCollada->m_MeshCount; ++i)
+    {
+        int        useLocalMatrixArray;
+        int        useSourceBuffer;
+        CSR_Mesh*  pMesh;
+        CSR_Mesh*  pLocalMesh;
+        CSR_Array* pLocalMatrixArray;
+
+        // if mesh has no skeleton, perform a simple draw
+        if (!pCollada->m_pSkeletons)
+        {
+            // draw the model mesh
+            csrOpenGLDrawMesh(&pCollada->m_pMesh[i], pShader, pMatrixArray, fOnGetID);
+            return;
+        }
+
+        // get the current model mesh to draw
+        pMesh = &pCollada->m_pMesh[i];
+
+        // found it?
+        if (!pMesh)
+            continue;
+
+        // normally each mesh should contain only one vertex buffer
+        if (pMesh->m_Count != 1)
+            // unsupported if not (because cannot know which texture should be binded. If a such model
+            // exists, a custom version of this function should also be written for it)
+            continue;
+
+        // create a local mesh to contain the processed frame to draw
+        pLocalMesh = csrMeshCreate();
+
+        if (!pLocalMesh)
+            continue;
+
+        // bind the source mesh to the local one. Don't need to take care of copy the pointers, because
+        // the source mesh will remain valid during the whole local mesh lifetime. Just don't delete
+        // them on the loop end
+        pLocalMesh->m_Skin = pMesh->m_Skin;
+        pLocalMesh->m_Time = pMesh->m_Time;
+
+        // mesh contains skin weights?
+        if (pCollada->m_pMeshWeights[i].m_pSkinWeights)
+        {
+            useSourceBuffer = 0;
+
+            // allocate memory for the final vertex buffer to draw
+            pLocalMesh->m_pVB   = (CSR_VertexBuffer*)malloc(pMesh->m_Count * sizeof(CSR_VertexBuffer));
+            pLocalMesh->m_Count = pMesh->m_Count;
+
+            if (!pLocalMesh->m_pVB || !pLocalMesh->m_Count)
+            {
+                free(pLocalMesh);
+                continue;
+            }
+
+            // bind the source vertex buffer to the local one
+            pLocalMesh->m_pVB->m_Format   = pMesh->m_pVB->m_Format;
+            pLocalMesh->m_pVB->m_Culling  = pMesh->m_pVB->m_Culling;
+            pLocalMesh->m_pVB->m_Material = pMesh->m_pVB->m_Material;
+            pLocalMesh->m_pVB->m_Time     = pMesh->m_pVB->m_Time;
+
+            // allocate memory for the vertex buffer data
+            pLocalMesh->m_pVB->m_pData = (float*)calloc(pMesh->m_pVB->m_Count, sizeof(float));
+            pLocalMesh->m_pVB->m_Count = pMesh->m_pVB->m_Count;
+
+            if (!pLocalMesh->m_pVB->m_pData || !pLocalMesh->m_pVB->m_Count)
+            {
+                free(pLocalMesh->m_pVB);
+                free(pLocalMesh);
+                continue;
+            }
+
+            // do copy the texture file name? NOTE the texture file name may be used as a key
+            // to retrieve the associated texture in the resources
+           if (pMesh->m_Skin.m_Texture.m_pFileName)
+            {
+                // measure the file name length and allocate memory for file name in local mesh
+                const size_t fileNameLen                 = strlen(pMesh->m_Skin.m_Texture.m_pFileName);
+                pLocalMesh->m_Skin.m_Texture.m_pFileName = (char*)calloc(fileNameLen + 1, sizeof(char));
+
+                // copy the file name
+                if (pLocalMesh->m_Skin.m_Texture.m_pFileName)
+                    memcpy(pLocalMesh->m_Skin.m_Texture.m_pFileName, pMesh->m_Skin.m_Texture.m_pFileName, fileNameLen);
+            }
+
+            // iterate through mesh skin weights
+            for (j = 0; j < pCollada->m_pMeshWeights[i].m_Count; ++j)
+            {
+                CSR_Matrix4 boneMatrix;
+                CSR_Matrix4 finalMatrix;
+
+                // get the bone matrix
+                if (pCollada->m_PoseOnly)
+                    csrBoneGetMatrix(pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pBone,
+                                    &pCollada->m_pSkeletons->m_InitialMatrix,
+                                    &boneMatrix);
+                else
+                    csrBoneGetAnimMatrix(pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pBone,
+                                        &pCollada->m_pAnimationSet[animSetIndex],
+                                         frameIndex,
+                                        &pCollada->m_pSkeletons->m_InitialMatrix,
+                                        &boneMatrix);
+
+                // get the final matrix after bones transform
+                csrMat4Multiply(&pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_Matrix,
+                                &boneMatrix,
+                                &finalMatrix);
+
+                // apply the bone and its skin weights to each vertices
+                for (k = 0; k < pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_IndexTableCount; ++k)
+                    for (l = 0; l < pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pIndexTable[k].m_Count; ++l)
+                    {
+                        #ifdef _MSC_VER
+                            size_t      iX;
+                            size_t      iY;
+                            size_t      iZ;
+                            CSR_Vector3 inputVertex  = {0};
+                            CSR_Vector3 outputVertex = {0};
+                        #else
+                            size_t      iX;
+                            size_t      iY;
+                            size_t      iZ;
+                            CSR_Vector3 inputVertex;
+                            CSR_Vector3 outputVertex;
+                        #endif
+
+                        // get the next vertex to which the next skin weight should be applied
+                        iX = pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pIndexTable[k].m_pData[l];
+                        iY = pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pIndexTable[k].m_pData[l] + 1;
+                        iZ = pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pIndexTable[k].m_pData[l] + 2;
+
+                        // get input vertex
+                        inputVertex.m_X = pMesh->m_pVB->m_pData[iX];
+                        inputVertex.m_Y = pMesh->m_pVB->m_pData[iY];
+                        inputVertex.m_Z = pMesh->m_pVB->m_pData[iZ];
+
+                        // apply bone transformation to vertex
+                        csrMat4Transform(&finalMatrix, &inputVertex, &outputVertex);
+
+                        // apply the skin weights and calculate the final output vertex
+                        pLocalMesh->m_pVB->m_pData[iX] += (outputVertex.m_X * pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+                        pLocalMesh->m_pVB->m_pData[iY] += (outputVertex.m_Y * pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+                        pLocalMesh->m_pVB->m_pData[iZ] += (outputVertex.m_Z * pCollada->m_pMeshWeights[i].m_pSkinWeights[j].m_pWeights[k]);
+
+                        // copy the remaining vertex data
+                        if (pMesh->m_pVB->m_Format.m_Stride > 3)
+                        {
+                            const size_t copyIndex = iZ + 1;
+
+                            memcpy(&pLocalMesh->m_pVB->m_pData[copyIndex],
+                                   &pMesh->m_pVB->m_pData[copyIndex],
+                                    ((size_t)pMesh->m_pVB->m_Format.m_Stride - 3) * sizeof(float));
+                        }
+                    }
+            }
+        }
+        else
+        {
+            useSourceBuffer = 1;
+
+            // no weights, just use the existing vertex buffer
+            pLocalMesh->m_pVB   = pMesh->m_pVB;
+            pLocalMesh->m_Count = pMesh->m_Count;
+        }
+
+        useLocalMatrixArray = 0;
+
+        // has matrix array to transform, and model contain mesh bones?
+        if (pMatrixArray                &&
+            pMatrixArray->m_Count       &&
+            pCollada->m_pMeshToBoneDict &&
+            pCollada->m_pMeshToBoneDict[i].m_pBone)
+        {
+            // create a new local matrix array
+            pLocalMatrixArray = (CSR_Array*)malloc(sizeof(CSR_Array));
+            csrArrayInit(pLocalMatrixArray);
+            useLocalMatrixArray = 1;
+
+            // create as array item as in the source matrix list
+            pLocalMatrixArray->m_pItem =
+                    (CSR_ArrayItem*)malloc(sizeof(CSR_ArrayItem) * pMatrixArray->m_Count);
+
+            // succeeded?
+            if (pLocalMatrixArray->m_pItem)
+            {
+                // update array count
+                pLocalMatrixArray->m_Count = pMatrixArray->m_Count;
+
+                // iterate through source model matrices
+                for (j = 0; j < pMatrixArray->m_Count; ++j)
+                {
+                    // initialize the local matrix array item
+                    pLocalMatrixArray->m_pItem[j].m_AutoFree = 1;
+                    pLocalMatrixArray->m_pItem[j].m_pData    = malloc(sizeof(CSR_Matrix4));
+
+                    // get the final matrix after bones transform
+                    csrBoneGetMatrix(pCollada->m_pMeshToBoneDict[i].m_pBone,
+                                     (CSR_Matrix4*)pMatrixArray->m_pItem[j].m_pData,
+                                     (CSR_Matrix4*)pLocalMatrixArray->m_pItem[j].m_pData);
+                }
+            }
+        }
+        else
+            // no matrix array or no bone, keep the original array
+            pLocalMatrixArray = (CSR_Array*)pMatrixArray;
+
+        // draw the model mesh
+        csrOpenGLDrawMesh(pLocalMesh, pShader, pLocalMatrixArray, fOnGetID);
+
+        // delete the local vertex buffer
+        if (!useSourceBuffer)
+        {
+            free(pLocalMesh->m_pVB->m_pData);
+            free(pLocalMesh->m_pVB);
+        }
+
+        // delete the local mesh texture file name
+        if (pLocalMesh->m_Skin.m_Texture.m_pFileName)
+            free(pLocalMesh->m_Skin.m_Texture.m_pFileName);
+
+        // delete the local mesh
+        free(pLocalMesh);
 
         // release the transformed matrix list
         if (useLocalMatrixArray)

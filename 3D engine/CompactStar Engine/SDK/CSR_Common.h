@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides the common functions and types        *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -22,7 +22,7 @@
 //---------------------------------------------------------------------------
 // Global defines
 //---------------------------------------------------------------------------
-#define M_CSR_Version        1.06
+#define M_CSR_Version        1.07
 #define M_CSR_Error_Code     0xFFFFFFFF // yes this is a 32 bit error code, but enough for this engine
 #define M_CSR_Unknown_Index -1
 #define M_CSR_Epsilon        1.0E-3     // epsilon value used for tolerance

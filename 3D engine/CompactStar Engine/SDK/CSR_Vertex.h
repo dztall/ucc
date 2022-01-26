@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides the vertex functions and types        *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -73,6 +73,7 @@ typedef struct
     CSR_Color   m_EndColor;
     float       m_Width;
     int         m_Smooth;
+    int         m_CustomModelMat;
 } CSR_Line;
 
 /**

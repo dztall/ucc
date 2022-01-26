@@ -1,9 +1,9 @@
 /****************************************************************************
  * ==> CSR_Collision -------------------------------------------------------*
  ****************************************************************************
- * Description : This module provides the colision detection functions      *
+ * Description : This module provides the collision detection functions     *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -110,8 +110,8 @@ typedef struct CSR_tagAABBNode
 
         /**
         * Calculates the position where a model or a point of view is placed on the ground
-        *@param pPolygon - polygon belonging to the model showing the ground of a scene
         *@param pSphere - bounding sphere surrounding the point of view or model
+        *@param pPolygon - polygon belonging to the model showing the ground of a scene
         *@param pGroundDir - ground direction. If 0, a default direction of [0, -1, 0] will be used
         *@param[in, out] pR - resulting position where the bounding sphere surrounding the point of
         *                     view or model will be placed on the ground. Ignored if 0

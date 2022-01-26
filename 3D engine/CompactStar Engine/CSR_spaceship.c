@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : A spaceship game demo                                      *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -38,6 +38,7 @@
 #include "SDK/CSR_Collision.h"
 #include "SDK/CSR_Vertex.h"
 #include "SDK/CSR_Model.h"
+#include "SDK/CSR_Mdl.h"
 #include "SDK/CSR_Particles.h"
 #include "SDK/CSR_Renderer.h"
 #include "SDK/CSR_Renderer_OpenGL.h"

@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides the texture functions and types       *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -86,13 +86,23 @@ CSR_PixelBuffer* csrPixelBufferFromBitmapFile(const char* pFileName)
 //---------------------------------------------------------------------------
 CSR_PixelBuffer* csrPixelBufferFromBitmapBuffer(const CSR_Buffer* pBuffer)
 {
-    CSR_PixelBuffer* pPixelBuffer;
-    size_t           offset;
-    unsigned         dataOffset;
-    unsigned         headerSize;
-    unsigned short   bpp;
-    unsigned short   compressed;
-    unsigned char    signature[2];
+    #ifdef _MSC_VER
+        CSR_PixelBuffer* pPixelBuffer;
+        size_t           offset;
+        unsigned         dataOffset;
+        unsigned         headerSize;
+        unsigned short   bpp;
+        unsigned short   compressed;
+        unsigned char    signature[2] = {0};
+    #else
+        CSR_PixelBuffer* pPixelBuffer;
+        size_t           offset;
+        unsigned         dataOffset;
+        unsigned         headerSize;
+        unsigned short   bpp;
+        unsigned short   compressed;
+        unsigned char    signature[2];
+    #endif
 
     // validate the input
     if (!pBuffer)
@@ -239,7 +249,7 @@ CSR_PixelBuffer* csrPixelBufferFromBitmapBuffer(const CSR_Buffer* pBuffer)
     pPixelBuffer->m_ImageType    = CSR_IT_Bitmap;
     pPixelBuffer->m_BytePerPixel = bpp / 8;
     pPixelBuffer->m_Stride       = (((pPixelBuffer->m_Width) * 3 + 3) / 4) * 4 - ((pPixelBuffer->m_Width) * 3 % 4);
-    pPixelBuffer->m_DataLength   = pPixelBuffer->m_Stride * pPixelBuffer->m_Height;
+    pPixelBuffer->m_DataLength   = (size_t)(pPixelBuffer->m_Stride * pPixelBuffer->m_Height);
     pPixelBuffer->m_pData        = malloc(sizeof(unsigned char) * pPixelBuffer->m_DataLength);
 
     offset = dataOffset;
@@ -417,7 +427,7 @@ void csrSkinContentRelease(CSR_Skin* pSkin, const CSR_fOnDeleteTexture fOnDelete
     // release the texture content
     csrTextureContentRelease(&pSkin->m_Texture);
 
-    // release the bumpmap content
+    // release the bump map content
     csrTextureContentRelease(&pSkin->m_BumpMap);
 
     // release the cubemap content

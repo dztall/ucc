@@ -3,7 +3,7 @@
  ****************************************************************************
  * Description : This module provides the functions to draw a scene         *
  * Developer   : Jean-Milost Reymond                                        *
- * Copyright   : 2017 - 2019, this file is part of the CompactStar Engine.  *
+ * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
  *               or use it for your own projects, commercial or not. This   *
  *               file is provided "as is", WITHOUT ANY WARRANTY OF ANY      *
@@ -51,7 +51,8 @@ typedef enum
     CSR_MT_Mesh,
     CSR_MT_Model,
     CSR_MT_MDL,
-    CSR_MT_X
+    CSR_MT_X,
+    CSR_MT_Collada
 } CSR_EModelType;
 
 /**
@@ -249,6 +250,14 @@ typedef void (*CSR_fOnGetMDLIndex)(const CSR_MDL* pMDL,
 typedef void (*CSR_fOnGetXIndex)(const CSR_X* pX, size_t* pAnimSetIndex, size_t* pFrameIndex);
 
 /**
+* Called when the Collada model indexes should be get
+*@param pCollada - Collada model for which the indexes should be get
+*@param[in, out] pAnimSetIndex - animation set index
+*@param[in, out] pFrameIndex - frame index
+*/
+typedef void (*CSR_fOnGetColladaIndex)(const CSR_Collada* pCollada, size_t* pAnimSetIndex, size_t* pFrameIndex);
+
+/**
 * Called when a custom collision should be detected in a scene
 *@param pScene - scene in which the models to check are contained
 *@param pSceneItem - the scene item currently tested
@@ -283,6 +292,7 @@ struct CSR_SceneContext
     CSR_fOnGetModelIndex          m_fOnGetModelIndex;
     CSR_fOnGetMDLIndex            m_fOnGetMDLIndex;
     CSR_fOnGetXIndex              m_fOnGetXIndex;
+    CSR_fOnGetColladaIndex        m_fOnGetColladaIndex;
     CSR_fOnGetShader              m_fOnGetShader;
     CSR_fOnGetID                  m_fOnGetID;
     CSR_fOnDeleteTexture          m_fOnDeleteTexture;
@@ -503,6 +513,18 @@ struct CSR_SceneContext
         *      be released from outside
         */
         CSR_SceneItem* csrSceneAddX(CSR_Scene* pScene, CSR_X* pX, int transparent, int aabb);
+
+        /**
+        * Adds a Collada model to a scene
+        *@param pScene - scene in which the model will be added
+        *@param pCollada - model to add
+        *@param transparent - if 1, the model is transparent, if 0 the model is opaque
+        *@param aabb - if 1, the AABB tree will be generated for the mesh
+        *@return the scene item containing the model on success, otherwise 0
+        *@note Once successfully added, the X model will be owned by the scene and should no longer
+        *      be released from outside
+        */
+        CSR_SceneItem* csrSceneAddCollada(CSR_Scene* pScene, CSR_Collada* pCollada, int transparent, int aabb);
 
         /**
         * Adds a model matrix to a scene item. Doing that the same model may be drawn several time
