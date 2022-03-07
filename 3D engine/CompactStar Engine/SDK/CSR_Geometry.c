@@ -1799,6 +1799,44 @@ int csrInsideSphere(const CSR_Vector3* pP, const CSR_Sphere* pS)
     return (distance <= pS->m_Radius);
 }
 //---------------------------------------------------------------------------
+int csrInsideCapsule(const CSR_Vector3* pP, const CSR_Capsule* pC)
+{
+    CSR_Vector3 capsuleAxis;
+    CSR_Vector3 ptToTop;
+    CSR_Vector3 lineDelta;
+    CSR_Vector3 ptToCapsule;
+    CSR_Vector3 ptToCapSeg;
+    float       a;
+    float       b;
+    float       t;
+    float       len;
+
+    // calculate capsule axis, and line between p and capsule top vertex
+    csrVec3Sub(&pC->m_Bottom, &pC->m_Top, &capsuleAxis);
+    csrVec3Sub( pP,           &pC->m_Top, &ptToTop);
+
+    // calculate dot products
+    csrVec3Dot(&ptToTop,     &capsuleAxis, &a);
+    csrVec3Dot(&capsuleAxis, &capsuleAxis, &b);
+
+    // find the line t parameter
+    csrMathClamp(a / b, 0.0f, 1.0f, &t);
+
+    // apply line equation, which is: ptToCapsule = pCapsule->m_Top + t * capsuleAxis;
+    csrVec3MulVal(&capsuleAxis,  t,         &lineDelta);
+    csrVec3Add   (&pC->m_Top,   &lineDelta, &ptToCapsule);
+
+    // calculate the length between p and the capsule
+    csrVec3Sub(pP, &ptToCapsule, &ptToCapSeg);
+    csrVec3Length(&ptToCapSeg, &len);
+
+    // if length is lower than the capsule radius, then point is inside the capsule
+    if (len <= pC->m_Radius)
+        return 1;
+
+    return 0;
+}
+//---------------------------------------------------------------------------
 // Intersection checks
 //---------------------------------------------------------------------------
 int csrIntersect2(const CSR_Figure2* pFigure1,
@@ -2740,6 +2778,7 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
             return (length <= (pSphere1->m_Radius + pSphere2->m_Radius));
         }
 
+        // capsule-capsule intersection
         case 35:
         {
             #ifdef _MSC_VER
@@ -2805,7 +2844,7 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
                  pCapsule1->m_Bottom.m_Z == pCapsule2->m_Bottom.m_Z))
                 return 1;
 
-            // this capsule
+            // first capsule
             csrVec3Sub      (&pCapsule1->m_Top,    &pCapsule1->m_Bottom, &firstLineDir);
             csrVec3Normalize(&firstLineDir,        &firstLineDir);
             csrVec3MulVal   (&firstLineDir,         pCapsule1->m_Radius, &firstLineEndOffset);

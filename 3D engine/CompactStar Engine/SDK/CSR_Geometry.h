@@ -1008,6 +1008,14 @@ typedef struct
         */
         int csrInsideSphere(const CSR_Vector3* pP, const CSR_Sphere* pS);
 
+        /**
+        * Checks if a point is inside a capsule
+        *@param pP - point to check
+        *@param pC - capsule to check against
+        *@return 1 if point is inside the capsule, otherwise 0
+        */
+        int csrInsideCapsule(const CSR_Vector3* pP, const CSR_Capsule* pC);
+
         //-------------------------------------------------------------------
         // Intersection checks
         //-------------------------------------------------------------------
