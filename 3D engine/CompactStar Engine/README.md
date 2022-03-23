@@ -4,8 +4,8 @@ The CompactStar engine is a tiny game engine I'm using for my own purposes. On t
 
 <b>Here are the actual supported features</b>
 - Simple shapes creation (surface, box, sphere, cylinder, disk, ring, spiral and capsule)
-- Quake I (.mdl), DirectX (.x, partially), Collada (.dae, partially) and WaveFront (.obj, partially) models
-- Animations for Quake I (.mdl), DirectX (.x) and Collada (.dae) models
+- Quake I (.mdl), Inter-Quake Model (.iqm), DirectX (.x, partially), Collada (.dae, partially) and WaveFront (.obj, partially) models
+- Animations for Quake I (.mdl), Inter-Quake Model (.iqm), DirectX (.x) and Collada (.dae) models
 - Skybox
 - Landscape generation
 - Transparency

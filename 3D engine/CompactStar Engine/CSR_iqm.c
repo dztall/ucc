@@ -1,7 +1,7 @@
 ﻿/****************************************************************************
- * ==> Cat demo ------------------------------------------------------------*
+ * ==> Inter-Quake model demo ----------------------------------------------*
  ****************************************************************************
- * Description : Small animated Collada cat model demo                      *
+ * Description : Inter-Quake model demo                                     *
  * Developer   : Jean-Milost Reymond                                        *
  * Copyright   : 2017 - 2022, this file is part of the CompactStar Engine.  *
  *               You are free to copy or redistribute this file, modify it, *
@@ -38,7 +38,7 @@
 #include "SDK/CSR_Collision.h"
 #include "SDK/CSR_Vertex.h"
 #include "SDK/CSR_Model.h"
-#include "SDK/CSR_Collada.h"
+#include "SDK/CSR_Iqm.h"
 #include "SDK/CSR_Renderer.h"
 #include "SDK/CSR_Renderer_OpenGL.h"
 #include "SDK/CSR_Scene.h"
@@ -52,29 +52,34 @@
 //#define SHOW_SKELETON
 
 // resource files
-#define COLLADA_FILE "Resources/cat.dae"
+#define IQM_FILE "Resources/mrfixit.iqm"
 
-//------------------------------------------------------------------------------
-const char g_VSColored[] =
+//----------------------------------------------------------------------------
+const char g_VSTextured[] =
     "precision mediump float;"
-    "attribute    vec3 csr_aVertices;"
-    "attribute    vec4 csr_aColor;"
-    "uniform      mat4 csr_uProjection;"
-    "uniform      mat4 csr_uView;"
-    "uniform      mat4 csr_uModel;"
-    "varying lowp vec4 csr_vColor;"
+    "attribute vec3 csr_aVertices;"
+    "attribute vec4 csr_aColor;"
+    "attribute vec2 csr_aTexCoord;"
+    "uniform   mat4 csr_uProjection;"
+    "uniform   mat4 csr_uView;"
+    "uniform   mat4 csr_uModel;"
+    "varying   vec4 csr_vColor;"
+    "varying   vec2 csr_vTexCoord;"
     "void main(void)"
     "{"
-    "    csr_vColor  = csr_aColor;"
-    "    gl_Position = csr_uProjection * csr_uView * csr_uModel * vec4(csr_aVertices, 1.0);"
+    "    csr_vColor    = csr_aColor;"
+    "    csr_vTexCoord = csr_aTexCoord;"
+    "    gl_Position   = csr_uProjection * csr_uView * csr_uModel * vec4(csr_aVertices, 1.0);"
     "}";
 //----------------------------------------------------------------------------
-const char g_FSColored[] =
+const char g_FSTextured[] =
     "precision mediump float;"
+    "uniform sampler2D csr_sColorMap;"
     "varying lowp vec4 csr_vColor;"
+    "varying      vec2 csr_vTexCoord;"
     "void main(void)"
     "{"
-    "    gl_FragColor = vec4(csr_vColor.x, csr_vColor.y, csr_vColor.z, 1.0);"
+    "    gl_FragColor = csr_vColor * texture2D(csr_sColorMap, csr_vTexCoord);"
     "}";
 //------------------------------------------------------------------------------
 const char g_VSLine[] =
@@ -99,14 +104,94 @@ const char g_FSLine[] =
     "    gl_FragColor = csr_vColor;"
     "}";
 //------------------------------------------------------------------------------
-CSR_Scene*        g_pScene      = 0;
-CSR_OpenGLShader* g_pShader     = 0;
-CSR_OpenGLShader* g_pLineShader = 0;
-CSR_Collada*      g_pModel      = 0;
+CSR_Scene*        g_pScene       = 0;
+CSR_OpenGLShader* g_pShader      = 0;
+CSR_OpenGLShader* g_pLineShader  = 0;
+CSR_IQM*          g_pModel       = 0;
 CSR_SceneContext  g_SceneContext;
 CSR_Matrix4       g_Matrix;
-size_t            g_AnimCount   = 0;
-float             g_Angle       = 0.0f;
+size_t            g_AnimCount    = 0;
+size_t            g_AnimMaxFrame = 101;
+float             g_Angle        = 0.0f;
+CSR_OpenGLID      g_ID[2];
+//---------------------------------------------------------------------------
+CSR_PixelBuffer* OnLoadTexture(const char* pTextureName)
+{
+    char* pFileName = (char*)malloc(10 + strlen(pTextureName));
+    strcpy(pFileName,      "Resources/\0");
+    strcpy(pFileName + 10, pTextureName);
+
+    return csrPixelBufferFromTgaFile(pFileName);
+}
+//---------------------------------------------------------------------------
+void OnApplySkin(size_t index, const CSR_Skin* pSkin, int* pCanRelease)
+{
+    size_t id;
+
+    if (!pSkin || !pSkin->m_Texture.m_pFileName)
+        return;
+
+    if (strcmp(pSkin->m_Texture.m_pFileName, "Body.tga") == 0)
+        id = 0;
+    else
+        id = 1;
+
+    // should not be hardcoded, however there is only 1 model which will use this function in this demo,
+    // so it is safe to do that
+    g_ID[id].m_pKey     = (void*)(&pSkin->m_Texture);
+    g_ID[id].m_ID       = csrOpenGLTextureFromPixelBuffer(pSkin->m_Texture.m_pBuffer);
+    g_ID[id].m_UseCount = 1;
+
+    // from now the source texture will no longer be used
+    if (pCanRelease)
+        *pCanRelease = 1;
+}
+//---------------------------------------------------------------------------
+void* OnGetID(const void* pKey)
+{
+    size_t       id;
+    CSR_Texture* pTexture;
+
+    pTexture = (CSR_Texture*)pKey;
+
+    if (!pTexture || !pTexture->m_pFileName)
+        return 0;
+
+    if (strcmp(pTexture->m_pFileName, "Body.tga") == 0)
+        id = 0;
+    else
+        id = 1;
+
+    return &g_ID[id];
+}
+//---------------------------------------------------------------------------
+void OnDeleteTexture(const CSR_Texture* pTexture)
+{
+    size_t id;
+
+    if (!pTexture || !pTexture->m_pFileName)
+        return;
+
+    if (strcmp(pTexture->m_pFileName, "Body.tga") == 0)
+        id = 0;
+    else
+        id = 1;
+
+    // unuse the texture
+    if (g_ID[id].m_UseCount)
+        --g_ID[id].m_UseCount;
+
+    // is texture no longer used?
+    if (g_ID[id].m_UseCount)
+        return;
+
+    // delete the texture from the GPU
+    if (g_ID[id].m_ID != M_CSR_Error_Code)
+    {
+        glDeleteTextures(1, (GLuint*)(&g_ID[id].m_ID));
+        g_ID[id].m_ID = M_CSR_Error_Code;
+    }
+}
 //---------------------------------------------------------------------------
 void* OnGetShader(const void* pModel, CSR_EModelType type)
 {
@@ -114,10 +199,10 @@ void* OnGetShader(const void* pModel, CSR_EModelType type)
     return g_pShader;
 }
 //---------------------------------------------------------------------------
-void OnGetColladaIndex(const CSR_Collada* pCollada, size_t* pAnimSetIndex, size_t* pFrameIndex)
+void OnGetIQMIndex(const CSR_IQM* pIQM, size_t* pAnimSetIndex, size_t* pFrameIndex)
 {
     *pAnimSetIndex = 0;
-    *pFrameIndex   = g_AnimCount % 36;
+    *pFrameIndex   = g_AnimCount % g_AnimMaxFrame;
 }
 //---------------------------------------------------------------------------
 void BuildCharMatrix(CSR_Matrix4* pMatrix)
@@ -149,9 +234,9 @@ void BuildCharMatrix(CSR_Matrix4* pMatrix)
     csrMat4Rotate((float)(-M_PI / 4.0) + g_Angle, &axis, &rotateYMatrix);
 
     // set scale factor
-    factor.m_X = 1.0f;
-    factor.m_Y = 1.0f;
-    factor.m_Z = 1.0f;
+    factor.m_X = 0.05f;
+    factor.m_Y = 0.05f;
+    factor.m_Z = 0.05f;
 
     // create the scale matrix
     csrMat4Scale(&factor, &scaleMatrix);
@@ -162,7 +247,7 @@ void BuildCharMatrix(CSR_Matrix4* pMatrix)
 
     // place it in the scene
     pMatrix->m_Table[3][0] =  0.1f;
-    pMatrix->m_Table[3][1] = -0.1f;
+    pMatrix->m_Table[3][1] = -0.2f;
     pMatrix->m_Table[3][2] = -1.0f;
 }
 //------------------------------------------------------------------------------
@@ -212,8 +297,9 @@ void on_GLES2_Init(int view_w, int view_h)
 
     // configure the scene context
     csrSceneContextInit(&g_SceneContext);
-    g_SceneContext.m_fOnGetShader       = OnGetShader;
-    g_SceneContext.m_fOnGetColladaIndex = OnGetColladaIndex;
+    g_SceneContext.m_fOnGetShader   = OnGetShader;
+    g_SceneContext.m_fOnGetIQMIndex = OnGetIQMIndex;
+    g_SceneContext.m_fOnGetID       = OnGetID;
 
     #ifdef SHOW_SKELETON
         // compile, link and use shader
@@ -227,7 +313,7 @@ void on_GLES2_Init(int view_w, int view_h)
         // succeeded?
         if (!g_pLineShader)
         {
-            printf("FAILED to compile line shader\n");
+        	printf("FAILED to compile line shader\n");
             return;
         }
 
@@ -239,10 +325,10 @@ void on_GLES2_Init(int view_w, int view_h)
     #endif
 
     // compile, link and use shader
-    g_pShader = csrOpenGLShaderLoadFromStr(&g_VSColored[0],
-                                            sizeof(g_VSColored),
-                                           &g_FSColored[0],
-                                            sizeof(g_FSColored),
+    g_pShader = csrOpenGLShaderLoadFromStr(&g_VSTextured[0],
+                                            sizeof(g_VSTextured),
+                                           &g_FSTextured[0],
+                                            sizeof(g_FSTextured),
                                             0,
                                             0);
 
@@ -256,8 +342,10 @@ void on_GLES2_Init(int view_w, int view_h)
     csrShaderEnable(g_pShader);
 
     // get shader attributes
-    g_pShader->m_VertexSlot = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aVertices");
-    g_pShader->m_ColorSlot  = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aColor");
+    g_pShader->m_VertexSlot   = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aVertices");
+    g_pShader->m_ColorSlot    = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aColor");
+    g_pShader->m_TexCoordSlot = glGetAttribLocation(g_pShader->m_ProgramID, "csr_aTexCoord");
+    g_pShader->m_TextureSlot  = glGetAttribLocation(g_pShader->m_ProgramID, "csr_sTexture");
 
     // configure OpenGL depth testing
     glEnable(GL_DEPTH_TEST);
@@ -268,32 +356,32 @@ void on_GLES2_Init(int view_w, int view_h)
     BuildCharMatrix(&g_Matrix);
 
     // configure the vertex format
-    vertexFormat.m_HasNormal         = 1;
-    vertexFormat.m_HasTexCoords      = 0;
+    vertexFormat.m_HasNormal         = 0;
+    vertexFormat.m_HasTexCoords      = 1;
     vertexFormat.m_HasPerVertexColor = 1;
 
     vertexCulling.m_Face = CSR_CF_CCW;
     vertexCulling.m_Type = CSR_CT_None;
 
     // configure the material
-    material.m_Color       = 0xA0A0A0FF;
+    material.m_Color       = 0xFFFFFFFF;
     material.m_Transparent = 0;
     material.m_Wireframe   = 0;
 
-    // load the Collada model
-    g_pModel = csrColladaOpen(COLLADA_FILE,
-                             &vertexFormat,
-                             &vertexCulling,
-                             &material,
-                              0,
-                              0,
-                              0,
-                              0,
-                              0,
-                              0);
+    // load the IQM model
+    g_pModel = csrIQMOpen(IQM_FILE,
+                         &vertexFormat,
+                         &vertexCulling,
+                         &material,
+                          0,
+                          0,
+                          0,
+                          OnLoadTexture,
+                          OnApplySkin,
+                          OnDeleteTexture);
 
     // add the model to the scene
-    CSR_SceneItem* pSceneItem = csrSceneAddCollada(g_pScene, g_pModel, 0, 0);
+    CSR_SceneItem* pSceneItem = csrSceneAddIQM(g_pScene, g_pModel, 0, 0);
     csrSceneAddModelMatrix(g_pScene, g_pModel, &g_Matrix);
 }
 //------------------------------------------------------------------------------
@@ -344,7 +432,7 @@ void on_GLES2_Render()
         glUniformMatrix4fv(slot, 1, 0, &g_Matrix.m_Table[0][0]);
 
         // draw the skeleton
-        csrDebugDrawSkeletonCollada(g_pModel, g_pLineShader, 0, g_AnimCount % 36);
+        csrDebugDrawSkeletonIQM(g_pModel, g_pLineShader, 0, g_AnimCount % g_AnimMaxFrame);
     #endif
 }
 //------------------------------------------------------------------------------
