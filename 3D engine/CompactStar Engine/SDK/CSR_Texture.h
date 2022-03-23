@@ -148,6 +148,22 @@ typedef void (*CSR_fOnDeleteTexture)(const CSR_Texture* pTexture);
         */
         CSR_PixelBuffer* csrPixelBufferFromBitmapBuffer(const CSR_Buffer* pBuffer);
 
+        /**
+        * Loads a pixel buffer from a TARGA (.tga) file
+        *@param pFileName - TARGA file name to load from
+        *@return pixel buffer, 0 on error
+        *@note The pixel buffer must be released when no longer used, see csrPixelBufferRelease()
+        */
+        CSR_PixelBuffer* csrPixelBufferFromTgaFile(const char* pFileName);
+
+        /**
+        * Loads a pixel buffer from a TARGA (.tga) buffer
+        *@param pBuffer - buffer containing the TARGA to load from
+        *@return pixel buffer, 0 on error
+        *@note The pixel buffer must be released when no longer used, see csrPixelBufferRelease()
+        */
+        CSR_PixelBuffer* csrPixelBufferFromTgaBuffer(const CSR_Buffer* pBuffer);
+
         //-------------------------------------------------------------------
         // Texture functions
         //-------------------------------------------------------------------

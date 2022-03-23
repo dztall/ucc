@@ -22,6 +22,18 @@
 #include "CSR_Collision.h"
 #include "CSR_Model.h"
 #include "CSR_Renderer.h"
+#ifdef USE_MDL
+    #include "CSR_Mdl.h"
+#endif
+#ifdef USE_X
+    #include "CSR_X.h"
+#endif
+#ifdef USE_COLLADA
+    #include "CSR_Collada.h"
+#endif
+#ifdef USE_IQM
+    #include "CSR_Iqm.h"
+#endif
 
 // visual studio specific code
 #ifdef _MSC_VER
@@ -49,10 +61,23 @@ typedef enum
 {
     CSR_MT_Line,
     CSR_MT_Mesh,
-    CSR_MT_Model,
-    CSR_MT_MDL,
-    CSR_MT_X,
-    CSR_MT_Collada
+    CSR_MT_Model
+    #ifdef USE_MDL
+        ,
+        CSR_MT_MDL
+    #endif
+    #ifdef USE_X
+        ,
+        CSR_MT_X
+    #endif
+    #ifdef USE_COLLADA
+        ,
+        CSR_MT_Collada
+    #endif
+    #ifdef USE_IQM
+        ,
+        CSR_MT_IQM
+    #endif
 } CSR_EModelType;
 
 /**
@@ -236,10 +261,12 @@ typedef void (*CSR_fOnGetModelIndex)(const CSR_Model* pModel, size_t* pIndex);
 *@param[in, out] pModelIndex - model index
 *@param[in, out] pMeshIndex - mesh index
 */
-typedef void (*CSR_fOnGetMDLIndex)(const CSR_MDL* pMDL,
-                                         size_t*  pSkinIndex,
-                                         size_t*  pModelIndex,
-                                         size_t*  pMeshIndex);
+#ifdef USE_MDL
+    typedef void (*CSR_fOnGetMDLIndex)(const CSR_MDL* pMDL,
+                                             size_t*  pSkinIndex,
+                                             size_t*  pModelIndex,
+                                             size_t*  pMeshIndex);
+#endif
 
 /**
 * Called when the X model indexes should be get
@@ -247,7 +274,11 @@ typedef void (*CSR_fOnGetMDLIndex)(const CSR_MDL* pMDL,
 *@param[in, out] pAnimSetIndex - animation set index
 *@param[in, out] pFrameIndex - frame index
 */
-typedef void (*CSR_fOnGetXIndex)(const CSR_X* pX, size_t* pAnimSetIndex, size_t* pFrameIndex);
+#ifdef USE_X
+    typedef void (*CSR_fOnGetXIndex)(const CSR_X*  pX,
+                                           size_t* pAnimSetIndex,
+                                           size_t* pFrameIndex);
+#endif
 
 /**
 * Called when the Collada model indexes should be get
@@ -255,7 +286,23 @@ typedef void (*CSR_fOnGetXIndex)(const CSR_X* pX, size_t* pAnimSetIndex, size_t*
 *@param[in, out] pAnimSetIndex - animation set index
 *@param[in, out] pFrameIndex - frame index
 */
-typedef void (*CSR_fOnGetColladaIndex)(const CSR_Collada* pCollada, size_t* pAnimSetIndex, size_t* pFrameIndex);
+#ifdef USE_COLLADA
+    typedef void (*CSR_fOnGetColladaIndex)(const CSR_Collada* pCollada,
+                                                 size_t*      pAnimSetIndex,
+                                                 size_t*      pFrameIndex);
+#endif
+
+/**
+* Called when the IQM model indexes should be get
+*@param pIQM - IQM model for which the indexes should be get
+*@param[in, out] pAnimSetIndex - animation set index
+*@param[in, out] pFrameIndex - frame index
+*/
+#ifdef USE_IQM
+    typedef void (*CSR_fOnGetIQMIndex)(const CSR_IQM* pIQM,
+                                             size_t*  pAnimSetIndex,
+                                             size_t*  pFrameIndex);
+#endif
 
 /**
 * Called when a custom collision should be detected in a scene
@@ -290,9 +337,18 @@ struct CSR_SceneContext
     CSR_fOnPrepareDraw            m_fOnPrepareDraw;
     CSR_fOnPrepareTransparentDraw m_fOnPrepareTransparentDraw;
     CSR_fOnGetModelIndex          m_fOnGetModelIndex;
-    CSR_fOnGetMDLIndex            m_fOnGetMDLIndex;
-    CSR_fOnGetXIndex              m_fOnGetXIndex;
-    CSR_fOnGetColladaIndex        m_fOnGetColladaIndex;
+    #ifdef USE_MDL
+        CSR_fOnGetMDLIndex        m_fOnGetMDLIndex;
+    #endif
+    #ifdef USE_X
+        CSR_fOnGetXIndex          m_fOnGetXIndex;
+    #endif
+    #ifdef USE_COLLADA
+        CSR_fOnGetColladaIndex    m_fOnGetColladaIndex;
+    #endif
+    #ifdef USE_IQM
+        CSR_fOnGetIQMIndex        m_fOnGetIQMIndex;
+    #endif
     CSR_fOnGetShader              m_fOnGetShader;
     CSR_fOnGetID                  m_fOnGetID;
     CSR_fOnDeleteTexture          m_fOnDeleteTexture;
@@ -500,7 +556,12 @@ struct CSR_SceneContext
         *@note Once successfully added, the MDL model will be owned by the scene and should no
         *      longer be released from outside
         */
-        CSR_SceneItem* csrSceneAddMDL(CSR_Scene* pScene, CSR_MDL* pMDL, int transparent, int aabb);
+        #ifdef USE_MDL
+            CSR_SceneItem* csrSceneAddMDL(CSR_Scene* pScene,
+                                          CSR_MDL*   pMDL,
+                                          int        transparent,
+                                          int        aabb);
+        #endif
 
         /**
         * Adds a X model to a scene
@@ -512,7 +573,12 @@ struct CSR_SceneContext
         *@note Once successfully added, the X model will be owned by the scene and should no longer
         *      be released from outside
         */
-        CSR_SceneItem* csrSceneAddX(CSR_Scene* pScene, CSR_X* pX, int transparent, int aabb);
+        #ifdef USE_X
+            CSR_SceneItem* csrSceneAddX(CSR_Scene* pScene,
+                                        CSR_X*     pX,
+                                        int        transparent,
+                                        int        aabb);
+        #endif
 
         /**
         * Adds a Collada model to a scene
@@ -524,7 +590,29 @@ struct CSR_SceneContext
         *@note Once successfully added, the X model will be owned by the scene and should no longer
         *      be released from outside
         */
-        CSR_SceneItem* csrSceneAddCollada(CSR_Scene* pScene, CSR_Collada* pCollada, int transparent, int aabb);
+        #ifdef USE_COLLADA
+            CSR_SceneItem* csrSceneAddCollada(CSR_Scene*   pScene,
+                                              CSR_Collada* pCollada,
+                                              int          transparent,
+                                              int          aabb);
+        #endif
+
+        /**
+        * Adds an Inter-Quake model (.iqm) to a scene
+        *@param pScene - scene in which the model will be added
+        *@param pX - model to add
+        *@param transparent - if 1, the model is transparent, if 0 the model is opaque
+        *@param aabb - if 1, the AABB tree will be generated for the mesh
+        *@return the scene item containing the model on success, otherwise 0
+        *@note Once successfully added, the X model will be owned by the scene and should no longer
+        *      be released from outside
+        */
+        #ifdef USE_IQM
+            CSR_SceneItem* csrSceneAddIQM(CSR_Scene* pScene,
+                                          CSR_IQM*   pIQM,
+                                          int        transparent,
+                                          int        aabb);
+        #endif
 
         /**
         * Adds a model matrix to a scene item. Doing that the same model may be drawn several time

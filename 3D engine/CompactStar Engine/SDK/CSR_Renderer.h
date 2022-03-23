@@ -20,10 +20,18 @@
 #include "CSR_Common.h"
 #include "CSR_Vertex.h"
 #include "CSR_Model.h"
-#include "CSR_Wavefront.h"
-#include "CSR_Mdl.h"
-#include "CSR_X.h"
-#include "CSR_Collada.h"
+#ifdef USE_MDL
+    #include "CSR_Mdl.h"
+#endif
+#ifdef USE_X
+    #include "CSR_X.h"
+#endif
+#ifdef USE_COLLADA
+    #include "CSR_Collada.h"
+#endif
+#ifdef USE_IQM
+    #include "CSR_Iqm.h"
+#endif
 
 // graphics library
 #if defined(_OS_IOS_) || defined(_OS_ANDROID_) || defined(_OS_WINDOWS_)
@@ -161,13 +169,15 @@ typedef void* (*CSR_fOnGetID)(const void* pKey);
         *@param meshIndex - mesh index
         *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
         */
-        void csrDrawMDL(const CSR_MDL*     pMDL,
-                        const void*        pShader,
-                        const CSR_Array*   pMatrixArray,
-                              size_t       skinIndex,
-                              size_t       modelIndex,
-                              size_t       meshIndex,
-                        const CSR_fOnGetID fOnGetID);
+        #ifdef USE_MDL
+            void csrDrawMDL(const CSR_MDL*     pMDL,
+                            const void*        pShader,
+                            const CSR_Array*   pMatrixArray,
+                                  size_t       skinIndex,
+                                  size_t       modelIndex,
+                                  size_t       meshIndex,
+                            const CSR_fOnGetID fOnGetID);
+        #endif
 
         /**
         * Draws a X model in a scene
@@ -179,12 +189,14 @@ typedef void* (*CSR_fOnGetID)(const void* pKey);
         *@param frameIndex - frame index, ignored if model isn't animated
         *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
         */
-        void csrDrawX(const CSR_X*       pX,
-                      const void*        pShader,
-                      const CSR_Array*   pMatrixArray,
-                            size_t       animSetIndex,
-                            size_t       frameIndex,
-                      const CSR_fOnGetID fOnGetID);
+        #ifdef USE_X
+            void csrDrawX(const CSR_X*       pX,
+                          const void*        pShader,
+                          const CSR_Array*   pMatrixArray,
+                                size_t       animSetIndex,
+                                size_t       frameIndex,
+                          const CSR_fOnGetID fOnGetID);
+        #endif
 
         /**
         * Draws a Collada model in a scene
@@ -196,12 +208,33 @@ typedef void* (*CSR_fOnGetID)(const void* pKey);
         *@param frameIndex - frame index, ignored if model isn't animated
         *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
         */
-        void csrDrawCollada(const CSR_Collada* pCollada,
+        #ifdef USE_COLLADA
+            void csrDrawCollada(const CSR_Collada* pCollada,
+                                const void*        pShader,
+                                const CSR_Array*   pMatrixArray,
+                                      size_t       animSetIndex,
+                                      size_t       frameIndex,
+                                const CSR_fOnGetID fOnGetID);
+        #endif
+
+        /**
+        * Draws an Inter-Quake model (.iqm) in a scene
+        *@param pIQM - IQM model to draw
+        *@param pShader - shader to use to draw the model
+        *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
+        *                      matrix currently connected in the shader will be used
+        *@param animSetIndex - animation set index, ignored if model isn't animated
+        *@param frameIndex - frame index, ignored if model isn't animated
+        *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
+        */
+        #ifdef USE_IQM
+            void csrDrawIQM(const CSR_IQM*     pIQM,
                             const void*        pShader,
                             const CSR_Array*   pMatrixArray,
                                   size_t       animSetIndex,
                                   size_t       frameIndex,
                             const CSR_fOnGetID fOnGetID);
+        #endif
 
         //-------------------------------------------------------------------
         // State functions

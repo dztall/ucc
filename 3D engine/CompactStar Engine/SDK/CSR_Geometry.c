@@ -786,10 +786,10 @@ void csrQuatNormalize(const CSR_Quaternion* pQ, CSR_Quaternion* pR)
         return;
     }
 
-    pR->m_X = (pR->m_X / len);
-    pR->m_Y = (pR->m_Y / len);
-    pR->m_Z = (pR->m_Z / len);
-    pR->m_W = (pR->m_W / len);
+    pR->m_X = (pQ->m_X / len);
+    pR->m_Y = (pQ->m_Y / len);
+    pR->m_Z = (pQ->m_Z / len);
+    pR->m_W = (pQ->m_W / len);
 }
 //---------------------------------------------------------------------------
 void csrQuatDot(const CSR_Quaternion* pQ1, const CSR_Quaternion* pQ2, float* pR)

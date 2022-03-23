@@ -280,12 +280,21 @@ void csrSceneItemContentRelease(CSR_SceneItem*       pSceneItem,
     if (pSceneItem->m_pModel)
         switch (pSceneItem->m_Type)
         {
-            case CSR_MT_Line:    free             ((CSR_Line*)pSceneItem->m_pModel);        break;
-            case CSR_MT_Mesh:    csrMeshRelease   (pSceneItem->m_pModel, fOnDeleteTexture); break;
-            case CSR_MT_Model:   csrModelRelease  (pSceneItem->m_pModel, fOnDeleteTexture); break;
-            case CSR_MT_MDL:     csrMDLRelease    (pSceneItem->m_pModel, fOnDeleteTexture); break;
-            case CSR_MT_X:       csrXRelease      (pSceneItem->m_pModel, fOnDeleteTexture); break;
-            case CSR_MT_Collada: csrColladaRelease(pSceneItem->m_pModel, fOnDeleteTexture); break;
+            case CSR_MT_Line:        free             ((CSR_Line*)pSceneItem->m_pModel);        break;
+            case CSR_MT_Mesh:        csrMeshRelease   (pSceneItem->m_pModel, fOnDeleteTexture); break;
+            case CSR_MT_Model:       csrModelRelease  (pSceneItem->m_pModel, fOnDeleteTexture); break;
+            #ifdef USE_MDL
+                case CSR_MT_MDL:     csrMDLRelease    (pSceneItem->m_pModel, fOnDeleteTexture); break;
+            #endif
+            #ifdef USE_X
+                case CSR_MT_X:       csrXRelease      (pSceneItem->m_pModel, fOnDeleteTexture); break;
+            #endif
+            #ifdef USE_COLLADA
+                case CSR_MT_Collada: csrColladaRelease(pSceneItem->m_pModel, fOnDeleteTexture); break;
+            #endif
+            #ifdef USE_IQM
+                case CSR_MT_IQM:     csrIQMRelease    (pSceneItem->m_pModel, fOnDeleteTexture); break;
+            #endif
         }
 
     // release the aligned-axis bounding box tree
@@ -401,70 +410,98 @@ void csrSceneItemDraw(const CSR_Scene*        pScene,
             break;
         }
 
-        case CSR_MT_MDL:
-        {
-            size_t skinIndex  = 0;
-            size_t modelIndex = 0;
-            size_t meshIndex  = 0;
+        #ifdef USE_MDL
+            case CSR_MT_MDL:
+            {
+                size_t skinIndex  = 0;
+                size_t modelIndex = 0;
+                size_t meshIndex  = 0;
 
-            // notify the caller that the MDL model is about to be drawn
-            if (pContext->m_fOnGetMDLIndex)
-                pContext->m_fOnGetMDLIndex((const CSR_MDL*)pItem->m_pModel,
-                                                          &skinIndex,
-                                                          &modelIndex,
-                                                          &meshIndex);
+                // notify the caller that the MDL model is about to be drawn
+                if (pContext->m_fOnGetMDLIndex)
+                    pContext->m_fOnGetMDLIndex((const CSR_MDL*)pItem->m_pModel,
+                                                              &skinIndex,
+                                                              &modelIndex,
+                                                              &meshIndex);
 
-            // draw the MDL model
-            csrDrawMDL((const CSR_MDL*)pItem->m_pModel,
+                // draw the MDL model
+                csrDrawMDL((const CSR_MDL*)pItem->m_pModel,
+                                           pShader,
+                                           pItem->m_pMatrixArray,
+                                           skinIndex,
+                                           modelIndex,
+                                           meshIndex,
+                                           pContext->m_fOnGetID);
+
+                break;
+            }
+        #endif
+
+        #ifdef USE_X
+            case CSR_MT_X:
+            {
+                size_t animSetIndex = 0;
+                size_t frameIndex   = 0;
+
+                // notify the caller that the X model is about to be drawn
+                if (pContext->m_fOnGetXIndex)
+                    pContext->m_fOnGetXIndex((const CSR_X*)pItem->m_pModel, &animSetIndex, &frameIndex);
+
+                // draw the X model
+                csrDrawX((const CSR_X*)pItem->m_pModel,
                                        pShader,
                                        pItem->m_pMatrixArray,
-                                       skinIndex,
-                                       modelIndex,
-                                       meshIndex,
+                                       animSetIndex,
+                                       frameIndex,
                                        pContext->m_fOnGetID);
 
-            break;
-        }
+                break;
+            }
+        #endif
 
-        case CSR_MT_X:
-        {
-            size_t animSetIndex = 0;
-            size_t frameIndex   = 0;
+        #ifdef USE_COLLADA
+            case CSR_MT_Collada:
+            {
+                size_t animSetIndex = 0;
+                size_t frameIndex   = 0;
 
-            // notify the caller that the X model is about to be drawn
-            if (pContext->m_fOnGetXIndex)
-                pContext->m_fOnGetXIndex((const CSR_X*)pItem->m_pModel, &animSetIndex, &frameIndex);
+                // notify the caller that the Collada model is about to be drawn
+                if (pContext->m_fOnGetColladaIndex)
+                    pContext->m_fOnGetColladaIndex((const CSR_Collada*)pItem->m_pModel, &animSetIndex, &frameIndex);
 
-            // draw the X model
-            csrDrawX((const CSR_X*)pItem->m_pModel,
-                                   pShader,
-                                   pItem->m_pMatrixArray,
-                                   animSetIndex,
-                                   frameIndex,
-                                   pContext->m_fOnGetID);
+                // draw the Collada model
+                csrDrawCollada((const CSR_Collada*)pItem->m_pModel,
+                                                   pShader,
+                                                   pItem->m_pMatrixArray,
+                                                   animSetIndex,
+                                                   frameIndex,
+                                                   pContext->m_fOnGetID);
 
-            break;
-        }
+                break;
+            }
+        #endif
 
-        case CSR_MT_Collada:
-        {
-            size_t animSetIndex = 0;
-            size_t frameIndex   = 0;
+        #ifdef USE_IQM
+            case CSR_MT_IQM:
+            {
+                size_t animSetIndex = 0;
+                size_t frameIndex   = 0;
 
-            // notify the caller that the Collada model is about to be drawn
-            if (pContext->m_fOnGetColladaIndex)
-                pContext->m_fOnGetColladaIndex((const CSR_Collada*)pItem->m_pModel, &animSetIndex, &frameIndex);
+                // notify the caller that the X model is about to be drawn
+                if (pContext->m_fOnGetIQMIndex)
+                    pContext->m_fOnGetIQMIndex((const CSR_IQM*)pItem->m_pModel, &animSetIndex, &frameIndex);
 
-            // draw the Collada model
-            csrDrawCollada((const CSR_Collada*)pItem->m_pModel,
-                                               pShader,
-                                               pItem->m_pMatrixArray,
-                                               animSetIndex,
-                                               frameIndex,
-                                               pContext->m_fOnGetID);
+                // draw the IQM model
+                csrDrawIQM((const CSR_IQM*)pItem->m_pModel,
+                                           pShader,
+                                           pItem->m_pMatrixArray,
+                                           animSetIndex,
+                                           frameIndex,
+                                           pContext->m_fOnGetID);
 
-            break;
-        }
+                break;
+            }
+        #endif
     }
 
     // disable the item shader
@@ -1040,93 +1077,230 @@ CSR_SceneItem* csrSceneAddModel(CSR_Scene* pScene, CSR_Model* pModel, int transp
     return &pItem[index];
 }
 //---------------------------------------------------------------------------
-CSR_SceneItem* csrSceneAddMDL(CSR_Scene* pScene, CSR_MDL* pMDL, int transparent, int aabb)
-{
-    CSR_SceneItem* pItem;
-    int            index;
-
-    // validate the inputs
-    if (!pScene || !pMDL)
-        return 0;
-
-    // search for a scene item which already contains the same model
-    pItem = csrSceneGetItem(pScene, pMDL);
-
-    // found one?
-    if (pItem)
-        return pItem;
-
-    // do add a transparent item?
-    if (transparent)
+#ifdef USE_MDL
+    CSR_SceneItem* csrSceneAddMDL(CSR_Scene* pScene, CSR_MDL* pMDL, int transparent, int aabb)
     {
-        // add a new item to the transparent items
-        pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pTransparentItem,
-                                               sizeof(CSR_SceneItem),
-                                               pScene->m_TransparentItemCount + 1);
+        CSR_SceneItem* pItem;
+        int            index;
 
-        // succeeded?
-        if (!pItem)
+        // validate the inputs
+        if (!pScene || !pMDL)
             return 0;
 
-        // get the item index to update
-        index = (int)pScene->m_TransparentItemCount;
-    }
-    else
-    {
-        // add a new item to the scene items
-        pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pItem,
-                                               sizeof(CSR_SceneItem),
-                                               pScene->m_ItemCount + 1);
+        // search for a scene item which already contains the same model
+        pItem = csrSceneGetItem(pScene, pMDL);
 
-        // succeeded?
-        if (!pItem)
-            return 0;
+        // found one?
+        if (pItem)
+            return pItem;
 
-        // get the scene item index to update
-        index = (int)pScene->m_ItemCount;
-    }
-
-    // initialize the newly created item with the default values
-    csrSceneItemInit(&pItem[index]);
-
-    // configure the item
-    pItem[index].m_pModel = pMDL;
-    pItem[index].m_Type   = CSR_MT_MDL;
-
-    // generate the aligned-axis bounding box tree for this model
-    if (aabb)
-    {
-        size_t i;
-        size_t j;
-
-        // reserve memory for all the AABB trees to create
-        pItem[index].m_AABBTreeCount = pMDL->m_ModelCount * pMDL->m_pModel->m_MeshCount;
-        pItem[index].m_pAABBTree     = (CSR_AABBNode*)csrMemoryAlloc(0,
-                                                                     sizeof(CSR_AABBNode),
-                                                                     pItem[index].m_AABBTreeCount);
-
-        // succeeded?
-        if (!pItem[index].m_pAABBTree)
+        // do add a transparent item?
+        if (transparent)
         {
-            // realloc to the previous size, thus the latest added item will be freed
-            if (transparent)
-                pScene->m_pTransparentItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
-                                                                            sizeof(CSR_SceneItem),
-                                                                            pScene->m_TransparentItemCount);
-            else
-                pScene->m_pItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
-                                                                 sizeof(CSR_SceneItem),
-                                                                 pScene->m_ItemCount);
+            // add a new item to the transparent items
+            pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pTransparentItem,
+                                                   sizeof(CSR_SceneItem),
+                                                   pScene->m_TransparentItemCount + 1);
 
-            return 0;
+            // succeeded?
+            if (!pItem)
+                return 0;
+
+            // get the item index to update
+            index = (int)pScene->m_TransparentItemCount;
+        }
+        else
+        {
+            // add a new item to the scene items
+            pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pItem,
+                                                   sizeof(CSR_SceneItem),
+                                                   pScene->m_ItemCount + 1);
+
+            // succeeded?
+            if (!pItem)
+                return 0;
+
+            // get the scene item index to update
+            index = (int)pScene->m_ItemCount;
         }
 
-        // iterate through the model meshes
-        for (i = 0; i < pMDL->m_ModelCount; ++i)
-            for (j = 0; j < pMDL->m_pModel->m_MeshCount; ++j)
+        // initialize the newly created item with the default values
+        csrSceneItemInit(&pItem[index]);
+
+        // configure the item
+        pItem[index].m_pModel = pMDL;
+        pItem[index].m_Type   = CSR_MT_MDL;
+
+        // generate the aligned-axis bounding box tree for this model
+        if (aabb)
+        {
+            size_t i;
+            size_t j;
+
+            // reserve memory for all the AABB trees to create
+            pItem[index].m_AABBTreeCount = pMDL->m_ModelCount * pMDL->m_pModel->m_MeshCount;
+            pItem[index].m_pAABBTree     = (CSR_AABBNode*)csrMemoryAlloc(0,
+                                                                         sizeof(CSR_AABBNode),
+                                                                         pItem[index].m_AABBTreeCount);
+
+            // succeeded?
+            if (!pItem[index].m_pAABBTree)
+            {
+                // realloc to the previous size, thus the latest added item will be freed
+                if (transparent)
+                    pScene->m_pTransparentItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
+                                                                                sizeof(CSR_SceneItem),
+                                                                                pScene->m_TransparentItemCount);
+                else
+                    pScene->m_pItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
+                                                                     sizeof(CSR_SceneItem),
+                                                                     pScene->m_ItemCount);
+
+                return 0;
+            }
+
+            // iterate through the model meshes
+            for (i = 0; i < pMDL->m_ModelCount; ++i)
+                for (j = 0; j < pMDL->m_pModel->m_MeshCount; ++j)
+                {
+                    // create a new tree for the mesh
+                    CSR_AABBNode* pAABBTree = csrAABBTreeFromMesh(&pMDL->m_pModel[i].m_pMesh[j]);
+
+                    // succeeded?
+                    if (!pAABBTree)
+                    {
+                        // realloc to the previous size, thus the latest added item will be freed
+                        if (transparent)
+                            pScene->m_pTransparentItem =
+                                    (CSR_SceneItem*)csrMemoryAlloc(pItem,
+                                                                   sizeof(CSR_SceneItem),
+                                                                   pScene->m_TransparentItemCount);
+                        else
+                            pScene->m_pItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
+                                                                             sizeof(CSR_SceneItem),
+                                                                             pScene->m_ItemCount);
+
+                        return 0;
+                    }
+
+                    // copy the tree content
+                    memcpy(&pItem[index].m_pAABBTree[i], pAABBTree, sizeof(CSR_AABBNode));
+
+                    // release the source tree (NOTE reset its value before, otherwise the copied tree
+                    // content will also be released, which will corrupt the tree)
+                    pAABBTree->m_pParent        = 0;
+                    pAABBTree->m_pLeft          = 0;
+                    pAABBTree->m_pRight         = 0;
+                    pAABBTree->m_pBox           = 0;
+                    pAABBTree->m_pPolygonBuffer = 0;
+                    csrAABBTreeNodeRelease(pAABBTree);
+                }
+        }
+
+        // do add a transparent item?
+        if (transparent)
+        {
+            // add item to the transparent item list
+            pScene->m_pTransparentItem = pItem;
+            ++pScene->m_TransparentItemCount;
+        }
+        else
+        {
+            // add item to the normal item list
+            pScene->m_pItem = pItem;
+            ++pScene->m_ItemCount;
+        }
+
+        return &pItem[index];
+    }
+#endif
+//---------------------------------------------------------------------------
+#ifdef USE_X
+    CSR_SceneItem* csrSceneAddX(CSR_Scene* pScene, CSR_X* pX, int transparent, int aabb)
+    {
+        CSR_SceneItem* pItem;
+        int            index;
+
+        // validate the inputs
+        if (!pScene || !pX)
+            return 0;
+
+        // search for a scene item which already contains the same model
+        pItem = csrSceneGetItem(pScene, pX);
+
+        // found one?
+        if (pItem)
+            return pItem;
+
+        // do add a transparent item?
+        if (transparent)
+        {
+            // add a new item to the transparent items
+            pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pTransparentItem,
+                                                   sizeof(CSR_SceneItem),
+                                                   pScene->m_TransparentItemCount + 1);
+
+            // succeeded?
+            if (!pItem)
+                return 0;
+
+            // get the item index to update
+            index = (int)pScene->m_TransparentItemCount;
+        }
+        else
+        {
+            // add a new item to the scene items
+            pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pItem,
+                                                   sizeof(CSR_SceneItem),
+                                                   pScene->m_ItemCount + 1);
+
+            // succeeded?
+            if (!pItem)
+                return 0;
+
+            // get the scene item index to update
+            index = (int)pScene->m_ItemCount;
+        }
+
+        // initialize the newly created item with the default values
+        csrSceneItemInit(&pItem[index]);
+
+        // configure the item
+        pItem[index].m_pModel = pX;
+        pItem[index].m_Type   = CSR_MT_X;
+
+        // generate the aligned-axis bounding box tree for this model
+        if (aabb)
+        {
+            size_t i;
+
+            // reserve memory for all the AABB trees to create
+            pItem[index].m_AABBTreeCount = pX->m_MeshCount;
+            pItem[index].m_pAABBTree     = (CSR_AABBNode*)csrMemoryAlloc(0,
+                                                                         sizeof(CSR_AABBNode),
+                                                                         pItem[index].m_AABBTreeCount);
+
+            // succeeded?
+            if (!pItem[index].m_pAABBTree)
+            {
+                // realloc to the previous size, thus the latest added item will be freed
+                if (transparent)
+                    pScene->m_pTransparentItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
+                                                                                sizeof(CSR_SceneItem),
+                                                                                pScene->m_TransparentItemCount);
+                else
+                    pScene->m_pItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
+                                                                     sizeof(CSR_SceneItem),
+                                                                     pScene->m_ItemCount);
+
+                return 0;
+            }
+
+            // iterate through the meshes
+            for (i = 0; i < pX->m_MeshCount; ++i)
             {
                 // create a new tree for the mesh
-                CSR_AABBNode* pAABBTree = csrAABBTreeFromMesh(&pMDL->m_pModel[i].m_pMesh[j]);
+                CSR_AABBNode* pAABBTree = csrAABBTreeFromMesh(&pX->m_pMesh[i]);
 
                 // succeeded?
                 if (!pAABBTree)
@@ -1157,120 +1331,99 @@ CSR_SceneItem* csrSceneAddMDL(CSR_Scene* pScene, CSR_MDL* pMDL, int transparent,
                 pAABBTree->m_pPolygonBuffer = 0;
                 csrAABBTreeNodeRelease(pAABBTree);
             }
-    }
-
-    // do add a transparent item?
-    if (transparent)
-    {
-        // add item to the transparent item list
-        pScene->m_pTransparentItem = pItem;
-        ++pScene->m_TransparentItemCount;
-    }
-    else
-    {
-        // add item to the normal item list
-        pScene->m_pItem = pItem;
-        ++pScene->m_ItemCount;
-    }
-
-    return &pItem[index];
-}
-//---------------------------------------------------------------------------
-CSR_SceneItem* csrSceneAddX(CSR_Scene* pScene, CSR_X* pX, int transparent, int aabb)
-{
-    CSR_SceneItem* pItem;
-    int            index;
-
-    // validate the inputs
-    if (!pScene || !pX)
-        return 0;
-
-    // search for a scene item which already contains the same model
-    pItem = csrSceneGetItem(pScene, pX);
-
-    // found one?
-    if (pItem)
-        return pItem;
-
-    // do add a transparent item?
-    if (transparent)
-    {
-        // add a new item to the transparent items
-        pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pTransparentItem,
-                                               sizeof(CSR_SceneItem),
-                                               pScene->m_TransparentItemCount + 1);
-
-        // succeeded?
-        if (!pItem)
-            return 0;
-
-        // get the item index to update
-        index = (int)pScene->m_TransparentItemCount;
-    }
-    else
-    {
-        // add a new item to the scene items
-        pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pItem,
-                                               sizeof(CSR_SceneItem),
-                                               pScene->m_ItemCount + 1);
-
-        // succeeded?
-        if (!pItem)
-            return 0;
-
-        // get the scene item index to update
-        index = (int)pScene->m_ItemCount;
-    }
-
-    // initialize the newly created item with the default values
-    csrSceneItemInit(&pItem[index]);
-
-    // configure the item
-    pItem[index].m_pModel = pX;
-    pItem[index].m_Type   = CSR_MT_X;
-
-    // generate the aligned-axis bounding box tree for this model
-    if (aabb)
-    {
-        size_t i;
-
-        // reserve memory for all the AABB trees to create
-        pItem[index].m_AABBTreeCount = pX->m_MeshCount;
-        pItem[index].m_pAABBTree     = (CSR_AABBNode*)csrMemoryAlloc(0,
-                                                                     sizeof(CSR_AABBNode),
-                                                                     pItem[index].m_AABBTreeCount);
-
-        // succeeded?
-        if (!pItem[index].m_pAABBTree)
-        {
-            // realloc to the previous size, thus the latest added item will be freed
-            if (transparent)
-                pScene->m_pTransparentItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
-                                                                            sizeof(CSR_SceneItem),
-                                                                            pScene->m_TransparentItemCount);
-            else
-                pScene->m_pItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
-                                                                 sizeof(CSR_SceneItem),
-                                                                 pScene->m_ItemCount);
-
-            return 0;
         }
 
-        // iterate through the meshes
-        for (i = 0; i < pX->m_MeshCount; ++i)
+        // do add a transparent item?
+        if (transparent)
         {
-            // create a new tree for the mesh
-            CSR_AABBNode* pAABBTree = csrAABBTreeFromMesh(&pX->m_pMesh[i]);
+            // add item to the transparent item list
+            pScene->m_pTransparentItem = pItem;
+            ++pScene->m_TransparentItemCount;
+        }
+        else
+        {
+            // add item to the normal item list
+            pScene->m_pItem = pItem;
+            ++pScene->m_ItemCount;
+        }
+
+        return &pItem[index];
+    }
+#endif
+//---------------------------------------------------------------------------
+#ifdef USE_COLLADA
+    CSR_SceneItem* csrSceneAddCollada(CSR_Scene* pScene, CSR_Collada* pCollada, int transparent, int aabb)
+    {
+        CSR_SceneItem* pItem;
+        int            index;
+
+        // validate the inputs
+        if (!pScene || !pCollada)
+            return 0;
+
+        // search for a scene item which already contains the same model
+        pItem = csrSceneGetItem(pScene, pCollada);
+
+        // found one?
+        if (pItem)
+            return pItem;
+
+        // do add a transparent item?
+        if (transparent)
+        {
+            // add a new item to the transparent items
+            pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pTransparentItem,
+                                                   sizeof(CSR_SceneItem),
+                                                   pScene->m_TransparentItemCount + 1);
 
             // succeeded?
-            if (!pAABBTree)
+            if (!pItem)
+                return 0;
+
+            // get the item index to update
+            index = (int)pScene->m_TransparentItemCount;
+        }
+        else
+        {
+            // add a new item to the scene items
+            pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pItem,
+                                                   sizeof(CSR_SceneItem),
+                                                   pScene->m_ItemCount + 1);
+
+            // succeeded?
+            if (!pItem)
+                return 0;
+
+            // get the scene item index to update
+            index = (int)pScene->m_ItemCount;
+        }
+
+        // initialize the newly created item with the default values
+        csrSceneItemInit(&pItem[index]);
+
+        // configure the item
+        pItem[index].m_pModel = pCollada;
+        pItem[index].m_Type   = CSR_MT_Collada;
+
+        // generate the aligned-axis bounding box tree for this model
+        if (aabb)
+        {
+            size_t i;
+
+            // reserve memory for all the AABB trees to create
+            pItem[index].m_AABBTreeCount = pCollada->m_MeshCount;
+            pItem[index].m_pAABBTree     = (CSR_AABBNode*)csrMemoryAlloc(0,
+                                                                         sizeof(CSR_AABBNode),
+                                                                         pItem[index].m_AABBTreeCount);
+
+            // succeeded?
+            if (!pItem[index].m_pAABBTree)
             {
                 // realloc to the previous size, thus the latest added item will be freed
                 if (transparent)
-                    pScene->m_pTransparentItem =
-                            (CSR_SceneItem*)csrMemoryAlloc(pItem,
-                                                           sizeof(CSR_SceneItem),
-                                                           pScene->m_TransparentItemCount);
+                    pScene->m_pTransparentItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
+                                                                                sizeof(CSR_SceneItem),
+                                                                                pScene->m_TransparentItemCount);
                 else
                     pScene->m_pItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
                                                                      sizeof(CSR_SceneItem),
@@ -1279,132 +1432,134 @@ CSR_SceneItem* csrSceneAddX(CSR_Scene* pScene, CSR_X* pX, int transparent, int a
                 return 0;
             }
 
-            // copy the tree content
-            memcpy(&pItem[index].m_pAABBTree[i], pAABBTree, sizeof(CSR_AABBNode));
+            // iterate through the meshes
+            for (i = 0; i < pCollada->m_MeshCount; ++i)
+            {
+                // create a new tree for the mesh
+                CSR_AABBNode* pAABBTree = csrAABBTreeFromMesh(&pCollada->m_pMesh[i]);
 
-            // release the source tree (NOTE reset its value before, otherwise the copied tree
-            // content will also be released, which will corrupt the tree)
-            pAABBTree->m_pParent        = 0;
-            pAABBTree->m_pLeft          = 0;
-            pAABBTree->m_pRight         = 0;
-            pAABBTree->m_pBox           = 0;
-            pAABBTree->m_pPolygonBuffer = 0;
-            csrAABBTreeNodeRelease(pAABBTree);
+                // succeeded?
+                if (!pAABBTree)
+                {
+                    // realloc to the previous size, thus the latest added item will be freed
+                    if (transparent)
+                        pScene->m_pTransparentItem =
+                                (CSR_SceneItem*)csrMemoryAlloc(pItem,
+                                                               sizeof(CSR_SceneItem),
+                                                               pScene->m_TransparentItemCount);
+                    else
+                        pScene->m_pItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
+                                                                         sizeof(CSR_SceneItem),
+                                                                         pScene->m_ItemCount);
+
+                    return 0;
+                }
+
+                // copy the tree content
+                memcpy(&pItem[index].m_pAABBTree[i], pAABBTree, sizeof(CSR_AABBNode));
+
+                // release the source tree (NOTE reset its value before, otherwise the copied tree
+                // content will also be released, which will corrupt the tree)
+                pAABBTree->m_pParent        = 0;
+                pAABBTree->m_pLeft          = 0;
+                pAABBTree->m_pRight         = 0;
+                pAABBTree->m_pBox           = 0;
+                pAABBTree->m_pPolygonBuffer = 0;
+                csrAABBTreeNodeRelease(pAABBTree);
+            }
         }
-    }
 
-    // do add a transparent item?
-    if (transparent)
-    {
-        // add item to the transparent item list
-        pScene->m_pTransparentItem = pItem;
-        ++pScene->m_TransparentItemCount;
-    }
-    else
-    {
-        // add item to the normal item list
-        pScene->m_pItem = pItem;
-        ++pScene->m_ItemCount;
-    }
+        // do add a transparent item?
+        if (transparent)
+        {
+            // add item to the transparent item list
+            pScene->m_pTransparentItem = pItem;
+            ++pScene->m_TransparentItemCount;
+        }
+        else
+        {
+            // add item to the normal item list
+            pScene->m_pItem = pItem;
+            ++pScene->m_ItemCount;
+        }
 
-    return &pItem[index];
-}
+        return &pItem[index];
+    }
+#endif
 //---------------------------------------------------------------------------
-CSR_SceneItem* csrSceneAddCollada(CSR_Scene* pScene, CSR_Collada* pCollada, int transparent, int aabb)
-{
-    CSR_SceneItem* pItem;
-    int            index;
-
-    // validate the inputs
-    if (!pScene || !pCollada)
-        return 0;
-
-    // search for a scene item which already contains the same model
-    pItem = csrSceneGetItem(pScene, pCollada);
-
-    // found one?
-    if (pItem)
-        return pItem;
-
-    // do add a transparent item?
-    if (transparent)
+#ifdef USE_IQM
+    CSR_SceneItem* csrSceneAddIQM(CSR_Scene* pScene, CSR_IQM* pIQM, int transparent, int aabb)
     {
-        // add a new item to the transparent items
-        pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pTransparentItem,
-                                               sizeof(CSR_SceneItem),
-                                               pScene->m_TransparentItemCount + 1);
+        CSR_SceneItem* pItem;
+        int            index;
 
-        // succeeded?
-        if (!pItem)
+        // validate the inputs
+        if (!pScene || !pIQM)
             return 0;
 
-        // get the item index to update
-        index = (int)pScene->m_TransparentItemCount;
-    }
-    else
-    {
-        // add a new item to the scene items
-        pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pItem,
-                                               sizeof(CSR_SceneItem),
-                                               pScene->m_ItemCount + 1);
+        // search for a scene item which already contains the same model
+        pItem = csrSceneGetItem(pScene, pIQM);
 
-        // succeeded?
-        if (!pItem)
-            return 0;
+        // found one?
+        if (pItem)
+            return pItem;
 
-        // get the scene item index to update
-        index = (int)pScene->m_ItemCount;
-    }
-
-    // initialize the newly created item with the default values
-    csrSceneItemInit(&pItem[index]);
-
-    // configure the item
-    pItem[index].m_pModel = pCollada;
-    pItem[index].m_Type   = CSR_MT_Collada;
-
-    // generate the aligned-axis bounding box tree for this model
-    if (aabb)
-    {
-        size_t i;
-
-        // reserve memory for all the AABB trees to create
-        pItem[index].m_AABBTreeCount = pCollada->m_MeshCount;
-        pItem[index].m_pAABBTree     = (CSR_AABBNode*)csrMemoryAlloc(0,
-                                                                     sizeof(CSR_AABBNode),
-                                                                     pItem[index].m_AABBTreeCount);
-
-        // succeeded?
-        if (!pItem[index].m_pAABBTree)
+        // do add a transparent item?
+        if (transparent)
         {
-            // realloc to the previous size, thus the latest added item will be freed
-            if (transparent)
-                pScene->m_pTransparentItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
-                                                                            sizeof(CSR_SceneItem),
-                                                                            pScene->m_TransparentItemCount);
-            else
-                pScene->m_pItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
-                                                                 sizeof(CSR_SceneItem),
-                                                                 pScene->m_ItemCount);
-
-            return 0;
-        }
-
-        // iterate through the meshes
-        for (i = 0; i < pCollada->m_MeshCount; ++i)
-        {
-            // create a new tree for the mesh
-            CSR_AABBNode* pAABBTree = csrAABBTreeFromMesh(&pCollada->m_pMesh[i]);
+            // add a new item to the transparent items
+            pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pTransparentItem,
+                                                   sizeof(CSR_SceneItem),
+                                                   pScene->m_TransparentItemCount + 1);
 
             // succeeded?
-            if (!pAABBTree)
+            if (!pItem)
+                return 0;
+
+            // get the item index to update
+            index = (int)pScene->m_TransparentItemCount;
+        }
+        else
+        {
+            // add a new item to the scene items
+            pItem = (CSR_SceneItem*)csrMemoryAlloc(pScene->m_pItem,
+                                                   sizeof(CSR_SceneItem),
+                                                   pScene->m_ItemCount + 1);
+
+            // succeeded?
+            if (!pItem)
+                return 0;
+
+            // get the scene item index to update
+            index = (int)pScene->m_ItemCount;
+        }
+
+        // initialize the newly created item with the default values
+        csrSceneItemInit(&pItem[index]);
+
+        // configure the item
+        pItem[index].m_pModel = pIQM;
+        pItem[index].m_Type   = CSR_MT_IQM;
+
+        // generate the aligned-axis bounding box tree for this model
+        if (aabb)
+        {
+            size_t i;
+
+            // reserve memory for all the AABB trees to create
+            pItem[index].m_AABBTreeCount = pIQM->m_MeshCount;
+            pItem[index].m_pAABBTree     = (CSR_AABBNode*)csrMemoryAlloc(0,
+                                                                         sizeof(CSR_AABBNode),
+                                                                         pItem[index].m_AABBTreeCount);
+
+            // succeeded?
+            if (!pItem[index].m_pAABBTree)
             {
                 // realloc to the previous size, thus the latest added item will be freed
                 if (transparent)
-                    pScene->m_pTransparentItem =
-                            (CSR_SceneItem*)csrMemoryAlloc(pItem,
-                                                           sizeof(CSR_SceneItem),
-                                                           pScene->m_TransparentItemCount);
+                    pScene->m_pTransparentItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
+                                                                                sizeof(CSR_SceneItem),
+                                                                                pScene->m_TransparentItemCount);
                 else
                     pScene->m_pItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
                                                                      sizeof(CSR_SceneItem),
@@ -1413,36 +1568,60 @@ CSR_SceneItem* csrSceneAddCollada(CSR_Scene* pScene, CSR_Collada* pCollada, int 
                 return 0;
             }
 
-            // copy the tree content
-            memcpy(&pItem[index].m_pAABBTree[i], pAABBTree, sizeof(CSR_AABBNode));
+            // iterate through the meshes
+            for (i = 0; i < pIQM->m_MeshCount; ++i)
+            {
+                // create a new tree for the mesh
+                CSR_AABBNode* pAABBTree = csrAABBTreeFromMesh(&pIQM->m_pMesh[i]);
 
-            // release the source tree (NOTE reset its value before, otherwise the copied tree
-            // content will also be released, which will corrupt the tree)
-            pAABBTree->m_pParent        = 0;
-            pAABBTree->m_pLeft          = 0;
-            pAABBTree->m_pRight         = 0;
-            pAABBTree->m_pBox           = 0;
-            pAABBTree->m_pPolygonBuffer = 0;
-            csrAABBTreeNodeRelease(pAABBTree);
+                // succeeded?
+                if (!pAABBTree)
+                {
+                    // realloc to the previous size, thus the latest added item will be freed
+                    if (transparent)
+                        pScene->m_pTransparentItem =
+                                (CSR_SceneItem*)csrMemoryAlloc(pItem,
+                                                               sizeof(CSR_SceneItem),
+                                                               pScene->m_TransparentItemCount);
+                    else
+                        pScene->m_pItem = (CSR_SceneItem*)csrMemoryAlloc(pItem,
+                                                                         sizeof(CSR_SceneItem),
+                                                                         pScene->m_ItemCount);
+
+                    return 0;
+                }
+
+                // copy the tree content
+                memcpy(&pItem[index].m_pAABBTree[i], pAABBTree, sizeof(CSR_AABBNode));
+
+                // release the source tree (NOTE reset its value before, otherwise the copied tree
+                // content will also be released, which will corrupt the tree)
+                pAABBTree->m_pParent        = 0;
+                pAABBTree->m_pLeft          = 0;
+                pAABBTree->m_pRight         = 0;
+                pAABBTree->m_pBox           = 0;
+                pAABBTree->m_pPolygonBuffer = 0;
+                csrAABBTreeNodeRelease(pAABBTree);
+            }
         }
-    }
 
-    // do add a transparent item?
-    if (transparent)
-    {
-        // add item to the transparent item list
-        pScene->m_pTransparentItem = pItem;
-        ++pScene->m_TransparentItemCount;
-    }
-    else
-    {
-        // add item to the normal item list
-        pScene->m_pItem = pItem;
-        ++pScene->m_ItemCount;
-    }
+        // do add a transparent item?
+        if (transparent)
+        {
+            // add item to the transparent item list
+            pScene->m_pTransparentItem = pItem;
+            ++pScene->m_TransparentItemCount;
+        }
+        else
+        {
+            // add item to the normal item list
+            pScene->m_pItem = pItem;
+            ++pScene->m_ItemCount;
+        }
 
-    return &pItem[index];
-}
+        return &pItem[index];
+    }
+#endif
 //---------------------------------------------------------------------------
 CSR_SceneItem* csrSceneAddModelMatrix(CSR_Scene* pScene, const void* pModel, CSR_Matrix4* pMatrix)
 {
