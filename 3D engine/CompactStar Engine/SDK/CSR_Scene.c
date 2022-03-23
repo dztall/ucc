@@ -202,8 +202,18 @@ void csrSceneContextInit(CSR_SceneContext* pContext)
     pContext->m_fOnPrepareDraw            = 0;
     pContext->m_fOnPrepareTransparentDraw = 0;
     pContext->m_fOnGetModelIndex          = 0;
-    pContext->m_fOnGetMDLIndex            = 0;
-    pContext->m_fOnGetXIndex              = 0;
+    #ifdef USE_COLLADA
+        pContext->m_fOnGetColladaIndex    = 0;
+    #endif
+    #ifdef USE_IQM
+        pContext->m_fOnGetIQMIndex        = 0;
+    #endif
+    #ifdef USE_MDL
+        pContext->m_fOnGetMDLIndex        = 0;
+    #endif
+    #ifdef USE_X
+        pContext->m_fOnGetXIndex          = 0;
+    #endif
     pContext->m_fOnGetShader              = 0;
     pContext->m_fOnGetID                  = 0;
     pContext->m_fOnDeleteTexture          = 0;

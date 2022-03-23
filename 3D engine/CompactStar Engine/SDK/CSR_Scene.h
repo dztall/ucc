@@ -337,17 +337,17 @@ struct CSR_SceneContext
     CSR_fOnPrepareDraw            m_fOnPrepareDraw;
     CSR_fOnPrepareTransparentDraw m_fOnPrepareTransparentDraw;
     CSR_fOnGetModelIndex          m_fOnGetModelIndex;
-    #ifdef USE_MDL
-        CSR_fOnGetMDLIndex        m_fOnGetMDLIndex;
-    #endif
-    #ifdef USE_X
-        CSR_fOnGetXIndex          m_fOnGetXIndex;
-    #endif
     #ifdef USE_COLLADA
         CSR_fOnGetColladaIndex    m_fOnGetColladaIndex;
     #endif
     #ifdef USE_IQM
         CSR_fOnGetIQMIndex        m_fOnGetIQMIndex;
+    #endif
+    #ifdef USE_MDL
+        CSR_fOnGetMDLIndex        m_fOnGetMDLIndex;
+    #endif
+    #ifdef USE_X
+        CSR_fOnGetXIndex          m_fOnGetXIndex;
     #endif
     CSR_fOnGetShader              m_fOnGetShader;
     CSR_fOnGetID                  m_fOnGetID;
