@@ -913,15 +913,15 @@ CSR_Mesh* csrShapeCreateCapsule(float                 height,
     capsuleBottom.m_Z = 0.0f;
 
     // calculate capsule bounds
-    csrVec3Sub(&capsuleTop, &capsuleBottom, &lineDir);
-    csrVec3Normalize(&lineDir, &lineDir);
-    csrVec3MulVal(&lineDir, radius,        &lineEndOffset);
-    csrVec3Sub(&capsuleTop, &lineEndOffset, &top);
-    csrVec3Add(&capsuleBottom, &lineEndOffset, &bottom);
+    csrVec3Sub      (&capsuleTop,    &capsuleBottom, &lineDir);
+    csrVec3Normalize(&lineDir,       &lineDir);
+    csrVec3MulVal   (&lineDir,       radius,         &lineEndOffset);
+    csrVec3Sub      (&capsuleTop,    &lineEndOffset, &top);
+    csrVec3Add      (&capsuleBottom, &lineEndOffset, &bottom);
 
     // calculate capsule axis and length
-    csrVec3Sub(&bottom, &top, &axis);
-    csrVec3Length(&axis, &length);
+    csrVec3Sub   (&bottom, &top, &axis);
+    csrVec3Length(&axis,   &length);
 
     if (length == 0.0f)
         localZ = axis;

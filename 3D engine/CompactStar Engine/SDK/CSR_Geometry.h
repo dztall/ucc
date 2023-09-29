@@ -486,7 +486,7 @@ typedef struct
         //-------------------------------------------------------------------
 
         /**
-        * Gets matrix identity
+        * Gets identity matrix
         *@param[out] pR - identity matrix
         */
         void csrMat4Identity(CSR_Matrix4* pR);

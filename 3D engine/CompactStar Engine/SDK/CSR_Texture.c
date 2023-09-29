@@ -28,18 +28,18 @@
 */
 typedef struct
 {
-    unsigned char  m_IdentSize;
-    unsigned char  m_CMapType;
-    unsigned char  m_ImageType;
-    unsigned char  m_CMapOrigin[2];
-    unsigned char  m_CMapSize[2];
-    unsigned char  m_CMapEntrySize;
-    unsigned char  m_XOrigin[2];
-    unsigned char  m_YOrigin[2];
-    unsigned char  m_Width[2];
-    unsigned char  m_Height[2];
-    unsigned char  m_PixelSize;
-    unsigned char  m_DescByte;
+    unsigned char m_IdentSize;
+    unsigned char m_CMapType;
+    unsigned char m_ImageType;
+    unsigned char m_CMapOrigin[2];
+    unsigned char m_CMapSize[2];
+    unsigned char m_CMapEntrySize;
+    unsigned char m_XOrigin[2];
+    unsigned char m_YOrigin[2];
+    unsigned char m_Width[2];
+    unsigned char m_Height[2];
+    unsigned char m_PixelSize;
+    unsigned char m_DescByte;
 } CSR_TGAHeader;
 
 //---------------------------------------------------------------------------
@@ -427,7 +427,7 @@ CSR_PixelBuffer* csrPixelBufferFromTgaBuffer(const CSR_Buffer* pBuffer)
                 pDst -= (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width;
                 pRow  = pDst;
 
-                for (j = 0; j < pPixelBuffer->m_Width; j++)
+                for (j = 0; j < pPixelBuffer->m_Width; ++j)
                 {
                     memcpy(pRow, &pCMap[*pSrc++ * pPixelBuffer->m_BytePerPixel], pPixelBuffer->m_BytePerPixel);
                     pRow += pPixelBuffer->m_BytePerPixel;
@@ -455,7 +455,7 @@ CSR_PixelBuffer* csrPixelBufferFromTgaBuffer(const CSR_Buffer* pBuffer)
             pDst                       = &((unsigned char*)pPixelBuffer->m_pData)[pPixelBuffer->m_DataLength];
 
             // read the pixels
-            for (i = 0; i < pPixelBuffer->m_Height; i++)
+            for (i = 0; i < pPixelBuffer->m_Height; ++i)
             {
                 pDst -= (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width;
 
