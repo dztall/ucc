@@ -573,7 +573,7 @@ void on_GLES2_Size(int view_w, int view_h)
 //------------------------------------------------------------------------------
 void on_GLES2_Update(float timeStep_sec)
 {
-	float elapsedTime = (timeStep_sec * 1000.0f);
+    float elapsedTime = (timeStep_sec * 1000.0f);
 
     // update the arcball position
     UpdatePos(&g_Arcball, elapsedTime);
