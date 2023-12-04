@@ -328,6 +328,13 @@ typedef struct
         void csrVec2DivVal(const CSR_Vector2* pV, float val, CSR_Vector2* pR);
 
         /**
+        * Inverses vector
+        *@param pV - vector to inverse
+        *@param[out] pR - inverted vector
+        */
+        void csrVec2Inverse(const CSR_Vector3* pV, CSR_Vector3* pR);
+
+        /**
         * Calculates vector length
         *@param pV - vector to calculate length
         *@param[out] pR - vector length
@@ -337,7 +344,7 @@ typedef struct
         /**
         * Normalizes the vector
         *@param pV - vector to normalize
-        *@param[out] pR - normailzed vector
+        *@param[out] pR - normalized vector
         */
         void csrVec2Normalize(const CSR_Vector2* pV, CSR_Vector2* pR);
 
@@ -439,6 +446,13 @@ typedef struct
         void csrVec3DivVal(const CSR_Vector3* pV, float val, CSR_Vector3* pR);
 
         /**
+        * Inverses vector
+        *@param pV - vector to inverse
+        *@param[out] pR - inverted vector
+        */
+        void csrVec3Inverse(const CSR_Vector3* pV, CSR_Vector3* pR);
+
+        /**
         * Calculates vector length
         *@param pV - vector to calculate length
         *@param[out] pR - vector length
@@ -448,7 +462,7 @@ typedef struct
         /**
         * Normalizes the vector
         *@param pV - vector to normalize
-        *@param[out] pR - normailzed vector
+        *@param[out] pR - normalized vector
         */
         void csrVec3Normalize(const CSR_Vector3* pV, CSR_Vector3* pR);
 

@@ -152,16 +152,21 @@ void csrCollisionOutputRelease(CSR_CollisionOutput* pCO)
     if (!pCO)
         return;
 
-    // release the hit polygons
-    if (pCO->m_pHitModel)
+    // release the hit models
+    if (pCO->m_pHitModels)
     {
         // iterate through hit models and free each of them
-        for (i = 0; i < pCO->m_pHitModel->m_Count; ++i)
-            csrHitModelRelease((CSR_HitModel*)pCO->m_pHitModel->m_pItem[i].m_pData);
+        for (i = 0; i < pCO->m_pHitModels->m_Count; ++i)
+            csrHitModelRelease((CSR_HitModel*)pCO->m_pHitModels->m_pItem[i].m_pData);
 
         // free the hit model container
-        csrArrayRelease(pCO->m_pHitModel);
+        csrArrayRelease(pCO->m_pHitModels);
     }
+
+    // release the colliders
+    if (pCO->m_pColliders)
+        // free the hit collider container
+        csrArrayRelease(pCO->m_pColliders);
 
     // free the collision output
     free(pCO);
@@ -184,7 +189,8 @@ void csrCollisionOutputInit(CSR_CollisionOutput* pCO)
     pCO->m_GroundPlane.m_B    = 0.0f;
     pCO->m_GroundPlane.m_C    = 0.0f;
     pCO->m_GroundPlane.m_D    = 0.0f;
-    pCO->m_pHitModel          = 0;
+    pCO->m_pHitModels         = 0;
+    pCO->m_pColliders         = 0;
 }
 //---------------------------------------------------------------------------
 // Scene context functions
@@ -307,6 +313,10 @@ void csrSceneItemContentRelease(CSR_SceneItem*       pSceneItem,
             #endif
         }
 
+    // release the collider
+    if (pSceneItem->m_pCollider)
+        free(pSceneItem->m_pCollider);
+
     // release the aligned-axis bounding box tree
     if (pSceneItem->m_pAABBTree)
     {
@@ -351,6 +361,7 @@ void csrSceneItemInit(CSR_SceneItem* pSceneItem)
     pSceneItem->m_Type          = CSR_MT_Model;
     pSceneItem->m_CollisionType = CSR_CO_None;
     pSceneItem->m_pMatrixArray  = 0;
+    pSceneItem->m_pCollider     = 0;
     pSceneItem->m_pAABBTree     = 0;
     pSceneItem->m_AABBTreeCount = 0;
     pSceneItem->m_AABBTreeIndex = 0;
@@ -543,13 +554,78 @@ void csrSceneItemDetectCollision(const CSR_Scene*                   pScene,
         return;
 
     // can detect collision on this model?
-    if (!(pSceneItem->m_CollisionType & CSR_CO_Custom) &&
-         (pSceneItem->m_CollisionType == CSR_CO_None   ||
-         !pSceneItem->m_pMatrixArray                   ||
-         !pSceneItem->m_pMatrixArray->m_Count          ||
-         !pSceneItem->m_AABBTreeCount                  ||
-          pSceneItem->m_AABBTreeIndex >= pSceneItem->m_AABBTreeCount))
+    if (!(pSceneItem->m_CollisionType & CSR_CO_Custom)                           &&
+         (pSceneItem->m_CollisionType == CSR_CO_None                             ||
+        ((pSceneItem->m_CollisionType & CSR_CO_GJK) && !pSceneItem->m_pCollider) ||
+       (((pSceneItem->m_CollisionType & CSR_CO_Ground)                           ||
+         (pSceneItem->m_CollisionType & CSR_CO_Edge)                             ||
+         (pSceneItem->m_CollisionType & CSR_CO_Mouse))                           &&
+        (!pSceneItem->m_pMatrixArray                                             ||
+         !pSceneItem->m_pMatrixArray->m_Count                                    ||
+         !pSceneItem->m_AABBTreeCount                                            ||
+          pSceneItem->m_AABBTreeIndex >= pSceneItem->m_AABBTreeCount))))
         return;
+
+    // do detect the GJK collision on this model?
+    if (pSceneItem->m_CollisionType & CSR_CO_GJK)
+    {
+        // create a new collider container, if required
+        if (!pCollisionOutput->m_pColliders)
+            pCollisionOutput->m_pColliders  = csrArrayCreate();
+
+        // check only the dynamic colliders, the static ones cannot enter in collision
+        // each ones with others
+        if (pSceneItem->m_pCollider && pSceneItem->m_pCollider->m_State == CSR_CS_Dynamic)
+        {
+            // iterate through the scene items
+            for (i = 0; i < pScene->m_ItemCount; ++i)
+            {
+                // don't test itself
+                if (pScene->m_pItem[i].m_pCollider == pSceneItem->m_pCollider)
+                    continue;
+
+                // ignore items without colliders or not concerned by the GJK algorithm
+                if (!(pScene->m_pItem[i].m_CollisionType & CSR_CO_GJK) ||
+                        !pScene->m_pItem[i].m_pCollider)
+                    continue;
+
+                // found a collision?
+                if (csrGJKResolve(pSceneItem->m_pCollider, pScene->m_pItem[i].m_pCollider))
+                {
+                    // notify that a GJK collision happened
+                    pCollisionOutput->m_Collision |= CSR_CO_GJK;
+
+                    // add the colliders in the array
+                    csrArrayAdd(pSceneItem->m_pCollider,        pCollisionOutput->m_pColliders, 0);
+                    csrArrayAdd(pScene->m_pItem[i].m_pCollider, pCollisionOutput->m_pColliders, 0);
+                }
+            }
+
+            // iterate through the scene transparent items
+            for (i = 0; i < pScene->m_TransparentItemCount; ++i)
+            {
+                // don't test itself
+                if (pScene->m_pTransparentItem[i].m_pCollider == pSceneItem->m_pCollider)
+                    continue;
+
+                // ignore items without colliders or not concerned by the GJK algorithm
+                if (!(pScene->m_pTransparentItem[i].m_CollisionType & CSR_CO_GJK) ||
+                        !pScene->m_pTransparentItem[i].m_pCollider)
+                    continue;
+
+                // found a collision?
+                if (csrGJKResolve(pSceneItem->m_pCollider, pScene->m_pTransparentItem[i].m_pCollider))
+                {
+                    // notify that a GJK collision happened
+                    pCollisionOutput->m_Collision |= CSR_CO_GJK;
+
+                    // add the colliders in the array
+                    csrArrayAdd(pSceneItem->m_pCollider,                   pCollisionOutput->m_pColliders, 0);
+                    csrArrayAdd(pScene->m_pTransparentItem[i].m_pCollider, pCollisionOutput->m_pColliders, 0);
+                }
+            }
+        }
+    }
 
     // copy the sphere radius
     sphere.m_Radius = pCollisionInput->m_BoundingSphere.m_Radius;
@@ -669,8 +745,8 @@ void csrSceneItemDetectCollision(const CSR_Scene*                   pScene,
             csrRay3FromPointDir(&rayPos, &rayDirN, &mouseRay);
 
             // create a new hit model container, if required
-            if (!pCollisionOutput->m_pHitModel)
-                pCollisionOutput->m_pHitModel = csrArrayCreate();
+            if (!pCollisionOutput->m_pHitModels)
+                pCollisionOutput->m_pHitModels = csrArrayCreate();
 
             // create a new hit model
             pHitModel = csrHitModelCreate();
@@ -698,7 +774,7 @@ void csrSceneItemDetectCollision(const CSR_Scene*                   pScene,
                 pHitModel->m_pAABBTree = &pSceneItem->m_pAABBTree[pSceneItem->m_AABBTreeIndex];
 
                 // add the hit model structure in the array
-                csrArrayAdd(pHitModel, pCollisionOutput->m_pHitModel, 0);
+                csrArrayAdd(pHitModel, pCollisionOutput->m_pHitModels, 0);
             }
             else
             {
@@ -1879,12 +1955,14 @@ void csrSceneArcBallToMatrix(const CSR_ArcBall* pArcball, CSR_Matrix4* pR)
     #ifdef _MSC_VER
         float       angleX;
         float       angleY;
-        CSR_Vector3 axis           = {0};
-        CSR_Matrix4 cameraMatrixX  = {0};
-        CSR_Matrix4 cameraMatrixY  = {0};
-        CSR_Matrix4 cameraMatrixXY = {0};
-        CSR_Matrix4 cameraMatrix   = {0};
-        CSR_Camera  camera         = {0};
+        CSR_Vector3 axis            = {0};
+        CSR_Matrix4 cameraMatrixX   = {0};
+        CSR_Matrix4 cameraMatrixY   = {0};
+        CSR_Matrix4 cameraMatrixXY  = {0};
+        CSR_Matrix4 cameraMatrixPos = {0};
+        CSR_Matrix4 cameraMatrix    = {0};
+        CSR_Matrix4 cameraMatrix2   = {0};
+        CSR_Camera  camera          = {0};
     #else
         float       angleX;
         float       angleY;
@@ -1892,7 +1970,9 @@ void csrSceneArcBallToMatrix(const CSR_ArcBall* pArcball, CSR_Matrix4* pR)
         CSR_Matrix4 cameraMatrixX;
         CSR_Matrix4 cameraMatrixY;
         CSR_Matrix4 cameraMatrixXY;
+        CSR_Matrix4 cameraMatrixPos;
         CSR_Matrix4 cameraMatrix;
+        CSR_Matrix4 cameraMatrix2;
         CSR_Camera  camera;
     #endif
 
@@ -1924,6 +2004,9 @@ void csrSceneArcBallToMatrix(const CSR_ArcBall* pArcball, CSR_Matrix4* pR)
     // combine the rotation matrices
     csrMat4Multiply(&cameraMatrixY, &cameraMatrixX, &cameraMatrixXY);
 
+    // create the position matrix
+    csrMat4Translate(&pArcball->m_Position, &cameraMatrixPos);
+
     // configure the camera
     camera.m_Position.m_X =  0.0f;
     camera.m_Position.m_Y =  0.0f;
@@ -1938,7 +2021,8 @@ void csrSceneArcBallToMatrix(const CSR_ArcBall* pArcball, CSR_Matrix4* pR)
 
     // build the camera
     csrSceneCameraToMatrix(&camera, &cameraMatrix);
-    csrMat4Multiply(&cameraMatrixXY, &cameraMatrix, pR);
+    csrMat4Multiply(&cameraMatrixXY,  &cameraMatrix,  &cameraMatrix2);
+    csrMat4Multiply(&cameraMatrixPos, &cameraMatrix2, pR);
 }
 //---------------------------------------------------------------------------
 void csrSceneCameraToMatrix(const CSR_Camera* pCamera, CSR_Matrix4* pR)

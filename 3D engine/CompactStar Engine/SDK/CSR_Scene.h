@@ -20,6 +20,7 @@
 #include "CSR_Common.h"
 #include "CSR_Geometry.h"
 #include "CSR_Collision.h"
+#include "CSR_GJK.h"
 #include "CSR_Model.h"
 #include "CSR_Renderer.h"
 #ifdef USE_MDL
@@ -88,8 +89,9 @@ typedef enum
     CSR_CO_None   = 0x0,
     CSR_CO_Ground = 0x1,
     CSR_CO_Edge   = 0x2,
-    CSR_CO_Mouse  = 0x4,
-    CSR_CO_Custom = 0x8
+    CSR_CO_GJK    = 0x4,
+    CSR_CO_Mouse  = 0x8,
+    CSR_CO_Custom = 0x10
 } CSR_ECollisionType;
 
 /**
@@ -122,9 +124,10 @@ typedef struct CSR_SceneContext CSR_SceneContext;
 typedef struct
 {
     void*              m_pModel;        // the model to draw
-    CSR_EModelType     m_Type;          // model type (a simple mesh, a model or a complex MDL model)
+    CSR_EModelType     m_Type;          // model type (a simple mesh, a model or a complex animated model)
     CSR_ECollisionType m_CollisionType; // collision type to apply to model
     CSR_Array*         m_pMatrixArray;  // matrices sharing the same model, e.g. all the walls of a room
+    CSR_Collider*      m_pCollider;     // collider for the GJK algorithm
     CSR_AABBNode*      m_pAABBTree;     // aligned-axis bounding box trees owned by the model
     size_t             m_AABBTreeCount; // aligned-axis bounding box tree count
     size_t             m_AABBTreeIndex; // aligned-axis bounding box tree index to use for the collision detection
@@ -164,9 +167,10 @@ typedef struct
 */
 typedef struct
 {
-    float m_AngleX;
-    float m_AngleY;
-    float m_Radius;
+    CSR_Vector3 m_Position;
+    float       m_AngleX;
+    float       m_AngleY;
+    float       m_Radius;
 } CSR_ArcBall;
 
 /**
@@ -203,7 +207,9 @@ typedef struct
     float              m_GroundPos;      // the ground position on the y axis, M_CSR_NoGround if no ground was found
     CSR_Plane          m_CollisionPlane; // the collision plane, in case a collision was found
     CSR_Plane          m_GroundPlane;    // the ground plane, in case a ground was found
-    CSR_Array*         m_pHitModel;      // models hit by the mouse ray
+    CSR_Array*         m_pHitModels;     // models hit by the mouse ray
+    CSR_Array*         m_pColliders;     // pairs of colliding colliders, array should be read as follow:
+                                         // [0] collides [1], [2] collides [3], ...
 } CSR_CollisionOutput;
 
 //---------------------------------------------------------------------------

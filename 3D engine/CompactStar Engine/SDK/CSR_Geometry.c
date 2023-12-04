@@ -90,6 +90,12 @@ void csrVec2DivVal(const CSR_Vector2* pV, float val, CSR_Vector2* pR)
     pR->m_Y = pV->m_Y / val;
 }
 //---------------------------------------------------------------------------
+void csrVec2Inverse(const CSR_Vector3* pV, CSR_Vector3* pR)
+{
+    pR->m_X = -pV->m_X;
+    pR->m_Y = -pV->m_Y;
+}
+//---------------------------------------------------------------------------
 void csrVec2Length(const CSR_Vector2* pV, float* pR)
 {
     *pR = sqrtf((pV->m_X * pV->m_X) + (pV->m_Y * pV->m_Y));
@@ -213,6 +219,13 @@ void csrVec3DivVal(const CSR_Vector3* pV, float val, CSR_Vector3* pR)
     pR->m_X = pV->m_X / val;
     pR->m_Y = pV->m_Y / val;
     pR->m_Z = pV->m_Z / val;
+}
+//---------------------------------------------------------------------------
+void csrVec3Inverse(const CSR_Vector3* pV, CSR_Vector3* pR)
+{
+    pR->m_X = -pV->m_X;
+    pR->m_Y = -pV->m_Y;
+    pR->m_Z = -pV->m_Z;
 }
 //---------------------------------------------------------------------------
 void csrVec3Length(const CSR_Vector3* pV, float* pR)
@@ -1831,7 +1844,11 @@ int csrInsideCapsule(const CSR_Vector3* pP, const CSR_Capsule* pC)
     csrVec3Length(&ptToCapSeg, &len);
 
     // if length is lower than the capsule radius, then point is inside the capsule
-    if (fabsf(len) <= pC->m_Radius)
+    #ifdef __CODEGEARC__
+        if (fabs(len) <= pC->m_Radius)
+    #else
+        if (fabsf(len) <= pC->m_Radius)
+    #endif
         return 1;
 
     return 0;
@@ -2837,7 +2854,11 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
             csrVec3Length      (&sphereToLine,      &len);
 
             // calculate the penetration depth
-            penetrationDepth = (pSphere->m_Radius + pCapsule->m_Radius) - fabsf(len);
+            #ifdef __CODEGEARC__
+                penetrationDepth = (pSphere->m_Radius + pCapsule->m_Radius) - fabs(len);
+            #else
+                penetrationDepth = (pSphere->m_Radius + pCapsule->m_Radius) - fabsf(len);
+            #endif
 
             return (penetrationDepth > 0.0f);
         }
@@ -2857,7 +2878,6 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
                 CSR_Vector3  secondTop           = {0};
                 CSR_Vector3  secondBottom        = {0};
                 float        len                 = 0.0f;
-                float        absLen              = 0.0f;
                 float        penetrationDepth    = 0.0f;
             #else
                 CSR_Segment3 firstLine;
@@ -2871,7 +2891,6 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
                 CSR_Vector3  secondTop;
                 CSR_Vector3  secondBottom;
                 float        len;
-                float        absLen;
                 float        penetrationDepth;
             #endif
 
@@ -2913,7 +2932,11 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
             csrSeg3DistanceBetween(&firstLine, &secondLine, 0.0f, &len);
 
             // calculate the penetration depth
-            penetrationDepth = (pCapsule1->m_Radius + pCapsule2->m_Radius) - fabsf(len);
+            #ifdef __CODEGEARC__
+                penetrationDepth = (pCapsule1->m_Radius + pCapsule2->m_Radius) - fabs(len);
+            #else
+                penetrationDepth = (pCapsule1->m_Radius + pCapsule2->m_Radius) - fabsf(len);
+            #endif
 
             // are capsules colliding?
             return (penetrationDepth > 0.0f);
