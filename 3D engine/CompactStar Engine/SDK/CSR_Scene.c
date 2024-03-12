@@ -189,6 +189,9 @@ void csrCollisionOutputInit(CSR_CollisionOutput* pCO)
     pCO->m_GroundPlane.m_B    = 0.0f;
     pCO->m_GroundPlane.m_C    = 0.0f;
     pCO->m_GroundPlane.m_D    = 0.0f;
+    pCO->m_MinTransVec.m_X    = 0.0f;
+    pCO->m_MinTransVec.m_Y    = 0.0f;
+    pCO->m_MinTransVec.m_Z    = 0.0f;
     pCO->m_pHitModels         = 0;
     pCO->m_pColliders         = 0;
 }
@@ -540,12 +543,14 @@ void csrSceneItemDetectCollision(const CSR_Scene*                   pScene,
         CSR_Vector3 rayPos  = {0};
         CSR_Vector3 rayDir  = {0};
         CSR_Vector3 rayDirN = {0};
+        CSR_Vector3 mtv     = {0};
         CSR_Sphere  sphere  = {0};
     #else
         size_t      i;
         CSR_Vector3 rayPos;
         CSR_Vector3 rayDir;
         CSR_Vector3 rayDirN;
+        CSR_Vector3 mtv;
         CSR_Sphere  sphere;
     #endif
 
@@ -590,10 +595,13 @@ void csrSceneItemDetectCollision(const CSR_Scene*                   pScene,
                     continue;
 
                 // found a collision?
-                if (csrGJKResolve(pSceneItem->m_pCollider, pScene->m_pItem[i].m_pCollider))
+                if (csrGJKResolve(pSceneItem->m_pCollider, pScene->m_pItem[i].m_pCollider, &mtv))
                 {
                     // notify that a GJK collision happened
                     pCollisionOutput->m_Collision |= CSR_CO_GJK;
+
+                    // update the resulting minimum translation vector
+                    csrVec3Add(&pCollisionOutput->m_MinTransVec, &mtv, &pCollisionOutput->m_MinTransVec);
 
                     // add the colliders in the array
                     csrArrayAdd(pSceneItem->m_pCollider,        pCollisionOutput->m_pColliders, 0);
@@ -614,10 +622,13 @@ void csrSceneItemDetectCollision(const CSR_Scene*                   pScene,
                     continue;
 
                 // found a collision?
-                if (csrGJKResolve(pSceneItem->m_pCollider, pScene->m_pTransparentItem[i].m_pCollider))
+                if (csrGJKResolve(pSceneItem->m_pCollider, pScene->m_pTransparentItem[i].m_pCollider, &mtv))
                 {
                     // notify that a GJK collision happened
                     pCollisionOutput->m_Collision |= CSR_CO_GJK;
+
+                    // update the resulting minimum translation vector
+                    csrVec3Add(&pCollisionOutput->m_MinTransVec, &mtv, &pCollisionOutput->m_MinTransVec);
 
                     // add the colliders in the array
                     csrArrayAdd(pSceneItem->m_pCollider,                   pCollisionOutput->m_pColliders, 0);

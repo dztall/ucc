@@ -207,6 +207,7 @@ typedef struct
     float              m_GroundPos;      // the ground position on the y axis, M_CSR_NoGround if no ground was found
     CSR_Plane          m_CollisionPlane; // the collision plane, in case a collision was found
     CSR_Plane          m_GroundPlane;    // the ground plane, in case a ground was found
+    CSR_Vector3        m_MinTransVec;    // minimum translation vector, if GJK is used
     CSR_Array*         m_pHitModels;     // models hit by the mouse ray
     CSR_Array*         m_pColliders;     // pairs of colliding colliders, array should be read as follow:
                                          // [0] collides [1], [2] collides [3], ...

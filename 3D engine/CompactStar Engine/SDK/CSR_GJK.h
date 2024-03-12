@@ -167,9 +167,10 @@ struct CSR_Collider
         * Resolves the GJK algorithm
         *@param pC1 - first collider to compare
         *@param pC2 - first collider to compare with
+        *@param pMTV - minimum translation vector to apply to the initial movement
         *@return 1 if a collision happened, otherwise 0
         */
-        int csrGJKResolve(const CSR_Collider* pC1, const CSR_Collider* pC2);
+        int csrGJKResolve(const CSR_Collider* pC1, const CSR_Collider* pC2, CSR_Vector3* pMTV);
 
 #ifdef __cplusplus
     }

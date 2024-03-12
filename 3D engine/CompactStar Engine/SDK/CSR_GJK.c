@@ -19,7 +19,11 @@
 // std
 #include <stdlib.h>
 
-#define GJK_MAX_NUM_ITERATIONS 64
+#define GJK_MAX_NUM_ITERATIONS  64
+#define EPA_TOLERANCE           0.0001f
+#define EPA_MAX_NUM_FACES       64
+#define EPA_MAX_NUM_LOOSE_EDGES 32
+#define EPA_MAX_NUM_ITERATIONS  64
 
 //---------------------------------------------------------------------------
 // Support functions
@@ -426,9 +430,253 @@ int csrUpdateSimplex4(CSR_Vector3* pA,
     return 1;
 }
 //---------------------------------------------------------------------------
+void FindMinTranslationVec(const CSR_Vector3*  pA,
+                           const CSR_Vector3*  pB,
+                           const CSR_Vector3*  pC,
+                           const CSR_Vector3*  pD,
+                           const CSR_Collider* pC1,
+                           const CSR_Collider* pC2,
+                                 CSR_Vector3*  pMTV)
+{
+    #ifdef _MSC_VER
+        CSR_Vector3 sub1         = {0};
+        CSR_Vector3 sub2         = {0};
+        CSR_Vector3 cross        = {0};
+        CSR_Vector3 searchDir    = {0};
+        CSR_Vector3 invSearchDir = {0};
+        CSR_Vector3 c1Support    = {0};
+        CSR_Vector3 c2Support    = {0};
+        CSR_Vector3 p            = {0};
+        CSR_Vector3 pToFace      = {0};
+        CSR_Vector3 temp         = {0};
+    #else
+        CSR_Vector3 sub1;
+        CSR_Vector3 sub2;
+        CSR_Vector3 cross;
+        CSR_Vector3 searchDir;
+        CSR_Vector3 invSearchDir;
+        CSR_Vector3 c1Support;
+        CSR_Vector3 c2Support;
+        CSR_Vector3 p;
+        CSR_Vector3 pToFace;
+        CSR_Vector3 temp;
+    #endif
+
+    size_t numFaces;
+    size_t closestFace;
+    size_t iterations;
+    size_t i;
+    size_t j;
+    size_t k;
+    size_t numLooseEdges;
+    float  minDist;
+    float  dist;
+    float  pDotSearchDir;
+    float  facesDot;
+    float  numFacesDot;
+    float  closestFacesDot;
+    int    foundEdge;
+
+    const float bias = 0.000001f;
+
+    // array of faces, each with 3 vertices and a normal
+    CSR_Vector3 faces[EPA_MAX_NUM_FACES][4];
+
+    CSR_Vector3 looseEdges[EPA_MAX_NUM_LOOSE_EDGES][2];
+    CSR_Vector3 currentEdge[2];
+
+    // init with final simplex from GJK
+    faces[0][0] = *pA;
+    faces[0][1] = *pB;
+    faces[0][2] = *pC;
+
+    // ABC
+    csrVec3Sub      ( pB,     pA,   &sub1);
+    csrVec3Sub      ( pC,     pA,   &sub2);
+    csrVec3Cross    (&sub1,  &sub2, &cross);
+    csrVec3Normalize(&cross, &faces[0][3]);
+
+    faces[1][0] = *pA;
+    faces[1][1] = *pC;
+    faces[1][2] = *pD;
+
+    // ACD
+    csrVec3Sub      ( pC,     pA,   &sub1);
+    csrVec3Sub      ( pD,     pA,   &sub2);
+    csrVec3Cross    (&sub1,  &sub2, &cross);
+    csrVec3Normalize(&cross, &faces[1][3]);
+
+    faces[2][0] = *pA;
+    faces[2][1] = *pD;
+    faces[2][2] = *pB;
+
+    // ADB
+    csrVec3Sub      ( pD,     pA,   &sub1);
+    csrVec3Sub      ( pB,     pA,   &sub2);
+    csrVec3Cross    (&sub1,  &sub2, &cross);
+    csrVec3Normalize(&cross, &faces[2][3]);
+
+    faces[3][0] = *pB;
+    faces[3][1] = *pD;
+    faces[3][2] = *pC;
+
+    // BDC
+    csrVec3Sub      ( pD,     pB,   &sub1);
+    csrVec3Sub      ( pC,     pB,   &sub2);
+    csrVec3Cross    (&sub1,  &sub2, &cross);
+    csrVec3Normalize(&cross, &faces[3][3]);
+
+    numFaces = 4;
+
+    // find face which is closest to origin
+    for (iterations = 0; iterations < EPA_MAX_NUM_ITERATIONS; ++iterations)
+    {
+        csrVec3Dot(&faces[0][0], &faces[0][3], &minDist);
+
+        closestFace = 0;
+
+        for (i = 1; i < numFaces; ++i)
+        {
+            csrVec3Dot(&faces[i][0], &faces[i][3], &dist);
+
+            if (dist < minDist)
+            {
+                minDist     = dist;
+                closestFace = i;
+            }
+        }
+
+        //search normal to face which is closest to origin
+        searchDir = faces[closestFace][3];
+        csrVec3Inverse(&searchDir, &invSearchDir);
+
+        pC2->m_fOnSupport(pC2,        &searchDir,    &c2Support);
+        pC1->m_fOnSupport(pC1,        &invSearchDir, &c1Support);
+        csrVec3Sub       (&c2Support, &c1Support,    &p);
+
+        csrVec3Dot(&p, &searchDir, &pDotSearchDir);
+
+        // convergence (new point is not significantly further from origin), dot vertex
+        // with normal to resolve collision along normal!
+        if (pDotSearchDir - minDist < EPA_TOLERANCE)
+        {
+            csrVec3MulVal(&faces[closestFace][3], pDotSearchDir, pMTV);
+            return;
+        }
+
+        // keep track of edges we need to fix after removing faces
+        numLooseEdges = 0;
+
+        // find all triangles that are facing p
+        for (size_t i = 0; i < numFaces; ++i)
+        {
+            csrVec3Sub(&p,           &faces[i][0], &pToFace);
+            csrVec3Dot(&faces[i][3], &pToFace,     &facesDot);
+
+            // triangle i faces p, remove it
+            if (facesDot > 0.0f)
+            {
+                // three edges per face
+                for (j = 0; j < 3; ++j)
+                {
+                    // add removed triangle edges to loose edge list. If already there, remove it (both triangles
+                    // it belonged to are gone)
+                    currentEdge[0] = faces[i][j];
+                    currentEdge[1] = faces[i][(j + 1) % 3];
+                    foundEdge      = 0;
+
+                    // check if current edge is already in list
+                    for (k = 0; k < numLooseEdges; ++k)
+                    {
+                        // edge is already in the list, remove it. THIS ASSUMES EDGE CAN ONLY BE SHARED BY 2 TRIANGLES
+                        // (which should be true), THIS ALSO ASSUMES SHARED EDGE WILL BE REVERSED IN THE TRIANGLES (which
+                        // should be true provided every triangle is wound CCW)
+                        if ((looseEdges[k][1].m_X == currentEdge[0].m_X  &&
+                             looseEdges[k][1].m_Y == currentEdge[0].m_Y  &&
+                             looseEdges[k][1].m_Z == currentEdge[0].m_Z) &&
+                            (looseEdges[k][0].m_X == currentEdge[1].m_X  &&
+                             looseEdges[k][0].m_Y == currentEdge[1].m_Y  &&
+                             looseEdges[k][0].m_Z == currentEdge[1].m_Z))
+                        {
+                            // overwrite current edge with last edge in list
+                            looseEdges[k][0] = looseEdges[numLooseEdges - 1][0];
+                            looseEdges[k][1] = looseEdges[numLooseEdges - 1][1];
+                            --numLooseEdges;
+
+                            foundEdge = 1;
+
+                            // exit loop because edge can only be shared once
+                            k = numLooseEdges;
+                        }
+                    }
+
+                    if (!foundEdge)
+                    {
+                        // add current edge to list
+                        // assert(num_loose_edges<EPA_MAX_NUM_LOOSE_EDGES);
+                        if (numLooseEdges >= EPA_MAX_NUM_LOOSE_EDGES)
+                            break;
+
+                        looseEdges[numLooseEdges][0] = currentEdge[0];
+                        looseEdges[numLooseEdges][1] = currentEdge[1];
+                        ++numLooseEdges;
+                    }
+                }
+
+                // remove triangle i from list
+                faces[i][0] = faces[numFaces - 1][0];
+                faces[i][1] = faces[numFaces - 1][1];
+                faces[i][2] = faces[numFaces - 1][2];
+                faces[i][3] = faces[numFaces - 1][3];
+
+                --numFaces;
+                --i;
+            }
+        }
+
+        // reconstruct point cloud with p added
+        for (i = 0; i < numLooseEdges; ++i)
+        {
+            // assert(num_faces<EPA_MAX_NUM_FACES);
+            if (numFaces >= EPA_MAX_NUM_FACES)
+                break;
+
+            faces[numFaces][0] = looseEdges[i][0];
+            faces[numFaces][1] = looseEdges[i][1];
+            faces[numFaces][2] = p;
+
+            csrVec3Sub      (&looseEdges[i][0], &looseEdges[i][1], &sub1);
+            csrVec3Sub      (&looseEdges[i][0], &p,                &sub2);
+            csrVec3Cross    (&sub1,  &sub2, &cross);
+            csrVec3Normalize(&cross, &faces[numFaces][3]);
+
+            csrVec3Dot(&faces[numFaces][0] , &faces[numFaces][3], &numFacesDot);
+
+            // check for wrong normal to maintain CCW winding, in case dot result is only slightly < 0
+            // (because origin is on face)
+            if (numFacesDot + bias < 0)
+            {
+                temp               = faces[numFaces][0];
+                faces[numFaces][0] = faces[numFaces][1];
+                faces[numFaces][1] = temp;
+
+                csrVec3Inverse(&faces[numFaces][3] , &faces[numFaces][3]);
+            }
+
+            ++numFaces;
+        }
+    }
+
+    // return most recent closest point
+    csrVec3Dot(&faces[closestFace][0], &faces[closestFace][3], &closestFacesDot);
+    pMTV->m_X = faces[closestFace][3].m_X * closestFacesDot;
+    pMTV->m_Y = faces[closestFace][3].m_Y * closestFacesDot;
+    pMTV->m_Z = faces[closestFace][3].m_Z * closestFacesDot;
+}
+//---------------------------------------------------------------------------
 // GJK functions
 //---------------------------------------------------------------------------
-int csrGJKResolve(const CSR_Collider* pC1, const CSR_Collider* pC2)
+int csrGJKResolve(const CSR_Collider* pC1, const CSR_Collider* pC2, CSR_Vector3* pMTV)
 {
     #ifdef _MSC_VER
         CSR_Vector3 searchDir    = {0};
@@ -539,7 +787,12 @@ int csrGJKResolve(const CSR_Collider* pC1, const CSR_Collider* pC2)
             csrUpdateSimplex3(&simplex[0], &simplex[1], &simplex[2], &simplex[3], &simpDim, &searchDir);
         else
         if (csrUpdateSimplex4(&simplex[0], &simplex[1], &simplex[2], &simplex[3], &simpDim, &searchDir))
+        {
+            if (pMTV)
+                FindMinTranslationVec(&simplex[0], &simplex[1], &simplex[2], &simplex[3], pC1, pC2, pMTV);
+
             return 1;
+        }
     }
 
     return 0;
