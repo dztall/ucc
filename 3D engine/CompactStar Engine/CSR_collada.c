@@ -32,6 +32,9 @@
 #include <gles2.h>
 #include <gles2ext.h>
 
+// uncomment this line to show the skeleton
+//#define SHOW_SKELETON
+
 // compactStar engine
 #include "SDK/CSR_Common.h"
 #include "SDK/CSR_Geometry.h"
@@ -290,11 +293,13 @@ void CreateViewport(float w, float h)
     GLint projectionSlot = glGetUniformLocation(g_pShader->m_ProgramID, "csr_uProjection");
     glUniformMatrix4fv(projectionSlot, 1, 0, &g_pScene->m_ProjectionMatrix.m_Table[0][0]);
 
-    csrShaderEnable(g_pLineShader);
+    #ifdef SHOW_SKELETON
+        csrShaderEnable(g_pLineShader);
 
-    // connect projection matrix to line shader
-    projectionSlot = glGetUniformLocation(g_pLineShader->m_ProgramID, "csr_uProjection");
-    glUniformMatrix4fv(projectionSlot, 1, 0, &g_pScene->m_ProjectionMatrix.m_Table[0][0]);
+        // connect projection matrix to line shader
+        projectionSlot = glGetUniformLocation(g_pLineShader->m_ProgramID, "csr_uProjection");
+        glUniformMatrix4fv(projectionSlot, 1, 0, &g_pScene->m_ProjectionMatrix.m_Table[0][0]);
+    #endif
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Init(int view_w, int view_h)
@@ -323,26 +328,28 @@ void on_GLES2_Init(int view_w, int view_h)
     g_SceneContext.m_fOnGetColladaIndex = OnGetColladaIndex;
     g_SceneContext.m_fOnDeleteTexture   = OnDeleteTexture;
 
-    // compile, link and use shader
-    g_pLineShader = csrOpenGLShaderLoadFromStr(&g_VSLine[0],
-                                                sizeof(g_VSLine),
-                                               &g_FSLine[0],
-                                                sizeof(g_FSLine),
-                                                0,
-                                                0);
+    #ifdef SHOW_SKELETON
+        // compile, link and use shader
+        g_pLineShader = csrOpenGLShaderLoadFromStr(&g_VSLine[0],
+                                                    sizeof(g_VSLine),
+                                                   &g_FSLine[0],
+                                                    sizeof(g_FSLine),
+                                                    0,
+                                                    0);
 
-    // succeeded?
-    if (!g_pLineShader)
-    {
-    	printf("FAILED to compile line shader\n");
-        return;
-    }
+        // succeeded?
+        if (!g_pLineShader)
+        {
+            printf("FAILED to compile line shader\n");
+            return;
+        }
 
-    csrShaderEnable(g_pLineShader);
+        csrShaderEnable(g_pLineShader);
 
-    // get line shader attributes
-    g_pLineShader->m_VertexSlot = glGetAttribLocation(g_pLineShader->m_ProgramID, "csr_aVertices");
-    g_pLineShader->m_ColorSlot  = glGetAttribLocation(g_pLineShader->m_ProgramID, "csr_aColor");
+        // get line shader attributes
+        g_pLineShader->m_VertexSlot = glGetAttribLocation(g_pLineShader->m_ProgramID, "csr_aVertices");
+        g_pLineShader->m_ColorSlot  = glGetAttribLocation(g_pLineShader->m_ProgramID, "csr_aColor");
+    #endif
 
     // compile, link and use shader
     g_pShader = csrOpenGLShaderLoadFromStr(&g_VSColored[0],
@@ -473,8 +480,10 @@ void on_GLES2_Final()
     g_pSkyboxShader = 0;
 
     // delete line shader
-    csrOpenGLShaderRelease(g_pLineShader);
-    g_pLineShader = 0;
+    #ifdef SHOW_SKELETON
+        csrOpenGLShaderRelease(g_pLineShader);
+        g_pLineShader = 0;
+    #endif
 }
 //------------------------------------------------------------------------------
 void on_GLES2_Size(int view_w, int view_h)
@@ -497,16 +506,18 @@ void on_GLES2_Render()
     // draw the scene
     csrSceneDraw(g_pScene, &g_SceneContext);
 
-    // enable line shader and connect view matrix to it
-    csrShaderEnable(g_pLineShader);
-    csrOpenGLShaderConnectViewMatrix(g_pLineShader, &g_pScene->m_ViewMatrix);
+    #ifdef SHOW_SKELETON
+        // enable line shader and connect view matrix to it
+        csrShaderEnable(g_pLineShader);
+        csrOpenGLShaderConnectViewMatrix(g_pLineShader, &g_pScene->m_ViewMatrix);
 
-    // connect model matrix to shader
-    GLint slot = glGetUniformLocation(g_pLineShader->m_ProgramID, "csr_uModel");
-    glUniformMatrix4fv(slot, 1, 0, &g_Matrix.m_Table[0][0]);
+        // connect model matrix to shader
+        GLint slot = glGetUniformLocation(g_pLineShader->m_ProgramID, "csr_uModel");
+        glUniformMatrix4fv(slot, 1, 0, &g_Matrix.m_Table[0][0]);
 
-    // draw the skeleton
-    csrDebugDrawSkeletonCollada(g_pModel, g_pLineShader, 0, (g_AnimCount / 5) % 60);
+        // draw the skeleton
+        csrDebugDrawSkeletonCollada(g_pModel, g_pLineShader, 0, (g_AnimCount / 5) % 60);
+    #endif
 }
 //------------------------------------------------------------------------------
 void on_GLES2_TouchBegin(float x, float y)

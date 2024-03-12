@@ -17,7 +17,45 @@
 
 // std
 #include <stdlib.h>
+#include <string.h>
 
+//---------------------------------------------------------------------------
+// Private structures
+//---------------------------------------------------------------------------
+
+/**
+* TARGA (.tga) header
+*/
+typedef struct
+{
+    unsigned char m_IdentSize;
+    unsigned char m_CMapType;
+    unsigned char m_ImageType;
+    unsigned char m_CMapOrigin[2];
+    unsigned char m_CMapSize[2];
+    unsigned char m_CMapEntrySize;
+    unsigned char m_XOrigin[2];
+    unsigned char m_YOrigin[2];
+    unsigned char m_Width[2];
+    unsigned char m_Height[2];
+    unsigned char m_PixelSize;
+    unsigned char m_DescByte;
+} CSR_TGAHeader;
+
+//---------------------------------------------------------------------------
+// Private functions
+//---------------------------------------------------------------------------
+static inline void csrBGRToRGB(unsigned char* pData, int len, int bpp)
+{
+    unsigned char* pEnd;
+
+    for (pEnd = &pData[len]; pData < pEnd; pData += bpp)
+    {
+        pData[0] = pData[0] ^ pData[2];
+        pData[2] = pData[0] ^ pData[2];
+        pData[0] = pData[2] ^ pData[0];
+    }
+}
 //---------------------------------------------------------------------------
 // Pixel buffer functions
 //---------------------------------------------------------------------------
@@ -249,7 +287,7 @@ CSR_PixelBuffer* csrPixelBufferFromBitmapBuffer(const CSR_Buffer* pBuffer)
     pPixelBuffer->m_ImageType    = CSR_IT_Bitmap;
     pPixelBuffer->m_BytePerPixel = bpp / 8;
     pPixelBuffer->m_Stride       = (((pPixelBuffer->m_Width) * 3 + 3) / 4) * 4 - ((pPixelBuffer->m_Width) * 3 % 4);
-    pPixelBuffer->m_DataLength   = (size_t)(pPixelBuffer->m_Stride * pPixelBuffer->m_Height);
+    pPixelBuffer->m_DataLength   = (size_t)pPixelBuffer->m_Stride * (size_t)pPixelBuffer->m_Height;
     pPixelBuffer->m_pData        = malloc(sizeof(unsigned char) * pPixelBuffer->m_DataLength);
 
     offset = dataOffset;
@@ -262,6 +300,441 @@ CSR_PixelBuffer* csrPixelBufferFromBitmapBuffer(const CSR_Buffer* pBuffer)
                   pPixelBuffer->m_pData);
 
     return pPixelBuffer;
+}
+//---------------------------------------------------------------------------
+CSR_PixelBuffer* csrPixelBufferFromTgaFile(const char* pFileName)
+{
+    CSR_Buffer*      pBuffer;
+    CSR_PixelBuffer* pPixelBuffer;
+
+    // open bitmap file
+    pBuffer = csrFileOpen(pFileName);
+
+    // convert to pixel buffer
+    pPixelBuffer = csrPixelBufferFromTgaBuffer(pBuffer);
+
+    // free the bitmap file
+    csrBufferRelease(pBuffer);
+
+    return pPixelBuffer;
+}
+//---------------------------------------------------------------------------
+CSR_PixelBuffer* csrPixelBufferFromTgaBuffer(const CSR_Buffer* pBuffer)
+{
+    CSR_TGAHeader    header;
+    CSR_PixelBuffer* pPixelBuffer;
+    size_t           offset = 0;
+
+    // validate the input
+    if (!pBuffer)
+        return 0;
+
+    // read the header
+    if (!csrBufferRead(pBuffer, &offset, sizeof(CSR_TGAHeader), 1, &header))
+        return 0;
+
+    // is image file valid?
+    if (header.m_PixelSize != 8 && header.m_PixelSize != 24 && header.m_PixelSize != 32)
+        return 0;
+
+    offset += header.m_IdentSize;
+
+    // is offset out of bounds?
+    if (offset >= pBuffer->m_Length)
+        return 0;
+
+    // create a new pixel buffer
+    pPixelBuffer = (CSR_PixelBuffer*)malloc(sizeof(CSR_PixelBuffer));
+
+    // succeeded?
+    if (!pPixelBuffer)
+        return 0;
+
+    // initialize it
+    csrPixelBufferInit(pPixelBuffer);
+
+    // get the image width and height
+    pPixelBuffer->m_PixelType = CSR_PT_BGR;
+    pPixelBuffer->m_ImageType = CSR_IT_Raw;
+    pPixelBuffer->m_Width     = header.m_Width [0] + (header.m_Width [1] << 8);
+    pPixelBuffer->m_Height    = header.m_Height[0] + (header.m_Height[1] << 8);
+    pPixelBuffer->m_Stride    = (((pPixelBuffer->m_Width) * 3 + 3) / 4) * 4 - ((pPixelBuffer->m_Width) * 3 % 4);
+
+    switch (header.m_ImageType)
+    {
+        case 1:
+        {
+            size_t         i;
+            size_t         j;
+            unsigned       cMapSize;
+            unsigned char* pCMap;
+            unsigned char* pIndexes;
+            unsigned char* pSrc;
+            unsigned char* pDst;
+
+            // validate the color map entry size
+            if (header.m_CMapEntrySize != 8 && header.m_CMapEntrySize != 24 && header.m_CMapEntrySize != 32)
+            {
+                csrPixelBufferRelease(pPixelBuffer);
+                return 0;
+            }
+
+            // get the color map size
+            cMapSize = header.m_CMapSize[0] + (header.m_CMapSize[1] << 8);
+
+            // calculate the byte per pixels, and allocate memory for color map
+            pPixelBuffer->m_BytePerPixel = header.m_CMapEntrySize / 8;
+            pCMap                        = (unsigned char*)malloc((size_t)pPixelBuffer->m_BytePerPixel *
+                                                                  (size_t)cMapSize);
+
+            // read the color map
+            if (!csrBufferRead(pBuffer, &offset, (size_t)pPixelBuffer->m_BytePerPixel * (size_t)cMapSize, 1, pCMap))
+            {
+                free(pCMap);
+                csrPixelBufferRelease(pPixelBuffer);
+                return 0;
+            }
+
+            // do convert the BGR pixel order to RGB?
+            if (pPixelBuffer->m_BytePerPixel >= 3)
+                csrBGRToRGB(pCMap, pPixelBuffer->m_BytePerPixel * cMapSize, pPixelBuffer->m_BytePerPixel);
+
+            // allocate memory for pixels and get indexes pointer
+            pPixelBuffer->m_DataLength =   (size_t)pPixelBuffer->m_BytePerPixel *
+                                           (size_t)pPixelBuffer->m_Width        *
+                                           (size_t)pPixelBuffer->m_Height;
+            pPixelBuffer->m_pData      =   (unsigned char*)malloc(pPixelBuffer->m_DataLength);
+            pIndexes                   = &((unsigned char*)pPixelBuffer->m_pData)[(pPixelBuffer->m_BytePerPixel - 1) *
+                                                                                   pPixelBuffer->m_Width             *
+                                                                                   pPixelBuffer->m_Height];
+
+            // read the index table
+            if (!csrBufferRead(pBuffer, &offset, (size_t)pPixelBuffer->m_Width * (size_t)pPixelBuffer->m_Height, 1, pIndexes))
+            {
+                free(pCMap);
+                csrPixelBufferRelease(pPixelBuffer);
+                return 0;
+            }
+
+            pSrc = pIndexes;
+            pDst = &((unsigned char*)pPixelBuffer->m_pData)[pPixelBuffer->m_DataLength];
+
+            // copy the pixels
+            for (i = 0; i < pPixelBuffer->m_Height; ++i)
+            {
+                unsigned char* pRow;
+
+                pDst -= (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width;
+                pRow  = pDst;
+
+                for (j = 0; j < pPixelBuffer->m_Width; ++j)
+                {
+                    memcpy(pRow, &pCMap[*pSrc++ * pPixelBuffer->m_BytePerPixel], pPixelBuffer->m_BytePerPixel);
+                    pRow += pPixelBuffer->m_BytePerPixel;
+                }
+            }
+
+            free(pCMap);
+
+            return pPixelBuffer;
+        }
+
+        case 2:
+        {
+            size_t         i;
+            unsigned char* pDst;
+
+            // calculate the byte per pixels
+            pPixelBuffer->m_BytePerPixel = header.m_PixelSize / 8;
+
+            // allocate memory for pixels and get destination pointer
+            pPixelBuffer->m_DataLength =   (size_t)pPixelBuffer->m_BytePerPixel *
+                                           (size_t)pPixelBuffer->m_Width        *
+                                           (size_t)pPixelBuffer->m_Height;
+            pPixelBuffer->m_pData      =   (unsigned char*)malloc(pPixelBuffer->m_DataLength);
+            pDst                       = &((unsigned char*)pPixelBuffer->m_pData)[pPixelBuffer->m_DataLength];
+
+            // read the pixels
+            for (i = 0; i < pPixelBuffer->m_Height; ++i)
+            {
+                pDst -= (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width;
+
+                // read the row
+                if (!csrBufferRead(pBuffer, &offset, (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width, 1, pDst))
+                {
+                    csrPixelBufferRelease(pPixelBuffer);
+                    return 0;
+                }
+            }
+
+            // do convert the BGR pixel order to RGB?
+            if (pPixelBuffer->m_BytePerPixel >= 3)
+                csrBGRToRGB(pPixelBuffer->m_pData,
+                            (int)pPixelBuffer->m_DataLength,
+                            pPixelBuffer->m_BytePerPixel);
+
+            return pPixelBuffer;
+        }
+
+        case 9:
+        {
+            unsigned       cMapSize;
+            unsigned char* pCMap;
+            unsigned char* pEnd;
+            unsigned char* pDst;
+            unsigned char  buffer[128];
+
+            // validate the color map entry size
+            if (header.m_CMapEntrySize != 8 && header.m_CMapEntrySize != 24 && header.m_CMapEntrySize != 32)
+            {
+                csrPixelBufferRelease(pPixelBuffer);
+                return 0;
+            }
+
+            // get the color map size
+            cMapSize = header.m_CMapSize[0] + (header.m_CMapSize[1] << 8);
+
+            // calculate the byte per pixels, and allocate memory for color map
+            pPixelBuffer->m_BytePerPixel = header.m_CMapEntrySize / 8;
+            pCMap                        = (unsigned char*) malloc((size_t)pPixelBuffer->m_BytePerPixel *
+                                                                   (size_t)cMapSize);
+
+            // read the color map
+            if (!csrBufferRead(pBuffer, &offset, (size_t)pPixelBuffer->m_BytePerPixel * (size_t)cMapSize, 1, pCMap))
+            {
+                free(pCMap);
+                csrPixelBufferRelease(pPixelBuffer);
+                return 0;
+            }
+
+            // do convert the BGR pixel order to RGB?
+            if (pPixelBuffer->m_BytePerPixel >= 3)
+                csrBGRToRGB(pCMap, pPixelBuffer->m_BytePerPixel * cMapSize, pPixelBuffer->m_BytePerPixel);
+
+            // allocate memory for pixels
+            pPixelBuffer->m_DataLength = (size_t)pPixelBuffer->m_BytePerPixel *
+                                         (size_t)pPixelBuffer->m_Width        *
+                                         (size_t)pPixelBuffer->m_Height;
+            pPixelBuffer->m_pData      = (unsigned char*)malloc(pPixelBuffer->m_DataLength);
+
+            // iterate though pixels to read
+            for (pEnd = &((unsigned char*)pPixelBuffer->m_pData)[pPixelBuffer->m_DataLength],
+                    pDst = pEnd - (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width;
+                    pDst >= (unsigned char*)pPixelBuffer->m_pData;)
+            {
+                int c;
+
+                // read next char
+                if (!csrBufferRead(pBuffer, &offset, 1, 1, &c))
+                {
+                    free(pCMap);
+                    csrPixelBufferRelease(pPixelBuffer);
+                    return 0;
+                }
+
+                // compressed pixel?
+                if (c & 0x80)
+                {
+                    int            index;
+                    unsigned char* pCol;
+                    unsigned char* pRun;
+
+                    // read next char
+                    if (!csrBufferRead(pBuffer, &offset, 1, 1, &index))
+                    {
+                        free(pCMap);
+                        csrPixelBufferRelease(pPixelBuffer);
+                        return 0;
+                    }
+
+                    pCol = &pCMap[index * pPixelBuffer->m_BytePerPixel];
+
+                    c -= 0x7F;
+                    c *= pPixelBuffer->m_BytePerPixel;
+
+                    while (c > 0 && pDst >= (unsigned char*)pPixelBuffer->m_pData)
+                    {
+                        int   n  = 0;
+                        float nF = 0.0f;
+
+                        csrMathMin((float)c, (float)(pEnd - pDst), &nF);
+
+                        n = (int)nF;
+
+                        for (pRun = pDst + n; pDst < pRun; pDst += pPixelBuffer->m_BytePerPixel)
+                            memcpy(pDst, pCol, pPixelBuffer->m_BytePerPixel);
+
+                        c -= n;
+
+                        if (pDst >= pEnd)
+                        {
+                            pEnd -=        (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width;
+                            pDst  = pEnd - (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width;
+                        }
+                    }
+                }
+                else
+                {
+                    c += 1;
+
+                    while (c > 0 && pDst >= (unsigned char*)pPixelBuffer->m_pData)
+                    {
+                        unsigned char* pSrc;
+                        int            n  = 0;
+                        float          nF = 0.0f;
+
+                        csrMathMin((float)c, (float)(pEnd - pDst) / pPixelBuffer->m_BytePerPixel, &nF);
+
+                        n = (int)nF;
+
+                        // read the row
+                        if (!csrBufferRead(pBuffer, &offset, n, 1, &buffer))
+                        {
+                            free(pCMap);
+                            csrPixelBufferRelease(pPixelBuffer);
+                            return 0;
+                        }
+
+                        for (pSrc = buffer; pSrc < &buffer[n]; pDst += pPixelBuffer->m_BytePerPixel)
+                            memcpy(pDst, &pCMap[*pSrc++ * pPixelBuffer->m_BytePerPixel], pPixelBuffer->m_BytePerPixel);
+
+                        c -= n;
+
+                        if (pDst >= pEnd)
+                        {
+                            pEnd -=        (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width;
+                            pDst  = pEnd - (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width;
+                        }
+                    }
+                }
+            }
+
+            free(pCMap);
+
+            return pPixelBuffer;
+        }
+
+        case 10:
+        {
+            unsigned char* pEnd;
+            unsigned char* pDst;
+            unsigned char  buffer[4];
+
+            // calculate the byte per pixels
+            pPixelBuffer->m_BytePerPixel = header.m_PixelSize / 8;
+
+            // allocate memory for pixels
+            pPixelBuffer->m_DataLength = (size_t)pPixelBuffer->m_BytePerPixel *
+                                         (size_t)pPixelBuffer->m_Width        *
+                                         (size_t)pPixelBuffer->m_Height;
+            pPixelBuffer->m_pData      = (unsigned char*)malloc(pPixelBuffer->m_DataLength);
+
+            // iterate though pixels to read
+            for (pEnd = &((unsigned char*)pPixelBuffer->m_pData)[pPixelBuffer->m_DataLength],
+                    pDst = pEnd - (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width;
+                    pDst >= (unsigned char*)pPixelBuffer->m_pData;)
+            {
+                int c;
+
+                // read next char
+                if (!csrBufferRead(pBuffer, &offset, 1, 1, &c))
+                {
+                    csrPixelBufferRelease(pPixelBuffer);
+                    return 0;
+                }
+
+                // compressed pixel?
+                if (c & 0x80)
+                {
+                    // read pixel
+                    if (!csrBufferRead(pBuffer, &offset, pPixelBuffer->m_BytePerPixel, 1, buffer))
+                    {
+                        csrPixelBufferRelease(pPixelBuffer);
+                        return 0;
+                    }
+
+                    c -= 0x7F;
+
+                    if (pPixelBuffer->m_BytePerPixel >= 3)
+                    {
+                        buffer[0] = buffer[0] ^ buffer[2];
+                        buffer[2] = buffer[0] ^ buffer[2];
+                        buffer[0] = buffer[2] ^ buffer[0];
+                    }
+
+                    c *= pPixelBuffer->m_BytePerPixel;
+
+                    while (c > 0)
+                    {
+                        unsigned char* pRun;
+                        int            n  = 0;
+                        float          nF = 0.0f;
+
+                        csrMathMin((float)c, (float)(pEnd - pDst), &nF);
+
+                        n = (int)nF;
+
+                        for (pRun = pDst + n; pDst < pRun; pDst += pPixelBuffer->m_BytePerPixel)
+                            memcpy(pDst, buffer, pPixelBuffer->m_BytePerPixel);
+
+                        c -= n;
+
+                        if (pDst >= pEnd)
+                        {
+                            pEnd -=        (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width;
+                            pDst  = pEnd - (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width;
+
+                            if (pDst < (unsigned char*)pPixelBuffer->m_pData)
+                                break;
+                        }
+                    }
+                }
+                else
+                {
+                    c += 1;
+                    c *= pPixelBuffer->m_BytePerPixel;
+
+                    while (c > 0)
+                    {
+                        int   n  = 0;
+                        float nF = 0.0f;
+
+                        csrMathMin((float)c, (float)(pEnd - pDst), &nF);
+
+                        n = (int)nF;
+
+                        // read pixel
+                        if (!csrBufferRead(pBuffer, &offset, n, 1, pDst))
+                        {
+                            csrPixelBufferRelease(pPixelBuffer);
+                            return 0;
+                        }
+
+                        if (pPixelBuffer->m_BytePerPixel >= 3)
+                            csrBGRToRGB(pDst, n, pPixelBuffer->m_BytePerPixel);
+
+                        pDst += n;
+                        c    -= n;
+
+                        if (pDst >= pEnd)
+                        {
+                            pEnd -=        (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width;
+                            pDst  = pEnd - (size_t)pPixelBuffer->m_BytePerPixel * (size_t)pPixelBuffer->m_Width;
+
+                            if (pDst < (unsigned char*)pPixelBuffer->m_pData)
+                                break;
+                        }
+                    }
+                }
+            }
+
+            return pPixelBuffer;
+        }
+
+        default:
+            csrPixelBufferRelease(pPixelBuffer);
+            return 0;
+    }
 }
 //---------------------------------------------------------------------------
 // Texture functions

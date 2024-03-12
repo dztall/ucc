@@ -21,6 +21,18 @@
 #include "CSR_Geometry.h"
 #include "CSR_Vertex.h"
 #include "CSR_Model.h"
+#ifdef USE_MDL
+    #include "CSR_Mdl.h"
+#endif
+#ifdef USE_X
+    #include "CSR_X.h"
+#endif
+#ifdef USE_COLLADA
+    #include "CSR_Collada.h"
+#endif
+#ifdef USE_IQM
+    #include "CSR_Iqm.h"
+#endif
 #include "CSR_Renderer.h"
 
 // openGL
@@ -54,6 +66,7 @@
 typedef struct
 {
     void*  m_pKey;
+    char*  m_pStr;
     size_t m_UseCount;
     GLint  m_ID;
 } CSR_OpenGLID;
@@ -439,13 +452,15 @@ typedef void (*CSR_fOnLinkStaticVB)(const CSR_OpenGLShader* pShader, const void*
         *@param meshIndex - mesh index
         *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
         */
-        void csrOpenGLDrawMDL(const CSR_MDL*          pMDL,
-                              const CSR_OpenGLShader* pShader,
-                              const CSR_Array*        pMatrixArray,
-                                    size_t            skinIndex,
-                                    size_t            modelIndex,
-                                    size_t            meshIndex,
-                              const CSR_fOnGetID      fOnGetID);
+        #ifdef USE_MDL
+            void csrOpenGLDrawMDL(const CSR_MDL*          pMDL,
+                                  const CSR_OpenGLShader* pShader,
+                                  const CSR_Array*        pMatrixArray,
+                                        size_t            skinIndex,
+                                        size_t            modelIndex,
+                                        size_t            meshIndex,
+                                  const CSR_fOnGetID      fOnGetID);
+        #endif
 
         /**
         * Draws a X model in a scene
@@ -457,12 +472,14 @@ typedef void (*CSR_fOnLinkStaticVB)(const CSR_OpenGLShader* pShader, const void*
         *@param frameIndex - frame index, ignored if model isn't animated
         *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
         */
-        void csrOpenGLDrawX(const CSR_X*            pX,
-                            const CSR_OpenGLShader* pShader,
-                            const CSR_Array*        pMatrixArray,
-                                  size_t            animSetIndex,
-                                  size_t            frameIndex,
-                            const CSR_fOnGetID      fOnGetID);
+        #ifdef USE_X
+            void csrOpenGLDrawX(const CSR_X*            pX,
+                                const CSR_OpenGLShader* pShader,
+                                const CSR_Array*        pMatrixArray,
+                                      size_t            animSetIndex,
+                                      size_t            frameIndex,
+                                const CSR_fOnGetID      fOnGetID);
+        #endif
 
         /**
         * Draws a Collada model in a scene
@@ -474,12 +491,33 @@ typedef void (*CSR_fOnLinkStaticVB)(const CSR_OpenGLShader* pShader, const void*
         *@param frameIndex - frame index, ignored if model isn't animated
         *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
         */
-        void csrOpenGLDrawCollada(const CSR_Collada*      pCollada,
+        #ifdef USE_COLLADA
+            void csrOpenGLDrawCollada(const CSR_Collada*      pCollada,
+                                      const CSR_OpenGLShader* pShader,
+                                      const CSR_Array*        pMatrixArray,
+                                            size_t            animSetIndex,
+                                            size_t            frameIndex,
+                                      const CSR_fOnGetID      fOnGetID);
+        #endif
+
+        /**
+        * Draws an Inter-Quake model (.iqm) in a scene
+        *@param pIQM - IQM model to draw
+        *@param pShader - shader to use to draw the model
+        *@param pMatrixArray - matrices to use, one for each vertex buffer drawing. If 0, the model
+        *                      matrix currently connected in the shader will be used
+        *@param animSetIndex - animation set index, ignored if model isn't animated
+        *@param frameIndex - frame index, ignored if model isn't animated
+        *@param fOnGetID - callback function to get the OpenGL identifier matching with a key
+        */
+        #ifdef USE_IQM
+            void csrOpenGLDrawIQM(const CSR_IQM*          pIQM,
                                   const CSR_OpenGLShader* pShader,
                                   const CSR_Array*        pMatrixArray,
                                         size_t            animSetIndex,
                                         size_t            frameIndex,
                                   const CSR_fOnGetID      fOnGetID);
+        #endif
 
         //-------------------------------------------------------------------
         // State functions

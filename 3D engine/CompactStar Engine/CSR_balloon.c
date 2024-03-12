@@ -43,6 +43,7 @@
 #include "SDK/CSR_Collision.h"
 #include "SDK/CSR_Renderer.h"
 #include "SDK/CSR_Renderer_OpenGL.h"
+#include "SDK/CSR_Wavefront.h"
 
 // libraries
 #include <ccr.h>

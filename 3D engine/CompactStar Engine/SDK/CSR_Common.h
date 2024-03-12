@@ -19,10 +19,17 @@
 // std
 #include <stddef.h>
 
+// enable or disable model formats
+#define USE_MDL       // Quake I model format
+#define USE_IQM       // Inter-Quake model format
+#define USE_COLLADA   // Collada model format, EXPERIMENTAL (not fully supported)
+#define USE_X         // DirectX model format, EXPERIMENTAL (not fully supported)
+#define USE_WAVEFRONT // WaveFront model format, EXPERIMENTAL (not fully supported)
+
 //---------------------------------------------------------------------------
 // Global defines
 //---------------------------------------------------------------------------
-#define M_CSR_Version        1.07
+#define M_CSR_Version        1.10
 #define M_CSR_Error_Code     0xFFFFFFFF // yes this is a 32 bit error code, but enough for this engine
 #define M_CSR_Unknown_Index -1
 #define M_CSR_Epsilon        1.0E-3     // epsilon value used for tolerance

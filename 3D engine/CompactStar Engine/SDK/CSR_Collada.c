@@ -7046,7 +7046,7 @@ int csrColladaParse(const CSR_Buffer*           pBuffer,
 
     if (!pNode)
         return 0;
-    
+
     // measure tag name length
     len = strlen(pNode->tag);
 
