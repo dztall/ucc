@@ -58,10 +58,15 @@ CSR_Model* csrWaveFrontCreate(const CSR_Buffer*           pBuffer,
     if (!pModel)
         return 0;
 
-    pVertex          = (CSR_WavefrontVertex*)  malloc(sizeof(CSR_WavefrontVertex));
-    pNormal          = (CSR_WavefrontNormal*)  malloc(sizeof(CSR_WavefrontNormal));
-    pUV              = (CSR_WavefrontTexCoord*)malloc(sizeof(CSR_WavefrontTexCoord));
-    pFace            = (CSR_WavefrontFace*)    malloc(sizeof(CSR_WavefrontFace));
+    pVertex = (CSR_WavefrontVertex*)  malloc(sizeof(CSR_WavefrontVertex));
+    pNormal = (CSR_WavefrontNormal*)  malloc(sizeof(CSR_WavefrontNormal));
+    pUV     = (CSR_WavefrontTexCoord*)malloc(sizeof(CSR_WavefrontTexCoord));
+    pFace   = (CSR_WavefrontFace*)    malloc(sizeof(CSR_WavefrontFace));
+
+    // validate the pointers
+    if (!pVertex || !pNormal || !pUV || !pFace)
+        return 0;
+
     pVertex->m_pData = 0;
     pVertex->m_Count = 0;
     pNormal->m_pData = 0;
@@ -623,8 +628,8 @@ int csrWaveFrontBuildFace(const CSR_WavefrontVertex*   pVertex,
 
             // configure the vertex format type
             pVB->m_Format.m_Type         = CSR_VT_Triangles;
-            pVB->m_Format.m_HasNormal    = pNormal->m_Count ? pVertFormat->m_HasNormal    : 0;
-            pVB->m_Format.m_HasTexCoords = pUV->m_Count     ? pVertFormat->m_HasTexCoords : 0;
+            pVB->m_Format.m_HasNormal    = pVertFormat && pNormal->m_Count ? pVertFormat->m_HasNormal    : 0;
+            pVB->m_Format.m_HasTexCoords = pVertFormat && pUV->m_Count     ? pVertFormat->m_HasTexCoords : 0;
 
             // calculate the stride
             csrVertexFormatCalculateStride(&pVB->m_Format);
@@ -673,7 +678,7 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
     faceStride      = 1;
 
     // get the first texture coordinate
-    if (pUV->m_Count)
+    if (pUV && pUV->m_Count)
     {
         baseUVIndex = (pFace->m_pData[uvOffset] - 1) * 2;
         ++faceStride;
@@ -682,7 +687,7 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
         baseUVIndex = 0;
 
     // get the first normal
-    if (pNormal->m_Count)
+    if (pNormal && pNormal->m_Count)
     {
         baseNormalIndex = (pFace->m_pData[normalOffset] - 1) * 3;
         ++faceStride;
@@ -714,7 +719,7 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
         vertex.m_Z = pVertex->m_pData[vertexIndex + 2];
 
         // vertex has a normal?
-        if (pVB->m_Format.m_HasNormal)
+        if (pNormal && pVB->m_Format.m_HasNormal)
         {
             // set normal data
             normal.m_X = pNormal->m_pData[normalIndex];
@@ -723,7 +728,7 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
         }
 
         // vertex has UV texture coordinates?
-        if (pVB->m_Format.m_HasTexCoords)
+        if (pUV && pVB->m_Format.m_HasTexCoords)
         {
             // set texture data
             uv.m_X = pUV->m_pData[uvIndex];
@@ -749,7 +754,7 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
         vertex.m_Z = pVertex->m_pData[vertexIndex + 2];
 
         // vertex has a normal?
-        if (pVB->m_Format.m_HasNormal)
+        if (pNormal && pVB->m_Format.m_HasNormal)
         {
             // set normal data
             normal.m_X = pNormal->m_pData[normalIndex];
@@ -758,7 +763,7 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
         }
 
         // vertex has UV texture coordinates?
-        if (pVB->m_Format.m_HasTexCoords)
+        if (pUV && pVB->m_Format.m_HasTexCoords)
         {
             // set texture data
             uv.m_X = pUV->m_pData[uvIndex];
@@ -784,7 +789,7 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
         vertex.m_Z = pVertex->m_pData[vertexIndex + 2];
 
         // vertex has a normal?
-        if (pVB->m_Format.m_HasNormal)
+        if (pNormal && pVB->m_Format.m_HasNormal)
         {
             // set normal data
             normal.m_X = pNormal->m_pData[normalIndex];
@@ -793,7 +798,7 @@ void csrWaveFrontBuildVertexBuffer(const CSR_WavefrontVertex*   pVertex,
         }
 
         // vertex has UV texture coordinates?
-        if (pVB->m_Format.m_HasTexCoords)
+        if (pUV && pVB->m_Format.m_HasTexCoords)
         {
             // set texture data
             uv.m_X = pUV->m_pData[uvIndex];

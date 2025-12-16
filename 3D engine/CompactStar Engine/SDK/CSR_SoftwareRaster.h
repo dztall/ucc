@@ -99,9 +99,7 @@ typedef struct
 *@param[in, out] pColor - vertex color
 */
 typedef void (*CSR_fOnApplyVertexShader)(const CSR_Matrix4* pMatrix,
-
                                                CSR_Vector3* pVertex,
-
                                                CSR_Vector3* pNormal,
                                                CSR_Vector2* pST,
                                                CSR_Color*   pColor);
@@ -144,7 +142,7 @@ typedef void (*CSR_fOnApplyFragmentShader)(const CSR_Matrix4*  pMatrix,
         *@param width - scene width in pixels
         *@param height - scene height in pixels
         *@param[in, out] pFB - the frame buffer to initialize
-        *@return 1 on sucess, otherwise 0
+        *@return 1 on success, otherwise 0
         */
         int csrFrameBufferInit(size_t width, size_t height, CSR_FrameBuffer* pFB);
 
@@ -179,7 +177,7 @@ typedef void (*CSR_fOnApplyFragmentShader)(const CSR_Matrix4*  pMatrix,
         *@param width - scene width in pixels
         *@param height - scene height in pixels
         *@param[in, out] pDB - the depth buffer to initialize
-        *@return 1 on sucess, otherwise 0
+        *@return 1 on success, otherwise 0
         */
         int csrDepthBufferInit(size_t width, size_t height, CSR_DepthBuffer* pDB);
 

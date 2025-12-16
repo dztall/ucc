@@ -246,23 +246,14 @@ CSR_PixelBuffer* csrPixelBufferFromBitmapBuffer(const CSR_Buffer* pBuffer)
         // Windows V4
         case 108:
         {
-            unsigned short width;
-            unsigned short height;
-
             // read bitmap width
-            csrBufferRead(pBuffer, &offset, sizeof(unsigned short), 1, &width);
+            csrBufferRead(pBuffer, &offset, sizeof(unsigned), 1, &pPixelBuffer->m_Width);
+
+            // read bitmap height
+            csrBufferRead(pBuffer, &offset, sizeof(unsigned), 1, &pPixelBuffer->m_Height);
 
             // skip next 2 bytes
             offset += 2;
-
-            // read bitmap height
-            csrBufferRead(pBuffer, &offset, sizeof(unsigned short), 1, &height);
-
-            pPixelBuffer->m_Width  = width;
-            pPixelBuffer->m_Height = height;
-
-            // skip next 4 bytes
-            offset += 4;
 
             // read bitmap bit per pixels
             csrBufferRead(pBuffer, &offset, sizeof(unsigned short), 1, &bpp);
@@ -286,9 +277,16 @@ CSR_PixelBuffer* csrPixelBufferFromBitmapBuffer(const CSR_Buffer* pBuffer)
     pPixelBuffer->m_PixelType    = CSR_PT_BGR;
     pPixelBuffer->m_ImageType    = CSR_IT_Bitmap;
     pPixelBuffer->m_BytePerPixel = bpp / 8;
-    pPixelBuffer->m_Stride       = (((pPixelBuffer->m_Width) * 3 + 3) / 4) * 4 - ((pPixelBuffer->m_Width) * 3 % 4);
+    pPixelBuffer->m_Stride       = ((pPixelBuffer->m_Width * 3 + 3) / 4) * 4;
     pPixelBuffer->m_DataLength   = (size_t)pPixelBuffer->m_Stride * (size_t)pPixelBuffer->m_Height;
     pPixelBuffer->m_pData        = malloc(sizeof(unsigned char) * pPixelBuffer->m_DataLength);
+
+    // check if memory allocation succeeded
+    if (!pPixelBuffer->m_pData)
+    {
+        csrPixelBufferRelease(pPixelBuffer);
+        return 0;
+    }
 
     offset = dataOffset;
 
@@ -358,7 +356,7 @@ CSR_PixelBuffer* csrPixelBufferFromTgaBuffer(const CSR_Buffer* pBuffer)
     pPixelBuffer->m_ImageType = CSR_IT_Raw;
     pPixelBuffer->m_Width     = header.m_Width [0] + (header.m_Width [1] << 8);
     pPixelBuffer->m_Height    = header.m_Height[0] + (header.m_Height[1] << 8);
-    pPixelBuffer->m_Stride    = (((pPixelBuffer->m_Width) * 3 + 3) / 4) * 4 - ((pPixelBuffer->m_Width) * 3 % 4);
+    pPixelBuffer->m_Stride    = ((pPixelBuffer->m_Width * 3 + 3) / 4) * 4;
 
     switch (header.m_ImageType)
     {
@@ -387,6 +385,12 @@ CSR_PixelBuffer* csrPixelBufferFromTgaBuffer(const CSR_Buffer* pBuffer)
             pCMap                        = (unsigned char*)malloc((size_t)pPixelBuffer->m_BytePerPixel *
                                                                   (size_t)cMapSize);
 
+            if (!pCMap)
+            {
+                csrPixelBufferRelease(pPixelBuffer);
+                return 0;
+            }
+
             // read the color map
             if (!csrBufferRead(pBuffer, &offset, (size_t)pPixelBuffer->m_BytePerPixel * (size_t)cMapSize, 1, pCMap))
             {
@@ -400,13 +404,21 @@ CSR_PixelBuffer* csrPixelBufferFromTgaBuffer(const CSR_Buffer* pBuffer)
                 csrBGRToRGB(pCMap, pPixelBuffer->m_BytePerPixel * cMapSize, pPixelBuffer->m_BytePerPixel);
 
             // allocate memory for pixels and get indexes pointer
-            pPixelBuffer->m_DataLength =   (size_t)pPixelBuffer->m_BytePerPixel *
-                                           (size_t)pPixelBuffer->m_Width        *
-                                           (size_t)pPixelBuffer->m_Height;
-            pPixelBuffer->m_pData      =   (unsigned char*)malloc(pPixelBuffer->m_DataLength);
-            pIndexes                   = &((unsigned char*)pPixelBuffer->m_pData)[(pPixelBuffer->m_BytePerPixel - 1) *
-                                                                                   pPixelBuffer->m_Width             *
-                                                                                   pPixelBuffer->m_Height];
+            pPixelBuffer->m_DataLength = (size_t)pPixelBuffer->m_BytePerPixel *
+                                         (size_t)pPixelBuffer->m_Width        *
+                                         (size_t)pPixelBuffer->m_Height;
+            pPixelBuffer->m_pData      = (unsigned char*)malloc(pPixelBuffer->m_DataLength);
+
+            if (!pPixelBuffer->m_pData)
+            {
+                free(pCMap);
+                csrPixelBufferRelease(pPixelBuffer);
+                return 0;
+            }
+
+            pIndexes = &((unsigned char*)pPixelBuffer->m_pData)[(pPixelBuffer->m_BytePerPixel - 1) *
+                                                                 pPixelBuffer->m_Width             *
+                                                                 pPixelBuffer->m_Height];
 
             // read the index table
             if (!csrBufferRead(pBuffer, &offset, (size_t)pPixelBuffer->m_Width * (size_t)pPixelBuffer->m_Height, 1, pIndexes))
@@ -448,11 +460,18 @@ CSR_PixelBuffer* csrPixelBufferFromTgaBuffer(const CSR_Buffer* pBuffer)
             pPixelBuffer->m_BytePerPixel = header.m_PixelSize / 8;
 
             // allocate memory for pixels and get destination pointer
-            pPixelBuffer->m_DataLength =   (size_t)pPixelBuffer->m_BytePerPixel *
-                                           (size_t)pPixelBuffer->m_Width        *
-                                           (size_t)pPixelBuffer->m_Height;
-            pPixelBuffer->m_pData      =   (unsigned char*)malloc(pPixelBuffer->m_DataLength);
-            pDst                       = &((unsigned char*)pPixelBuffer->m_pData)[pPixelBuffer->m_DataLength];
+            pPixelBuffer->m_DataLength = (size_t)pPixelBuffer->m_BytePerPixel *
+                                         (size_t)pPixelBuffer->m_Width        *
+                                         (size_t)pPixelBuffer->m_Height;
+            pPixelBuffer->m_pData      = (unsigned char*)malloc(pPixelBuffer->m_DataLength);
+
+            if (!pPixelBuffer->m_pData)
+            {
+                csrPixelBufferRelease(pPixelBuffer);
+                return 0;
+            }
+
+            pDst = &((unsigned char*)pPixelBuffer->m_pData)[pPixelBuffer->m_DataLength];
 
             // read the pixels
             for (i = 0; i < pPixelBuffer->m_Height; ++i)
@@ -499,6 +518,12 @@ CSR_PixelBuffer* csrPixelBufferFromTgaBuffer(const CSR_Buffer* pBuffer)
             pCMap                        = (unsigned char*) malloc((size_t)pPixelBuffer->m_BytePerPixel *
                                                                    (size_t)cMapSize);
 
+            if (!pCMap)
+            {
+                csrPixelBufferRelease(pPixelBuffer);
+                return 0;
+            }
+
             // read the color map
             if (!csrBufferRead(pBuffer, &offset, (size_t)pPixelBuffer->m_BytePerPixel * (size_t)cMapSize, 1, pCMap))
             {
@@ -516,6 +541,13 @@ CSR_PixelBuffer* csrPixelBufferFromTgaBuffer(const CSR_Buffer* pBuffer)
                                          (size_t)pPixelBuffer->m_Width        *
                                          (size_t)pPixelBuffer->m_Height;
             pPixelBuffer->m_pData      = (unsigned char*)malloc(pPixelBuffer->m_DataLength);
+
+            if (!pPixelBuffer->m_pData)
+            {
+                free(pCMap);
+                csrPixelBufferRelease(pPixelBuffer);
+                return 0;
+            }
 
             // iterate though pixels to read
             for (pEnd = &((unsigned char*)pPixelBuffer->m_pData)[pPixelBuffer->m_DataLength],
@@ -628,6 +660,12 @@ CSR_PixelBuffer* csrPixelBufferFromTgaBuffer(const CSR_Buffer* pBuffer)
                                          (size_t)pPixelBuffer->m_Width        *
                                          (size_t)pPixelBuffer->m_Height;
             pPixelBuffer->m_pData      = (unsigned char*)malloc(pPixelBuffer->m_DataLength);
+
+            if (!pPixelBuffer->m_pData)
+            {
+                csrPixelBufferRelease(pPixelBuffer);
+                return 0;
+            }
 
             // iterate though pixels to read
             for (pEnd = &((unsigned char*)pPixelBuffer->m_pData)[pPixelBuffer->m_DataLength],

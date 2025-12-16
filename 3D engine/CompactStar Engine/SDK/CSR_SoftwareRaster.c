@@ -315,7 +315,7 @@ void csrRasterRasterizeVertex(const CSR_Vector3* pInVertex,
     // transform the input vertex into the camera space
     csrMat4Transform(pMatrix, pInVertex, &vertexCamera);
 
-    // transfrom the camera vertex to a point in the screen space
+    // transform the camera vertex to a point in the screen space
     vertexScreen.m_X = (zNear * vertexCamera.m_X) / -vertexCamera.m_Z;
     vertexScreen.m_Y = (zNear * vertexCamera.m_Y) / -vertexCamera.m_Z;
 
@@ -471,63 +471,63 @@ int csrRasterDrawPolygon(const CSR_Polygon3*              pPolygon,
                          const CSR_fOnApplyFragmentShader fOnApplyFragmentShader)
 {
     #ifdef _MSC_VER
-        float         xMin;
-        float         yMin;
-        float         xMax;
-        float         yMax;
-        float         xStart;
-        float         yStart;
-        float         xEnd;
-        float         yEnd;
-        float         area;
-        float         w0;
-        float         w1;
-        float         w2;
-        float         invZ;
-        float         z;
-        size_t        x;
-        size_t        y;
-        size_t        x0;
-        size_t        x1;
-        size_t        y0;
-        size_t        y1;
-        int           cullingMode;
-        int           pixelVisible;
-        CSR_Polygon3  rasterPoly  = {0};
-        CSR_Vector2   st[3]       = {0};
-        CSR_Vector2   stCoord     = {0};
-        CSR_Vector3   pixelSample = {0};
-        CSR_Vector3   sampler     = {0};
-        CSR_Color     color       = {0};
+        float        xMin;
+        float        yMin;
+        float        xMax;
+        float        yMax;
+        float        xStart;
+        float        yStart;
+        float        xEnd;
+        float        yEnd;
+        float        area;
+        float        w0;
+        float        w1;
+        float        w2;
+        float        invZ;
+        float        z;
+        size_t       x;
+        size_t       y;
+        size_t       x0;
+        size_t       x1;
+        size_t       y0;
+        size_t       y1;
+        int          cullingMode;
+        int          pixelVisible;
+        CSR_Polygon3 rasterPoly  = {0};
+        CSR_Vector2  st[3]       = {0};
+        CSR_Vector2  stCoord     = {0};
+        CSR_Vector3  pixelSample = {0};
+        CSR_Vector3  sampler     = {0};
+        CSR_Color    color       = {0};
     #else
-        float         xMin;
-        float         yMin;
-        float         xMax;
-        float         yMax;
-        float         xStart;
-        float         yStart;
-        float         xEnd;
-        float         yEnd;
-        float         area;
-        float         w0;
-        float         w1;
-        float         w2;
-        float         invZ;
-        float         z;
-        size_t        x;
-        size_t        y;
-        size_t        x0;
-        size_t        x1;
-        size_t        y0;
-        size_t        y1;
-        int           cullingMode;
-        int           pixelVisible;
-        CSR_Polygon3  rasterPoly;
-        CSR_Vector2   st[3];
-        CSR_Vector2   stCoord;
-        CSR_Vector3   pixelSample;
-        CSR_Vector3   sampler;
-        CSR_Color     color;
+        float        xMin;
+        float        yMin;
+        float        xMax;
+        float        yMax;
+        float        xStart;
+        float        yStart;
+        float        xEnd;
+        float        yEnd;
+        float        area;
+        float        w0;
+        float        w1;
+        float        w2;
+        float        invZ;
+        float        z;
+        size_t       x;
+        size_t       y;
+        size_t       x0;
+        size_t       x1;
+        size_t       y0;
+        size_t       y1;
+        int          cullingMode;
+        int          pixelVisible;
+        CSR_Polygon3 rasterPoly;
+        CSR_Vector2  st[3];
+        CSR_Vector2  stCoord;
+        CSR_Vector3  pixelSample;
+        CSR_Vector3  sampler;
+        CSR_Color    color;
     #endif
 
     // validate the input

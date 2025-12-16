@@ -363,7 +363,7 @@ void OnRender()
     for (y = 0; y < g_Height; ++y)
         for (x = 0; x < g_Width; ++x)
         {
-            // thaw the pixel
+            // draw the pixel
             SDL_SetRenderDrawColor(g_pRenderer,
                                    g_pFrameBuffer->m_pPixel[(y * g_Width) + x].m_R,
                                    g_pFrameBuffer->m_pPixel[(y * g_Width) + x].m_G,
