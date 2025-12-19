@@ -720,7 +720,7 @@ void OnNewTask(float elapsedTime, MINI_BotItem* pItem)
 void ApplyMatrix(float w, float h)
 {
     // calculate matrix items
-    const float zNear  = 1.0f;
+    const float zNear  = 0.1f;
     const float zFar   = 1000.0f;
     const float fov    = 45.0f;
     const float aspect = w / h;
@@ -942,7 +942,7 @@ void on_GLES2_Init(int view_w, int view_h)
     g_TouchPosition.m_X = 0.0f;
     g_TouchPosition.m_Y = 0.0f;
 
-    // create MD2 animation list
+    // create MDL animation list
     g_Animation[0].m_Range[0] = 0;  g_Animation[0].m_Range[1] = 14; // wizard hovers
     g_Animation[1].m_Range[0] = 15; g_Animation[1].m_Range[1] = 28; // wizard flies
     g_Animation[2].m_Range[0] = 29; g_Animation[2].m_Range[1] = 42; // wizard attacks
@@ -1247,10 +1247,10 @@ void on_GLES2_Render()
     MINI_Matrix        scaleMatrix;
     MINI_Matrix        combinedMatrixLevel1;
     MINI_Matrix        combinedMatrixLevel2;
-    MINI_Matrix        modelViewMatrix;
+    MINI_Matrix        modelMatrix;
     MINI_LevelDrawInfo drawInfo;
     float              angle;
-    GLint              modelviewUniform;
+    GLint              modelUniform;
 
     miniBeginScene(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -1326,11 +1326,11 @@ void on_GLES2_Render()
     // calculate model view matrix
     miniMatrixMultiply(&scaleMatrix,          &rotateMatrixX,   &combinedMatrixLevel1);
     miniMatrixMultiply(&combinedMatrixLevel1, &rotateMatrixY,   &combinedMatrixLevel2);
-    miniMatrixMultiply(&combinedMatrixLevel2, &translateMatrix, &modelViewMatrix);
+    miniMatrixMultiply(&combinedMatrixLevel2, &translateMatrix, &modelMatrix);
 
     // connect model view matrix to shader
-    modelviewUniform = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
-    glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
+    modelUniform = glGetUniformLocation(g_ShaderProgram, "mini_uModelview");
+    glUniformMatrix4fv(modelUniform, 1, 0, &modelMatrix.m_Table[0][0]);
 
     // bind the model texture
     glBindTexture(GL_TEXTURE_2D, g_ModelTextureIndex);
@@ -1361,10 +1361,10 @@ void on_GLES2_Render()
         t.m_Z = g_PlayerBullet.m_Shape.m_Pos.m_Z - g_Player.m_Pos.m_Z;
 
         // get the bullet model view matrix
-        miniGetTranslateMatrix(&t, &modelViewMatrix);
+        miniGetTranslateMatrix(&t, &modelMatrix);
 
         // connect model view matrix to shader
-        glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
+        glUniformMatrix4fv(modelUniform, 1, 0, &modelMatrix.m_Table[0][0]);
 
         // bind the model texture
         glBindTexture(GL_TEXTURE_2D, g_BulletTextureIndex);
@@ -1392,10 +1392,10 @@ void on_GLES2_Render()
         t.m_Z = g_BotBullet.m_Shape.m_Pos.m_Z - g_Player.m_Pos.m_Z;
 
         // get the bullet model view matrix
-        miniGetTranslateMatrix(&t, &modelViewMatrix);
+        miniGetTranslateMatrix(&t, &modelMatrix);
 
         // connect model view matrix to shader
-        glUniformMatrix4fv(modelviewUniform, 1, 0, &modelViewMatrix.m_Table[0][0]);
+        glUniformMatrix4fv(modelUniform, 1, 0, &modelMatrix.m_Table[0][0]);
 
         // bind the model texture
         glBindTexture(GL_TEXTURE_2D, g_BulletTextureIndex);

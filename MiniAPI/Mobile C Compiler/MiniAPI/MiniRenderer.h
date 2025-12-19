@@ -193,6 +193,23 @@ typedef enum
                            MINI_VertexFormat* pVertexFormat,
                            MINI_Shader*       pShader);
 
+        /**
+        * Draws a spaceship model
+        *@param pVertices - model vertices
+        *@param pVertexCount - vertex count
+        *@param pMdlCmds - model commands
+        *@param pIndexes - index buffer
+        *@param pIndexCount - index count
+        *@param pVertexFormat - vertex format
+        *@param pShader - shader parameters
+        */
+        void miniDrawSpaceship(float*             pVertices,
+                               unsigned           vertexCount,
+                               MINI_MdlCmds*      pMdlCmds,
+                               MINI_Index*        pIndexes,
+                               unsigned           indexCount,
+                               MINI_VertexFormat* pVertexFormat,
+                               MINI_Shader*       pShader);
 #ifdef __cplusplus
     }
 #endif

@@ -34,7 +34,7 @@
 // Global defines
 //-----------------------------------------------------------------------------
 
-#define M_MINI_VERSION 2.2
+#define M_MINI_VERSION 2.4
 
 // __CCR__ and __CCR_MINOR__ macros may be undefined on older compiler versions,
 // so define them if needed
