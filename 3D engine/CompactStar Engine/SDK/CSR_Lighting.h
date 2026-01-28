@@ -25,16 +25,6 @@
 //---------------------------------------------------------------------------
 
 /**
-* Material, describes the way a mesh reacts to the light
-*/
-typedef struct
-{
-    unsigned m_Color;       // vertex color, applied to all vertices if per-vertex color is disabled
-    int      m_Transparent; // whether or not the alpha blending should be activated
-    int      m_Wireframe;   // whether or not the vertex buffer should be drawn in wireframe
-} CSR_Material;
-
-/**
 * Directional light
 */
 typedef struct
@@ -48,16 +38,6 @@ typedef struct
     extern "C"
     {
 #endif
-        //-------------------------------------------------------------------
-        // Material functions
-        //-------------------------------------------------------------------
-
-        /**
-        * Initializes a material structure
-        *@param[in, out] pMaterial - material to initialize
-        */
-        void csrMaterialInit(CSR_Material* pMaterial);
-
         //-------------------------------------------------------------------
         // Directional light functions
         //-------------------------------------------------------------------

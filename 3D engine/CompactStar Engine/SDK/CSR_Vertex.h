@@ -77,6 +77,18 @@ typedef struct
 } CSR_Line;
 
 /**
+* Material, describes the way a mesh reacts to the light
+*/
+typedef struct
+{
+    unsigned m_Color;       // vertex color, applied to all vertices if per-vertex color is disabled
+    int      m_Transparent; // whether or not the alpha blending should be activated
+    int      m_Wireframe;   // whether or not the vertex buffer should be drawn in wireframe
+    float    m_uScale;      // texture u coordinate scale factor
+    float    m_vScale;      // texture v coordinate scale factor
+} CSR_Material;
+
+/**
 * Vertex format
 */
 typedef struct
@@ -169,6 +181,16 @@ typedef unsigned (*CSR_fOnGetVertexColor)(const CSR_VertexBuffer* pVB,
         *@param pLine - line to initialize
         */
         void csrLineInit(CSR_Line* pLine);
+
+        //-------------------------------------------------------------------
+        // Material functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Initializes a material structure
+        *@param[in, out] pMaterial - material to initialize
+        */
+        void csrMaterialInit(CSR_Material* pMaterial);
 
         //-------------------------------------------------------------------
         // Vertex format functions

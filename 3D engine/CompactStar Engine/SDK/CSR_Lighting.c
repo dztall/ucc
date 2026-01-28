@@ -16,20 +16,6 @@
 #include "CSR_Lighting.h"
 
 //---------------------------------------------------------------------------
-// Material functions
-//---------------------------------------------------------------------------
-void csrMaterialInit(CSR_Material* pMaterial)
-{
-    // no material to initialize?
-    if (!pMaterial)
-        return;
-
-    // initialize the material content
-    pMaterial->m_Color       = 0xFFFFFFFF;
-    pMaterial->m_Transparent = 0;
-    pMaterial->m_Wireframe   = 0;
-}
-//---------------------------------------------------------------------------
 // Directional light functions
 //---------------------------------------------------------------------------
 void csrDirectionalLightInit(CSR_DirectionalLight* pLight)

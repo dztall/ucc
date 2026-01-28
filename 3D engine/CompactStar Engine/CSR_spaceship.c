@@ -675,6 +675,8 @@ void on_GLES2_Init(int view_w, int view_h)
     material.m_Color       = 0xFFFFFFFF;
     material.m_Transparent = 1;
     material.m_Wireframe   = 0;
+    material.m_uScale      = 1.0f;
+    material.m_vScale      = 1.0f;
 
     // IMPORTANT this will map the model with the correct texture resource
     g_TextureIndex = 0;

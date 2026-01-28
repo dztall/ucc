@@ -374,6 +374,8 @@ void on_GLES2_Init(int view_w, int view_h)
     material.m_Color       = 0xFFFFFFFF;
     material.m_Transparent = 0;
     material.m_Wireframe   = 0;
+    material.m_uScale      = 1.0f;
+    material.m_vScale      = 1.0f;
 
     // create the background
     g_pBackgroundMesh = csrShapeCreateSurface(20.0f, 20.0f, &vertexFormat, &vertexCulling, &material, 0);

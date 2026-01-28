@@ -548,13 +548,19 @@ void on_GLES2_Init(int view_w, int view_h)
     vc.m_Type = CSR_CT_Back;
     vc.m_Face = CSR_CF_CCW;
 
+    material.m_Color       = 0xffffffff;
+    material.m_Transparent = 0;
+    material.m_Wireframe   = 0;
+    material.m_uScale      = 1.0f;
+    material.m_vScale      = 1.0f;
+
     // create the surfaces
-    g_pPlayfield   = csrShapeCreateSurface(0.8f, 0.8f, &vf, &vc, 0, 0);
-    g_pCross       = csrShapeCreateSurface(0.2f, 0.2f, &vf, &vc, 0, 0);
-    g_pRound       = csrShapeCreateSurface(0.2f, 0.2f, &vf, &vc, 0, 0);
-    g_pYouWonMsg   = csrShapeCreateSurface(0.2f, 0.1f, &vf, &vc, 0, 0);
-    g_pYouLooseMsg = csrShapeCreateSurface(0.2f, 0.1f, &vf, &vc, 0, 0);
-    g_pEqualityMsg = csrShapeCreateSurface(0.2f, 0.1f, &vf, &vc, 0, 0);
+    g_pPlayfield   = csrShapeCreateSurface(0.8f, 0.8f, &vf, &vc, &material, 0);
+    g_pCross       = csrShapeCreateSurface(0.2f, 0.2f, &vf, &vc, &material, 0);
+    g_pRound       = csrShapeCreateSurface(0.2f, 0.2f, &vf, &vc, &material, 0);
+    g_pYouWonMsg   = csrShapeCreateSurface(0.2f, 0.1f, &vf, &vc, &material, 0);
+    g_pYouLooseMsg = csrShapeCreateSurface(0.2f, 0.1f, &vf, &vc, &material, 0);
+    g_pEqualityMsg = csrShapeCreateSurface(0.2f, 0.1f, &vf, &vc, &material, 0);
 
     // add playfield to the scene
     csrSceneAddMesh(g_pScene, g_pPlayfield, 0, 0);

@@ -47,6 +47,22 @@ void csrLineInit(CSR_Line* pLine)
     pLine->m_CustomModelMat =  0;
 }
 //---------------------------------------------------------------------------
+// Material functions
+//---------------------------------------------------------------------------
+void csrMaterialInit(CSR_Material* pMaterial)
+{
+    // no material to initialize?
+    if (!pMaterial)
+        return;
+
+    // initialize the material content
+    pMaterial->m_Color       = 0xFFFFFFFF;
+    pMaterial->m_Transparent = 0;
+    pMaterial->m_Wireframe   = 0;
+    pMaterial->m_uScale      = 1.0f;
+    pMaterial->m_vScale      = 1.0f;
+}
+//---------------------------------------------------------------------------
 // Vertex format functions
 //---------------------------------------------------------------------------
 void csrVertexFormatInit(CSR_VertexFormat* pVertexFormat)
