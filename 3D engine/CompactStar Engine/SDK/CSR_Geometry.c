@@ -90,6 +90,12 @@ void csrVec2DivVal(const CSR_Vector2* pV, float val, CSR_Vector2* pR)
     pR->m_Y = pV->m_Y / val;
 }
 //---------------------------------------------------------------------------
+void csrVec2Inverse(const CSR_Vector3* pV, CSR_Vector3* pR)
+{
+    pR->m_X = -pV->m_X;
+    pR->m_Y = -pV->m_Y;
+}
+//---------------------------------------------------------------------------
 void csrVec2Length(const CSR_Vector2* pV, float* pR)
 {
     *pR = sqrtf((pV->m_X * pV->m_X) + (pV->m_Y * pV->m_Y));
@@ -213,6 +219,13 @@ void csrVec3DivVal(const CSR_Vector3* pV, float val, CSR_Vector3* pR)
     pR->m_X = pV->m_X / val;
     pR->m_Y = pV->m_Y / val;
     pR->m_Z = pV->m_Z / val;
+}
+//---------------------------------------------------------------------------
+void csrVec3Inverse(const CSR_Vector3* pV, CSR_Vector3* pR)
+{
+    pR->m_X = -pV->m_X;
+    pR->m_Y = -pV->m_Y;
+    pR->m_Z = -pV->m_Z;
 }
 //---------------------------------------------------------------------------
 void csrVec3Length(const CSR_Vector3* pV, float* pR)
@@ -786,10 +799,10 @@ void csrQuatNormalize(const CSR_Quaternion* pQ, CSR_Quaternion* pR)
         return;
     }
 
-    pR->m_X = (pR->m_X / len);
-    pR->m_Y = (pR->m_Y / len);
-    pR->m_Z = (pR->m_Z / len);
-    pR->m_W = (pR->m_W / len);
+    pR->m_X = (pQ->m_X / len);
+    pR->m_Y = (pQ->m_Y / len);
+    pR->m_Z = (pQ->m_Z / len);
+    pR->m_W = (pQ->m_W / len);
 }
 //---------------------------------------------------------------------------
 void csrQuatDot(const CSR_Quaternion* pQ1, const CSR_Quaternion* pQ2, float* pR)
@@ -1799,6 +1812,48 @@ int csrInsideSphere(const CSR_Vector3* pP, const CSR_Sphere* pS)
     return (distance <= pS->m_Radius);
 }
 //---------------------------------------------------------------------------
+int csrInsideCapsule(const CSR_Vector3* pP, const CSR_Capsule* pC)
+{
+    CSR_Vector3 capsuleAxis;
+    CSR_Vector3 ptToTop;
+    CSR_Vector3 lineDelta;
+    CSR_Vector3 ptToCapsule;
+    CSR_Vector3 ptToCapSeg;
+    float       a;
+    float       b;
+    float       t;
+    float       len;
+
+    // calculate capsule axis, and line between p and capsule top vertex
+    csrVec3Sub(&pC->m_Bottom, &pC->m_Top, &capsuleAxis);
+    csrVec3Sub( pP,           &pC->m_Top, &ptToTop);
+
+    // calculate dot products
+    csrVec3Dot(&ptToTop,     &capsuleAxis, &a);
+    csrVec3Dot(&capsuleAxis, &capsuleAxis, &b);
+
+    // find the line t parameter
+    csrMathClamp(a / b, 0.0f, 1.0f, &t);
+
+    // apply line equation, which is: ptToCapsule = pCapsule->m_Top + t * capsuleAxis;
+    csrVec3MulVal(&capsuleAxis,  t,         &lineDelta);
+    csrVec3Add   (&pC->m_Top,   &lineDelta, &ptToCapsule);
+
+    // calculate the length between p and the capsule
+    csrVec3Sub(pP, &ptToCapsule, &ptToCapSeg);
+    csrVec3Length(&ptToCapSeg, &len);
+
+    // if length is lower than the capsule radius, then point is inside the capsule
+    #ifdef __CODEGEARC__
+        if (fabs(len) <= pC->m_Radius)
+    #else
+        if (fabsf(len) <= pC->m_Radius)
+    #endif
+        return 1;
+
+    return 0;
+}
+//---------------------------------------------------------------------------
 // Intersection checks
 //---------------------------------------------------------------------------
 int csrIntersect2(const CSR_Figure2* pFigure1,
@@ -2330,7 +2385,13 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
             plane.m_pFigure = &polygonPlane;
 
             // calculate the intersection point
-            if (!csrIntersect3(pFigure1, &plane, &pointOnPlane, pR2, pR3))
+            if (pFigure1->m_Type == CSR_F3_Ray)
+            {
+                if (!csrIntersect3(pFigure1, &plane, &pointOnPlane, pR2, pR3))
+                    return 0;
+            }
+            else
+            if (!csrIntersect3(pFigure2, &plane, &pointOnPlane, pR2, pR3))
                 return 0;
 
             // check if calculated point is inside the polygon
@@ -2450,15 +2511,17 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
         case 14:
         {
             #ifdef _MSC_VER
-                CSR_Vector3 point     = {0};
-                CSR_Vector3 dir       = {0};
-                CSR_Ray3    ray       = {0};
-                CSR_Figure3 rayFigure = {0};
+                CSR_Vector3 point       = {0};
+                CSR_Vector3 dir         = {0};
+                CSR_Ray3    ray         = {0};
+                CSR_Figure3 rayFigure   = {0};
+                CSR_Figure3 planeFigure = {0};
             #else
                 CSR_Vector3 point;
                 CSR_Vector3 dir;
                 CSR_Ray3    ray;
                 CSR_Figure3 rayFigure;
+                CSR_Figure3 planeFigure;
             #endif
 
             // get the segment to check
@@ -2472,13 +2535,19 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
             csrVec3Sub(&pSegment->m_End, &pSegment->m_Start, &dir);
             csrVec3Normalize(&dir, &ray.m_Dir);
 
-            // build a figure for the plane
+            // build a figure for the ray
             rayFigure.m_Type    = CSR_F3_Ray;
             rayFigure.m_pFigure = &ray;
 
+            // get the figure containing the plane
+            if (pFigure1->m_Type == CSR_F3_Plane)
+                planeFigure = *pFigure1;
+            else
+                planeFigure = *pFigure2;
+
             // check the intersection. NOTE the segment will only intersect the plane if the
             // intersection point is inside the segment limits
-            if (csrIntersect3(&rayFigure, pSecond, &point, pR2, pR3))
+            if (csrIntersect3(&rayFigure, &planeFigure, &point, pR2, pR3))
                 if (csrVec3BetweenRange(&point, &pSegment->m_Start, &pSegment->m_End, (float)M_CSR_Epsilon))
                 {
                     if (pR1)
@@ -2517,7 +2586,13 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
             plane.m_pFigure = &polygonPlane;
 
             // calculate the intersection point
-            if (!csrIntersect3(pFigure1, &plane, &pointOnPlane, pR2, pR3))
+            if (pFigure1->m_Type == CSR_F3_Segment)
+            {
+                if (!csrIntersect3(pFigure1, &plane, &pointOnPlane, pR2, pR3))
+                    return 0;
+            }
+            else
+            if (!csrIntersect3(pFigure2, &plane, &pointOnPlane, pR2, pR3))
                 return 0;
 
             // check if calculated point is inside the polygon
@@ -2740,9 +2815,60 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
             return (length <= (pSphere1->m_Radius + pSphere2->m_Radius));
         }
 
+        // sphere-capsule intersection
+        case 34:
+        {
+            #ifdef _MSC_VER
+                CSR_Segment3 segment          = {0};
+                CSR_Vector3  lineDir          = {0};
+                CSR_Vector3  lineEndOffset    = {0};
+                CSR_Vector3  closestPoint     = {0};
+                CSR_Vector3  sphereToLine     = {0};
+                float        len              = 0.0f;
+                float        penetrationDepth = 0.0f;
+            #else
+                CSR_Segment3 segment;
+                CSR_Vector3  lineDir;
+                CSR_Vector3  lineEndOffset;
+                CSR_Vector3  closestPoint;
+                CSR_Vector3  sphereToLine;
+                float        len;
+                float        penetrationDepth;
+            #endif
+
+            // get the figures to check
+            const CSR_Sphere*  pSphere  = (CSR_Sphere*)pFirst;
+            const CSR_Capsule* pCapsule = (CSR_Capsule*)pSecond;
+
+            // calculate capsule top and bottom positions from which the calculation should be applied
+            csrVec3Sub      (&pCapsule->m_Top,             &pCapsule->m_Bottom, &lineDir);
+            csrVec3Normalize(&lineDir,                     &lineDir);
+            csrVec3MulVal   (&lineDir, pCapsule->m_Radius, &lineEndOffset);
+            csrVec3Sub      (&pCapsule->m_Top,             &lineEndOffset, &segment.m_Start);
+            csrVec3Add      (&pCapsule->m_Bottom,          &lineEndOffset, &segment.m_End);
+
+            // calculate the closest point on line located in the capsule center, then use this point
+            // to calculate the length between the sphere and this line
+            csrSeg3ClosestPoint(&segment,           &pSphere->m_Center, &closestPoint);
+            csrVec3Sub         (&pSphere->m_Center, &closestPoint,      &sphereToLine);
+            csrVec3Length      (&sphereToLine,      &len);
+
+            // calculate the penetration depth
+            #ifdef __CODEGEARC__
+                penetrationDepth = (pSphere->m_Radius + pCapsule->m_Radius) - fabs(len);
+            #else
+                penetrationDepth = (pSphere->m_Radius + pCapsule->m_Radius) - fabsf(len);
+            #endif
+
+            return (penetrationDepth > 0.0f);
+        }
+
+        // capsule-capsule intersection
         case 35:
         {
             #ifdef _MSC_VER
+                CSR_Segment3 firstLine           = {0};
+                CSR_Segment3 secondLine          = {0};
                 CSR_Vector3  firstLineDir        = {0};
                 CSR_Vector3  firstLineEndOffset  = {0};
                 CSR_Vector3  firstTop            = {0};
@@ -2751,22 +2877,11 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
                 CSR_Vector3  secondLineEndOffset = {0};
                 CSR_Vector3  secondTop           = {0};
                 CSR_Vector3  secondBottom        = {0};
-                CSR_Vector3  v0                  = {0};
-                CSR_Vector3  v1                  = {0};
-                CSR_Vector3  v2                  = {0};
-                CSR_Vector3  v3                  = {0};
-                CSR_Vector3  bestCandidate       = {0};
-                CSR_Vector3  secondBestCandidate = {0};
-                CSR_Vector3  penetrationNormal   = {0};
-                CSR_Segment3 line                = {0};
-                CSR_Segment3 secondLine          = {0};
-                float        d0                  = 0.0f;
-                float        d1                  = 0.0f;
-                float        d2                  = 0.0f;
-                float        d3                  = 0.0f;
                 float        len                 = 0.0f;
                 float        penetrationDepth    = 0.0f;
             #else
+                CSR_Segment3 firstLine;
+                CSR_Segment3 secondLine;
                 CSR_Vector3  firstLineDir;
                 CSR_Vector3  firstLineEndOffset;
                 CSR_Vector3  firstTop;
@@ -2775,19 +2890,6 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
                 CSR_Vector3  secondLineEndOffset;
                 CSR_Vector3  secondTop;
                 CSR_Vector3  secondBottom;
-                CSR_Vector3  v0;
-                CSR_Vector3  v1;
-                CSR_Vector3  v2;
-                CSR_Vector3  v3;
-                CSR_Vector3  bestCandidate;
-                CSR_Vector3  secondBestCandidate;
-                CSR_Vector3  penetrationNormal;
-                CSR_Segment3 line;
-                CSR_Segment3 secondLine;
-                float        d0;
-                float        d1;
-                float        d2;
-                float        d3;
                 float        len;
                 float        penetrationDepth;
             #endif
@@ -2805,62 +2907,38 @@ int csrIntersect3(const CSR_Figure3* pFigure1,
                  pCapsule1->m_Bottom.m_Z == pCapsule2->m_Bottom.m_Z))
                 return 1;
 
-            // this capsule
+            // calculate first capsule top and bottom positions from which the calculation should be applied
             csrVec3Sub      (&pCapsule1->m_Top,    &pCapsule1->m_Bottom, &firstLineDir);
             csrVec3Normalize(&firstLineDir,        &firstLineDir);
-            csrVec3MulVal   (&firstLineDir,         pCapsule1->m_Radius, &firstLineEndOffset);
+            csrVec3MulVal   (&firstLineDir,        pCapsule1->m_Radius,  &firstLineEndOffset);
             csrVec3Sub      (&pCapsule1->m_Top,    &firstLineEndOffset,  &firstTop);
             csrVec3Add      (&pCapsule1->m_Bottom, &firstLineEndOffset,  &firstBottom);
 
-            // second capsule
+            // calculate second capsule top and bottom positions from which the calculation should be applied
             csrVec3Sub      (&pCapsule2->m_Top,    &pCapsule2->m_Bottom, &secondLineDir);
             csrVec3Normalize(&secondLineDir,       &secondLineDir);
-            csrVec3MulVal   (&secondLineDir,        pCapsule2->m_Radius, &secondLineEndOffset);
+            csrVec3MulVal   (&secondLineDir,       pCapsule2->m_Radius,  &secondLineEndOffset);
             csrVec3Sub      (&pCapsule2->m_Top,    &secondLineEndOffset, &secondTop);
             csrVec3Add      (&pCapsule2->m_Bottom, &secondLineEndOffset, &secondBottom);
 
-            // vectors between line endpoints
-            csrVec3Sub(&secondBottom, &firstBottom, &v0);
-            csrVec3Sub(&secondTop,    &firstBottom, &v1);
-            csrVec3Sub(&secondBottom, &firstTop,    &v2);
-            csrVec3Sub(&secondTop,    &firstTop,    &v3);
+            // get lines in the center of each capsules
+            firstLine.m_Start  = firstTop;
+            firstLine.m_End    = firstBottom;
+            secondLine.m_Start = secondTop;
+            secondLine.m_End   = secondBottom;
 
-            // squared distances
-            csrVec3Dot(&v0, &v0, &d0);
-            csrVec3Dot(&v1, &v1, &d1);
-            csrVec3Dot(&v2, &v2, &d2);
-            csrVec3Dot(&v3, &v3, &d3);
-
-            // select best candidate for endpoint on first capsule
-            if (d2 < d0 || d2 < d1 || d3 < d0 || d3 < d1)
-                bestCandidate = firstTop;
-            else
-                bestCandidate = firstBottom;
-
-            line.m_Start       = firstBottom;
-            line.m_End         = firstTop;
-            secondLine.m_Start = secondBottom;
-            secondLine.m_End   = secondTop;
-
-            // select best candidate for point on second capsule line segment nearest to best potential endpoint on first capsule
-            csrSeg3ClosestPoint(&secondLine, &bestCandidate, &secondBestCandidate);
-
-            // do the same for first capsule segment
-            csrSeg3ClosestPoint(&line, &secondBestCandidate, &bestCandidate);
-
-            // calculate penetration normal and length
-            csrVec3Sub   (&bestCandidate,     &secondBestCandidate, &penetrationNormal);
-            csrVec3Length(&penetrationNormal, &len);
-
-            if (len == 0.0f)
-                return 0;
-
-            // normalize
-            csrVec3DivVal(&penetrationNormal, len, &penetrationNormal);
+            // check if closest distance between lines composed by capsules top and bottom points
+            // is smaller than capsules radius
+            csrSeg3DistanceBetween(&firstLine, &secondLine, 0.0f, &len);
 
             // calculate the penetration depth
-            penetrationDepth = (pCapsule1->m_Radius + pCapsule2->m_Radius) - len;
+            #ifdef __CODEGEARC__
+                penetrationDepth = (pCapsule1->m_Radius + pCapsule2->m_Radius) - fabs(len);
+            #else
+                penetrationDepth = (pCapsule1->m_Radius + pCapsule2->m_Radius) - fabsf(len);
+            #endif
 
+            // are capsules colliding?
             return (penetrationDepth > 0.0f);
         }
 

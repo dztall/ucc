@@ -48,25 +48,25 @@
 //------------------------------------------------------------------------------
 CSR_Matrix4      g_ProjectionMatrix;
 CSR_Raster       g_Raster;
-CSR_MDL*         g_pModel           = 0;
-CSR_PixelBuffer* g_pModelTexture    = 0;
-CSR_FrameBuffer* g_pFrameBuffer     = 0;
-CSR_DepthBuffer* g_pDepthBuffer     = 0;
-float            g_Width            = 0.0f;
-float            g_Height           = 0.0f;
-const float      g_zNear            = 1.0f;
-const float      g_zFar             = 200.0f;
-double           g_TextureLastTime  = 0.0;
-double           g_ModelLastTime    = 0.0;
-double           g_MeshLastTime     = 0.0;
-const unsigned   g_FPS              = 10;
-size_t           g_AnimIndex        = 0;
-size_t           g_TextureIndex     = 0;
-size_t           g_ModelIndex       = 0;
-size_t           g_MeshIndex        = 0;
-SDL_Window*      g_pWindow          = 0;
-SDL_Texture*     g_pTexture         = 0;
-SDL_Renderer*    g_pRenderer        = 0;
+CSR_MDL*         g_pModel          = 0;
+CSR_PixelBuffer* g_pModelTexture   = 0;
+CSR_FrameBuffer* g_pFrameBuffer    = 0;
+CSR_DepthBuffer* g_pDepthBuffer    = 0;
+float            g_Width           = 0.0f;
+float            g_Height          = 0.0f;
+const float      g_zNear           = 1.0f;
+const float      g_zFar            = 200.0f;
+double           g_TextureLastTime = 0.0;
+double           g_ModelLastTime   = 0.0;
+double           g_MeshLastTime    = 0.0;
+const unsigned   g_FPS             = 10;
+size_t           g_AnimIndex       = 0;
+size_t           g_TextureIndex    = 0;
+size_t           g_ModelIndex      = 0;
+size_t           g_MeshIndex       = 0;
+SDL_Window*      g_pWindow         = 0;
+SDL_Texture*     g_pTexture        = 0;
+SDL_Renderer*    g_pRenderer       = 0;
 //------------------------------------------------------------------------------
 void OnApplySkin(size_t index, const CSR_Skin* pSkin, int* pCanRelease)
 {
@@ -157,7 +157,7 @@ int InitSDL(float width, float height)
                                     -1,
                                      SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    // suceeded?
+    // succeeded?
     if (!g_pRenderer)
     {
         SDL_DestroyWindow(g_pWindow);
@@ -173,7 +173,7 @@ int InitSDL(float width, float height)
                                    width,
                                    height);
 
-    // suceeded?
+    // succeeded?
     if (!g_pTexture)
     {
         SDL_DestroyRenderer(g_pRenderer);
@@ -345,14 +345,14 @@ void OnRender()
 
     // draw the model
     csrRasterDraw(&matrix,
-                  g_zNear,
-                  g_zFar,
-                  pMesh->m_pVB,
+                   g_zNear,
+                   g_zFar,
+                   pMesh->m_pVB,
                   &g_Raster,
-                  g_pFrameBuffer,
-                  g_pDepthBuffer,
-                  0,
-                  OnApplyFragmentShader);
+                   g_pFrameBuffer,
+                   g_pDepthBuffer,
+                   0,
+                   OnApplyFragmentShader);
 
     // begin a SDL drawing
     SDL_SetRenderTarget(g_pRenderer, g_pTexture);
@@ -363,7 +363,7 @@ void OnRender()
     for (y = 0; y < g_Height; ++y)
         for (x = 0; x < g_Width; ++x)
         {
-            // thaw the pixel
+            // draw the pixel
             SDL_SetRenderDrawColor(g_pRenderer,
                                    g_pFrameBuffer->m_pPixel[(y * g_Width) + x].m_R,
                                    g_pFrameBuffer->m_pPixel[(y * g_Width) + x].m_G,

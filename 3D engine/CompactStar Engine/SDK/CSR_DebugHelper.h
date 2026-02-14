@@ -20,8 +20,15 @@
 #include "CSR_Common.h"
 #include "CSR_Vertex.h"
 #include "CSR_Model.h"
-#include "CSR_X.h"
-#include "CSR_Collada.h"
+#ifdef USE_X
+    #include "CSR_X.h"
+#endif
+#ifdef USE_COLLADA
+    #include "CSR_Collada.h"
+#endif
+#ifdef USE_IQM
+    #include "CSR_Iqm.h"
+#endif
 #include "CSR_Renderer.h"
 #include "CSR_Renderer_OpenGL.h"
 
@@ -44,10 +51,12 @@
         *@param animSetIndex - animation set index
         *#param frameIndex - frame index
         */
-        void csrDebugDrawSkeletonX(const CSR_X*            pX,
-                                   const CSR_OpenGLShader* pShader,
-                                         size_t            animSetIndex,
-                                         size_t            frameIndex);
+        #ifdef USE_X
+            void csrDebugDrawSkeletonX(const CSR_X*            pX,
+                                       const CSR_OpenGLShader* pShader,
+                                             size_t            animSetIndex,
+                                             size_t            frameIndex);
+        #endif
 
         //-------------------------------------------------------------------
         // Collada model debug functions
@@ -60,10 +69,30 @@
         *@param animSetIndex - animation set index
         *#param frameIndex - frame index
         */
-        void csrDebugDrawSkeletonCollada(const CSR_Collada*      pCollada,
+        #ifdef USE_COLLADA
+            void csrDebugDrawSkeletonCollada(const CSR_Collada*      pCollada,
+                                             const CSR_OpenGLShader* pShader,
+                                                   size_t            animSetIndex,
+                                                   size_t            frameIndex);
+        #endif
+
+        //-------------------------------------------------------------------
+        // Inter-Quake model debug functions
+        //-------------------------------------------------------------------
+
+        /**
+        * Draws the skeleton of an IQM model
+        *@param pIQM - IQM model for which the skeleton should be drawn
+        *@param pShader - line shader to use to draw skeleton
+        *@param animSetIndex - animation set index
+        *#param frameIndex - frame index
+        */
+        #ifdef USE_IQM
+            void csrDebugDrawSkeletonIQM(const CSR_IQM*          pIQM,
                                          const CSR_OpenGLShader* pShader,
                                                size_t            animSetIndex,
                                                size_t            frameIndex);
+        #endif
 
 #ifdef __cplusplus
     }

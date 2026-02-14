@@ -217,6 +217,27 @@ typedef void (*CSR_fOnApplySkin)(size_t index, const CSR_Skin* pSkin, int* pCanR
                                   const CSR_fOnGetVertexColor fOnGetVertexColor);
 
         /**
+        * Creates a water surface model
+        *@param width - surface width (on the x axis)
+        *@param height - surface height (on the y axis)
+        *@param gridSize - tessellation (be aware that this value doesn't change the surface size, just its density)
+        *@param pVertFormat - mesh vertex format, if 0 the default format will be used
+        *@param pVertCulling - mesh vertex culling, if 0 the default culling will be used
+        *@param pMaterial - mesh material, if 0 the default material will be used
+        *@param fOnGetVertexColor - get vertex color callback function to use, 0 if not used
+        *@return mesh containing the surface, 0 on error
+        *@note The mesh must be released when no longer used, see csrMeshRelease()
+        *@note This model is submitted to several constraints, e.g. it cannot be rotated
+        */
+        CSR_Mesh* csrShapeCreateWaterSurface(float                 width,
+                                             float                 height,
+                                             size_t                gridSize,
+                                       const CSR_VertexFormat*     pVertFormat,
+                                       const CSR_VertexCulling*    pVertCulling,
+                                       const CSR_Material*         pMaterial,
+                                       const CSR_fOnGetVertexColor fOnGetVertexColor);
+
+        /**
         * Creates a box
         *@param width - box width (on the x axis)
         *@param height - box height (on the y axis)

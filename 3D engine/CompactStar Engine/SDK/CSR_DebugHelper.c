@@ -103,52 +103,82 @@ void csrDebugDrawBone(const CSR_Bone*              pBone,
 //---------------------------------------------------------------------------
 // X model debug functions
 //---------------------------------------------------------------------------
-void csrDebugDrawSkeletonX(const CSR_X*            pX,
-                           const CSR_OpenGLShader* pShader,
-                                 size_t            animSetIndex,
-                                 size_t            frameIndex)
-{
-    if (!pX)
-        return;
+#ifdef USE_X
+    void csrDebugDrawSkeletonX(const CSR_X*            pX,
+                               const CSR_OpenGLShader* pShader,
+                                     size_t            animSetIndex,
+                                     size_t            frameIndex)
+    {
+        if (!pX)
+            return;
 
-    if (!pShader)
-        return;
+        if (!pShader)
+            return;
 
-    csrShaderEnable(pShader);
+        csrShaderEnable(pShader);
 
-    csrDebugDrawBone(pX->m_pSkeleton,
-                     pShader,
-                     pX->m_pAnimationSet,
-                     0,
-                     animSetIndex,
-                     frameIndex,
-                     pX->m_PoseOnly);
-}
+        csrDebugDrawBone(pX->m_pSkeleton,
+                         pShader,
+                         pX->m_pAnimationSet,
+                         0,
+                         animSetIndex,
+                         frameIndex,
+                         pX->m_PoseOnly);
+    }
+#endif
 //---------------------------------------------------------------------------
 // Collada model debug functions
 //---------------------------------------------------------------------------
-void csrDebugDrawSkeletonCollada(const CSR_Collada*      pCollada,
+#ifdef USE_COLLADA
+    void csrDebugDrawSkeletonCollada(const CSR_Collada*      pCollada,
+                                     const CSR_OpenGLShader* pShader,
+                                           size_t            animSetIndex,
+                                           size_t            frameIndex)
+    {
+        size_t i;
+
+        if (!pCollada)
+            return;
+
+        if (!pShader)
+            return;
+
+        csrShaderEnable(pShader);
+
+        for (i = 0; i < pCollada->m_SkeletonCount; ++i)
+            csrDebugDrawBone(pCollada->m_pSkeletons[i].m_pRoot,
+                             pShader,
+                             pCollada->m_pAnimationSet,
+                            &pCollada->m_pSkeletons[i].m_InitialMatrix,
+                             animSetIndex,
+                             frameIndex,
+                             pCollada->m_PoseOnly);
+    }
+#endif
+//---------------------------------------------------------------------------
+// Inter-Quake model debug functions
+//---------------------------------------------------------------------------
+#ifdef USE_IQM
+    void csrDebugDrawSkeletonIQM(const CSR_IQM*          pIQM,
                                  const CSR_OpenGLShader* pShader,
                                        size_t            animSetIndex,
                                        size_t            frameIndex)
-{
-    size_t i;
+    {
+        if (!pIQM)
+            return;
 
-    if (!pCollada)
-        return;
+        if (!pShader)
+            return;
 
-    if (!pShader)
-        return;
+        csrShaderEnable(pShader);
 
-    csrShaderEnable(pShader);
-
-    for (i = 0; i < pCollada->m_SkeletonCount; ++i)
-        csrDebugDrawBone(pCollada->m_pSkeletons[i].m_pRoot,
+        csrDebugDrawBone(pIQM->m_pSkeleton,
                          pShader,
-                         pCollada->m_pAnimationSet,
-                        &pCollada->m_pSkeletons[i].m_InitialMatrix,
+                         pIQM->m_pAnimationSet,
+                         0,
                          animSetIndex,
                          frameIndex,
-                         pCollada->m_PoseOnly);
-}
+                         pIQM->m_PoseOnly);
+    }
+#endif
 //---------------------------------------------------------------------------

@@ -167,7 +167,7 @@ CSR_Mesh* csrShapeCreateSurface(float                 width,
     #ifdef _MSC_VER
         int         i;
         int         index;
-        CSR_Mesh*   pMesh  = {0};
+        CSR_Mesh*   pMesh  =  0;
         CSR_Vector3 vertex = {0};
         CSR_Vector3 normal = {0};
         CSR_Vector2 uv     = {0};
@@ -264,13 +264,13 @@ CSR_Mesh* csrShapeCreateSurface(float                 width,
         {
             // calculate texture u coordinate
             if (bufferTemplate[index])
-                uv.m_X = 1.0f;
+                uv.m_X = pMaterial->m_uScale;
             else
                 uv.m_X = 0.0f;
 
             // calculate texture v coordinate
             if (bufferTemplate[index + 1])
-                uv.m_Y = 1.0f;
+                uv.m_Y = pMaterial->m_vScale;
             else
                 uv.m_Y = 0.0f;
         }
@@ -278,6 +278,183 @@ CSR_Mesh* csrShapeCreateSurface(float                 width,
         // add the vertex to the buffer
         csrVertexBufferAdd(&vertex, &normal, &uv, i, fOnGetVertexColor, pMesh->m_pVB);
     }
+
+    return pMesh;
+}
+//---------------------------------------------------------------------------
+CSR_Mesh* csrShapeCreateWaterSurface(float                 width,
+                                     float                 height,
+                                     size_t                gridSize,
+                               const CSR_VertexFormat*     pVertFormat,
+                               const CSR_VertexCulling*    pVertCulling,
+                               const CSR_Material*         pMaterial,
+                               const CSR_fOnGetVertexColor fOnGetVertexColor)
+{
+    #ifdef _MSC_VER
+        size_t      x;
+        size_t      y;
+        float       stepX;
+        float       stepY;
+        CSR_Mesh*   pMesh  =  0;
+        CSR_Vector3 vertex = {0};
+        CSR_Vector3 normal = {0};
+        CSR_Vector2 uv     = {0};
+    #else
+        size_t      x;
+        size_t      y;
+        float       stepX;
+        float       stepY;
+        CSR_Mesh*   pMesh;
+        CSR_Vector3 vertex;
+        CSR_Vector3 normal;
+        CSR_Vector2 uv;
+    #endif
+
+    // create a mesh to contain the shape
+    pMesh = csrMeshCreate();
+
+    // succeeded?
+    if (!pMesh)
+        return 0;
+
+    // create a vertex buffer
+    pMesh->m_pVB = csrVertexBufferCreate();
+
+    // succeeded?
+    if (!pMesh->m_pVB)
+    {
+        csrMeshRelease(pMesh, 0);
+        return 0;
+    }
+
+    pMesh->m_Count = 1;
+
+    // apply the user wished vertex format
+    if (pVertFormat)
+        pMesh->m_pVB->m_Format = *pVertFormat;
+
+    // apply the user wished vertex culling
+    if (pVertCulling)
+        pMesh->m_pVB->m_Culling = *pVertCulling;
+    else
+    {
+        // otherwise configure the default culling
+        pMesh->m_pVB->m_Culling.m_Type = CSR_CT_None;
+        pMesh->m_pVB->m_Culling.m_Face = CSR_CF_CW;
+    }
+
+    // apply the user wished material
+    if (pMaterial)
+        pMesh->m_pVB->m_Material = *pMaterial;
+
+    // set the vertex format type
+    pMesh->m_pVB->m_Format.m_Type = CSR_VT_Triangles;
+
+    // calculate the stride
+    csrVertexFormatCalculateStride(&pMesh->m_pVB->m_Format);
+
+    stepX = width  / (float)gridSize;
+    stepY = height / (float)gridSize;
+
+    // generate grid as triangles
+    for (y = 0; y < gridSize; ++y)
+        for (x = 0; x < gridSize; ++x)
+        {
+            #ifdef _MSC_VER
+                CSR_Vector3 vertex1 = {0};
+                CSR_Vector3 vertex2 = {0};
+                CSR_Vector3 vertex3 = {0};
+                CSR_Vector3 vertex4 = {0};
+                CSR_Vector3 vertex5 = {0};
+                CSR_Vector3 vertex6 = {0};
+                CSR_Vector2 uv1     = {0};
+                CSR_Vector2 uv2     = {0};
+                CSR_Vector2 uv3     = {0};
+                CSR_Vector2 uv4     = {0};
+                CSR_Vector2 uv5     = {0};
+                CSR_Vector2 uv6     = {0};
+                CSR_Vector3 normal  = {0};
+            #else
+                CSR_Vector3 vertex1;
+                CSR_Vector3 vertex2;
+                CSR_Vector3 vertex3;
+                CSR_Vector3 vertex4;
+                CSR_Vector3 vertex5;
+                CSR_Vector3 vertex6;
+                CSR_Vector2 uv1;
+                CSR_Vector2 uv2;
+                CSR_Vector2 uv3;
+                CSR_Vector2 uv4;
+                CSR_Vector2 uv5;
+                CSR_Vector2 uv6;
+                CSR_Vector3 normal;
+            #endif
+
+            // calculate the 4 corners of this grid cell
+            float x0 =  (x      * stepX) - (width  / 2.0f);
+            float x1 = ((x + 1) * stepX) - (width  / 2.0f);
+            float y0 =  (y      * stepY) - (height / 2.0f);
+            float y1 = ((y + 1) * stepY) - (height / 2.0f);
+
+            // calculate UV coordinates for the 4 corners
+            float u0 = ((float) x      / (float)gridSize) * pMaterial->m_uScale;
+            float u1 = ((float)(x + 1) / (float)gridSize) * pMaterial->m_uScale;
+            float v0 = ((float) y      / (float)gridSize) * pMaterial->m_vScale;
+            float v1 = ((float)(y + 1) / (float)gridSize) * pMaterial->m_vScale;
+
+            // normal for flat surface (will be recalculated in shader)
+            normal.m_X = 0.0f;
+            normal.m_Y = 0.0f;
+            normal.m_Z = 1.0f;
+
+            // first triangle, vertex 1 (top-left)
+            vertex1.m_X = x0;
+            vertex1.m_Y = 0.0f;
+            vertex1.m_Z = y0;
+            uv1.m_X     = u0;
+            uv1.m_Y     = v0;
+            csrVertexBufferAdd(&vertex1, &normal, &uv1, 0, fOnGetVertexColor, pMesh->m_pVB);
+
+            // first triangle, vertex 2 (bottom-left)
+            vertex2.m_X = x0;
+            vertex2.m_Y = 0.0f;
+            vertex2.m_Z = y1;
+            uv2.m_X     = u0;
+            uv2.m_Y     = v1;
+            csrVertexBufferAdd(&vertex2, &normal, &uv2, 0, fOnGetVertexColor, pMesh->m_pVB);
+
+            // first triangle, vertex 3 (top-right)
+            vertex3.m_X = x1;
+            vertex3.m_Y = 0.0f;
+            vertex3.m_Z = y0;
+            uv3.m_X     = u1;
+            uv3.m_Y     = v0;
+            csrVertexBufferAdd(&vertex3, &normal, &uv3, 0, fOnGetVertexColor, pMesh->m_pVB);
+
+            // second triangle, vertex 1 (top-right)
+            vertex4.m_X = x1;
+            vertex4.m_Y = 0.0f;
+            vertex4.m_Z = y0;
+            uv4.m_X     = u1;
+            uv4.m_Y     = v0;
+            csrVertexBufferAdd(&vertex4, &normal, &uv4, 0, fOnGetVertexColor, pMesh->m_pVB);
+
+            // second triangle, vertex 2 (bottom-left)
+            vertex5.m_X = x0;
+            vertex5.m_Y = 0.0f;
+            vertex5.m_Z = y1;
+            uv5.m_X     = u0;
+            uv5.m_Y     = v1;
+            csrVertexBufferAdd(&vertex5, &normal, &uv5, 0, fOnGetVertexColor, pMesh->m_pVB);
+
+            // second triangle, vertex 3 (bottom-right)
+            vertex6.m_X = x1;
+            vertex6.m_Y = 0.0f;
+            vertex6.m_Z = y1;
+            uv6.m_X     = u1;
+            uv6.m_Y     = v1;
+            csrVertexBufferAdd(&vertex6, &normal, &uv6, 0, fOnGetVertexColor, pMesh->m_pVB);
+        }
 
     return pMesh;
 }
@@ -395,30 +572,30 @@ CSR_Mesh* csrShapeCreateBox(float                 width,
     if (repeatTexOnEachFace)
     {
         // calculate texture positions
-        texCoords[0].m_X  = 0.0; texCoords[0].m_Y  = 0.0;
-        texCoords[1].m_X  = 0.0; texCoords[1].m_Y  = 1.0;
-        texCoords[2].m_X  = 1.0; texCoords[2].m_Y  = 0.0;
-        texCoords[3].m_X  = 1.0; texCoords[3].m_Y  = 1.0;
-        texCoords[4].m_X  = 0.0; texCoords[4].m_Y  = 0.0;
-        texCoords[5].m_X  = 0.0; texCoords[5].m_Y  = 1.0;
-        texCoords[6].m_X  = 1.0; texCoords[6].m_Y  = 0.0;
-        texCoords[7].m_X  = 1.0; texCoords[7].m_Y  = 1.0;
-        texCoords[8].m_X  = 0.0; texCoords[8].m_Y  = 0.0;
-        texCoords[9].m_X  = 0.0; texCoords[9].m_Y  = 1.0;
-        texCoords[10].m_X = 1.0; texCoords[10].m_Y = 0.0;
-        texCoords[11].m_X = 1.0; texCoords[11].m_Y = 1.0;
-        texCoords[12].m_X = 0.0; texCoords[12].m_Y = 0.0;
-        texCoords[13].m_X = 0.0; texCoords[13].m_Y = 1.0;
-        texCoords[14].m_X = 1.0; texCoords[14].m_Y = 0.0;
-        texCoords[15].m_X = 1.0; texCoords[15].m_Y = 1.0;
-        texCoords[16].m_X = 0.0; texCoords[16].m_Y = 0.0;
-        texCoords[17].m_X = 0.0; texCoords[17].m_Y = 1.0;
-        texCoords[18].m_X = 1.0; texCoords[18].m_Y = 0.0;
-        texCoords[19].m_X = 1.0; texCoords[19].m_Y = 1.0;
-        texCoords[20].m_X = 0.0; texCoords[20].m_Y = 0.0;
-        texCoords[21].m_X = 0.0; texCoords[21].m_Y = 1.0;
-        texCoords[22].m_X = 1.0; texCoords[22].m_Y = 0.0;
-        texCoords[23].m_X = 1.0; texCoords[23].m_Y = 1.0;
+        texCoords[0].m_X  = 0.0f;                texCoords[0].m_Y  = 0.0f;
+        texCoords[1].m_X  = 0.0f;                texCoords[1].m_Y  = pMaterial->m_vScale;
+        texCoords[2].m_X  = pMaterial->m_uScale; texCoords[2].m_Y  = 0.0f;
+        texCoords[3].m_X  = pMaterial->m_uScale; texCoords[3].m_Y  = pMaterial->m_vScale;
+        texCoords[4].m_X  = 0.0f;                texCoords[4].m_Y  = 0.0f;
+        texCoords[5].m_X  = 0.0f;                texCoords[5].m_Y  = pMaterial->m_vScale;
+        texCoords[6].m_X  = pMaterial->m_uScale; texCoords[6].m_Y  = 0.0f;
+        texCoords[7].m_X  = pMaterial->m_uScale; texCoords[7].m_Y  = pMaterial->m_vScale;
+        texCoords[8].m_X  = 0.0f;                texCoords[8].m_Y  = 0.0f;
+        texCoords[9].m_X  = 0.0f;                texCoords[9].m_Y  = pMaterial->m_vScale;
+        texCoords[10].m_X = pMaterial->m_uScale; texCoords[10].m_Y = 0.0f;
+        texCoords[11].m_X = pMaterial->m_uScale; texCoords[11].m_Y = pMaterial->m_vScale;
+        texCoords[12].m_X = 0.0f;                texCoords[12].m_Y = 0.0f;
+        texCoords[13].m_X = 0.0f;                texCoords[13].m_Y = pMaterial->m_vScale;
+        texCoords[14].m_X = pMaterial->m_uScale; texCoords[14].m_Y = 0.0f;
+        texCoords[15].m_X = pMaterial->m_uScale; texCoords[15].m_Y = pMaterial->m_vScale;
+        texCoords[16].m_X = 0.0f;                texCoords[16].m_Y = 0.0f;
+        texCoords[17].m_X = 0.0f;                texCoords[17].m_Y = pMaterial->m_vScale;
+        texCoords[18].m_X = pMaterial->m_uScale; texCoords[18].m_Y = 0.0f;
+        texCoords[19].m_X = pMaterial->m_uScale; texCoords[19].m_Y = pMaterial->m_vScale;
+        texCoords[20].m_X = 0.0f;                texCoords[20].m_Y = 0.0f;
+        texCoords[21].m_X = 0.0f;                texCoords[21].m_Y = pMaterial->m_vScale;
+        texCoords[22].m_X = pMaterial->m_uScale; texCoords[22].m_Y = 0.0f;
+        texCoords[23].m_X = pMaterial->m_uScale; texCoords[23].m_Y = pMaterial->m_vScale;
     }
     else
     {
@@ -637,8 +814,8 @@ CSR_Mesh* csrShapeCreateSphere(float                 radius,
             // vertex has UV texture coordinates?
             if (pMesh->m_pVB[0].m_Format.m_HasTexCoords)
             {
-                uv.m_X = ((float)j / (float)stacks);
-                uv.m_Y = ((float)i / (float)slices);
+                uv.m_X = ((float)j / (float)stacks) * pMaterial->m_uScale;
+                uv.m_Y = ((float)i / (float)slices) * pMaterial->m_vScale;
             }
 
             // add the vertex to the buffer
@@ -665,8 +842,8 @@ CSR_Mesh* csrShapeCreateSphere(float                 radius,
             // vertex has UV texture coordinates?
             if (pMesh->m_pVB[0].m_Format.m_HasTexCoords)
             {
-                uv.m_X = ( (float)j         / (float)stacks);
-                uv.m_Y = (((float)i + 1.0f) / (float)slices);
+                uv.m_X =  ((float)j         / (float)stacks) * pMaterial->m_uScale;
+                uv.m_Y = (((float)i + 1.0f) / (float)slices) * pMaterial->m_vScale;
             }
 
             // add the vertex to the buffer
@@ -695,6 +872,10 @@ CSR_Mesh* csrShapeCreateCylinder(float                 minRadius,
         int         i;
         float       angle;
         float       step;
+        float       radiusDiff;
+        float       normalLength;
+        float       normalY;
+        float       normalRadial;
         CSR_Vector3 vertex = {0};
         CSR_Vector3 normal = {0};
         CSR_Vector2 uv     = {0};
@@ -703,6 +884,10 @@ CSR_Mesh* csrShapeCreateCylinder(float                 minRadius,
         int         i;
         float       angle;
         float       step;
+        float       radiusDiff;
+        float       normalLength;
+        float       normalY;
+        float       normalRadial;
         CSR_Vector3 vertex;
         CSR_Vector3 normal;
         CSR_Vector2 uv;
@@ -749,6 +934,12 @@ CSR_Mesh* csrShapeCreateCylinder(float                 minRadius,
     // calculate step to apply between faces
     step = (float)(2.0 * M_PI) / (float)faces;
 
+    // calculate normal components for truncated cone. In this case, the normal is perpendicular to the slanted surface
+    radiusDiff   =  maxRadius - minRadius;
+    normalLength =  sqrtf(height * height + radiusDiff * radiusDiff);
+    normalY      = -radiusDiff / normalLength;
+    normalRadial =  height     / normalLength;
+
     // iterate through vertices to create
     for (i = 0; i < faces + 1; ++i)
     {
@@ -764,27 +955,20 @@ CSR_Mesh* csrShapeCreateCylinder(float                 minRadius,
         if (pMesh->m_pVB->m_Format.m_HasNormal)
         {
             // set normals
-            normal.m_X = cosf(angle);
-            normal.m_Y = 0.0f;
-            normal.m_Z = sinf(angle);
+            normal.m_X = normalRadial * cosf(angle);
+            normal.m_Y = normalY;
+            normal.m_Z = normalRadial * sinf(angle);
+
+            // normalize the normal vector (should already be normalized, but ensure it)
+            csrVec3Normalize(&normal, &normal);
         }
 
         // vertex has UV texture coordinates?
         if (pMesh->m_pVB->m_Format.m_HasTexCoords)
         {
-            // is the first point to calculate?
-            if (!i)
-            {
-                // add texture coordinates data to buffer
-                uv.m_X = 0.0f;
-                uv.m_Y = 0.0f;
-            }
-            else
-            {
-                // add texture coordinates data to buffer
-                uv.m_X = 1.0f / (float)i;
-                uv.m_Y = 0.0f;
-            }
+            // add texture coordinates data to buffer
+            uv.m_X = ((float)i / (float)faces) * pMaterial->m_uScale;
+            uv.m_Y = 0.0f;
         }
 
         // add the vertex to the buffer
@@ -799,27 +983,20 @@ CSR_Mesh* csrShapeCreateCylinder(float                 minRadius,
         if (pMesh->m_pVB->m_Format.m_HasNormal)
         {
             // set normals
-            normal.m_X = cosf(angle);
-            normal.m_Y = 0.0f;
-            normal.m_Z = sinf(angle);
+            normal.m_X = normalRadial * cosf(angle);
+            normal.m_Y = normalY;
+            normal.m_Z = normalRadial * sinf(angle);
+
+            // normalize the normal vector (should already be normalized, but ensure it)
+            csrVec3Normalize(&normal, &normal);
         }
 
         // vertex has UV texture coordinates?
         if (pMesh->m_pVB->m_Format.m_HasTexCoords)
         {
-            // is the first point to calculate?
-            if (!i)
-            {
-                // add texture coordinates data to buffer
-                uv.m_X = 0.0f;
-                uv.m_Y = 1.0f;
-            }
-            else
-            {
-                // add texture coordinates data to buffer
-                uv.m_X = 1.0f / (float)i;
-                uv.m_Y = 1.0f;
-            }
+            // add texture coordinates data to buffer
+            uv.m_X = ((float)i / (float)faces) * pMaterial->m_uScale;
+            uv.m_Y =                             pMaterial->m_vScale;
         }
 
         // add the vertex to the buffer
@@ -913,15 +1090,15 @@ CSR_Mesh* csrShapeCreateCapsule(float                 height,
     capsuleBottom.m_Z = 0.0f;
 
     // calculate capsule bounds
-    csrVec3Sub(&capsuleTop, &capsuleBottom, &lineDir);
-    csrVec3Normalize(&lineDir, &lineDir);
-    csrVec3MulVal(&lineDir, radius,        &lineEndOffset);
-    csrVec3Sub(&capsuleTop, &lineEndOffset, &top);
-    csrVec3Add(&capsuleBottom, &lineEndOffset, &bottom);
+    csrVec3Sub      (&capsuleTop,    &capsuleBottom, &lineDir);
+    csrVec3Normalize(&lineDir,       &lineDir);
+    csrVec3MulVal   (&lineDir,       radius,         &lineEndOffset);
+    csrVec3Sub      (&capsuleTop,    &lineEndOffset, &top);
+    csrVec3Add      (&capsuleBottom, &lineEndOffset, &bottom);
 
     // calculate capsule axis and length
-    csrVec3Sub(&bottom, &top, &axis);
-    csrVec3Length(&axis, &length);
+    csrVec3Sub   (&bottom, &top, &axis);
+    csrVec3Length(&axis,   &length);
 
     if (length == 0.0f)
         localZ = axis;
@@ -1009,14 +1186,14 @@ CSR_Mesh* csrShapeCreateCapsule(float                 height,
             // vertex has UV texture coordinates?
             if (pMesh->m_pVB[0].m_Format.m_HasTexCoords)
             {
-                uv0.m_X =           (i      / resolution);
-                uv0.m_Y = third +  ((j      / resolution) * third);
-                uv1.m_X =           (i      / resolution);
-                uv1.m_Y = third + (((j + 1) / resolution) * third);
-                uv2.m_X =          ((i + 1) / resolution);
-                uv2.m_Y = third +  ((j      / resolution) * third);
-                uv3.m_X =          ((i + 1) / resolution);
-                uv3.m_Y = third + (((j + 1) / resolution) * third);
+                uv0.m_X =            (i      / resolution)           * pMaterial->m_uScale;
+                uv0.m_Y = (third +  ((j      / resolution) * third)) * pMaterial->m_vScale;
+                uv1.m_X =            (i      / resolution)           * pMaterial->m_uScale;
+                uv1.m_Y = (third + (((j + 1) / resolution) * third)) * pMaterial->m_vScale;
+                uv2.m_X =           ((i + 1) / resolution)           * pMaterial->m_uScale;
+                uv2.m_Y = (third +  ((j      / resolution) * third)) * pMaterial->m_vScale;
+                uv3.m_X =           ((i + 1) / resolution)           * pMaterial->m_uScale;
+                uv3.m_Y = (third + (((j + 1) / resolution) * third)) * pMaterial->m_vScale;
             }
 
             // add face to vertex buffer
@@ -1046,14 +1223,14 @@ CSR_Mesh* csrShapeCreateCapsule(float                 height,
             // vertex has UV texture coordinates?
             if (pMesh->m_pVB[0].m_Format.m_HasTexCoords)
             {
-                uv0.m_X =   (i      / resolution);
-                uv0.m_Y =  ((j      / resolution) * third);
-                uv1.m_X =   (i      / resolution);
-                uv1.m_Y = (((j + 1) / resolution) * third);
-                uv2.m_X =  ((i + 1) / resolution);
-                uv2.m_Y =  ((j      / resolution) * third);
-                uv3.m_X =  ((i + 1) / resolution);
-                uv3.m_Y = (((j + 1) / resolution) * third);
+                uv0.m_X =   (i      / resolution)          * pMaterial->m_uScale;
+                uv0.m_Y =  ((j      / resolution) * third) * pMaterial->m_vScale;
+                uv1.m_X =   (i      / resolution)          * pMaterial->m_uScale;
+                uv1.m_Y = (((j + 1) / resolution) * third) * pMaterial->m_vScale;
+                uv2.m_X =  ((i + 1) / resolution)          * pMaterial->m_uScale;
+                uv2.m_Y =  ((j      / resolution) * third) * pMaterial->m_vScale;
+                uv3.m_X =  ((i + 1) / resolution)          * pMaterial->m_uScale;
+                uv3.m_Y = (((j + 1) / resolution) * third) * pMaterial->m_vScale;
             }
 
             // add face to vertex buffer
@@ -1083,14 +1260,14 @@ CSR_Mesh* csrShapeCreateCapsule(float                 height,
             // vertex has UV texture coordinates?
             if (pMesh->m_pVB[0].m_Format.m_HasTexCoords)
             {
-                uv0.m_X =               (i      / resolution);
-                uv0.m_Y = twoThirds +  ((j      / resolution) * third);
-                uv1.m_X =               (i      / resolution);
-                uv1.m_Y = twoThirds + (((j + 1) / resolution) * third);
-                uv2.m_X =              ((i + 1) / resolution);
-                uv2.m_Y = twoThirds +  ((j      / resolution) * third);
-                uv3.m_X =              ((i + 1) / resolution);
-                uv3.m_Y = twoThirds + (((j + 1) / resolution) * third);
+                uv0.m_X =                (i      / resolution)           * pMaterial->m_uScale;
+                uv0.m_Y = (twoThirds +  ((j      / resolution)) * third) * pMaterial->m_vScale;
+                uv1.m_X =                (i      / resolution)           * pMaterial->m_uScale;
+                uv1.m_Y = (twoThirds + (((j + 1) / resolution)) * third) * pMaterial->m_vScale;
+                uv2.m_X =               ((i + 1) / resolution)           * pMaterial->m_uScale;
+                uv2.m_Y = (twoThirds +  ((j      / resolution)) * third) * pMaterial->m_vScale;
+                uv3.m_X =               ((i + 1) / resolution)           * pMaterial->m_uScale;
+                uv3.m_Y = (twoThirds + (((j + 1) / resolution)) * third) * pMaterial->m_vScale;
             }
 
             // add face to vertex buffer
@@ -1223,13 +1400,13 @@ CSR_Mesh* csrShapeCreateDisk(float                 centerX,
             // set texture data
             if (!i)
             {
-                uv.m_X = 0.5f;
-                uv.m_Y = 0.5f;
+                uv.m_X = 0.5f * pMaterial->m_uScale;
+                uv.m_Y = 0.5f * pMaterial->m_vScale;
             }
             else
             {
-                uv.m_X = 0.5f + (cosf(angle) * 0.5f);
-                uv.m_Y = 0.5f + (sinf(angle) * 0.5f);
+                uv.m_X = (0.5f + (cosf(angle) * 0.5f)) * pMaterial->m_uScale;
+                uv.m_Y = (0.5f + (sinf(angle) * 0.5f)) * pMaterial->m_vScale;
             }
 
         // add the vertex to the buffer
@@ -1364,7 +1541,7 @@ CSR_Mesh* csrShapeCreateRing(float                 centerX,
         if (pMesh->m_pVB->m_Format.m_HasTexCoords)
         {
             // set texture data
-            uv.m_X = texU;
+            uv.m_X = texU * pMaterial->m_uScale;
             uv.m_Y = 0.0f;
         }
 
@@ -1389,8 +1566,8 @@ CSR_Mesh* csrShapeCreateRing(float                 centerX,
         if (pMesh->m_pVB->m_Format.m_HasTexCoords)
         {
             // set texture data
-            uv.m_X = texU;
-            uv.m_Y = 1.0f;
+            uv.m_X = texU * pMaterial->m_uScale;
+            uv.m_Y =        pMaterial->m_vScale;
         }
 
         // add the vertex to the buffer
@@ -1558,7 +1735,7 @@ CSR_Mesh* csrShapeCreateSpiral(float                 centerX,
             if (pMesh->m_pVB[index].m_Format.m_HasTexCoords)
             {
                 // set texture data
-                uv.m_X = texU;
+                uv.m_X = texU * pMaterial->m_uScale;
                 uv.m_Y = 0.0f;
             }
 
@@ -1588,8 +1765,8 @@ CSR_Mesh* csrShapeCreateSpiral(float                 centerX,
             if (pMesh->m_pVB[index].m_Format.m_HasTexCoords)
             {
                 // set texture data
-                uv.m_X = texU;
-                uv.m_Y = 1.0f;
+                uv.m_X = texU * pMaterial->m_uScale;
+                uv.m_Y =        pMaterial->m_vScale;
             }
 
             // add the vertex to the buffer
@@ -2516,7 +2693,7 @@ int csrLandscapeGenerateVertices(const CSR_PixelBuffer* pPixelBuffer,
         return 0;
 
     // calculate landscape data size
-    pVertices->m_Length = (size_t)(pPixelBuffer->m_Width * pPixelBuffer->m_Height);
+    pVertices->m_Length = (size_t)pPixelBuffer->m_Width * (size_t)pPixelBuffer->m_Height;
 
     // incorrect length?
     if (!pVertices->m_Length)

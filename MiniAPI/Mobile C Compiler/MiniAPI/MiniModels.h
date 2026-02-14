@@ -1,4 +1,4 @@
-/*****************************************************************************
+﻿/*****************************************************************************
  * ==> MiniModels -----------------------------------------------------------*
  *****************************************************************************
  * Description : This module provides the functions to generate models like  *
@@ -543,6 +543,26 @@ typedef struct
                              MINI_MdlCmds**     pMdlCmds,
                              MINI_Index**       pIndexes,
                              unsigned*          pIndexCount);
+
+        //----------------------------------------------------------------------------
+        // Spaceship creation functions
+        //----------------------------------------------------------------------------
+
+        /**
+        * Creates a spaceship model
+        *@param[in, out] pVertexFormat - vertex format, generated format on function ends
+        *@param[out] pVertices - model vertices, should be deleted whenever useless
+        *@param[out] pVertexCount - vertex count
+        *@param[out] pMdlCmds - model commands, should be deleted whenever useless
+        *@param[out] pIndexes - index buffer, should be deleted whenever useless
+        *@param[out] pIndexCount - index count
+        */
+        void miniCreateSpaceship(MINI_VertexFormat* pVertexFormat,
+                                 float**            pVertices,
+                                 unsigned*          pVertexCount,
+                                 MINI_MdlCmds**     pMdlCmds,
+                                 MINI_Index**       pIndexes,
+                                 unsigned*          pIndexCount);
 
 #ifdef __cplusplus
     }

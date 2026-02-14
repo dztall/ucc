@@ -1,4 +1,4 @@
-/*****************************************************************************
+﻿/*****************************************************************************
  * ==> MiniModels -----------------------------------------------------------*
  *****************************************************************************
  * Description : This module provides the functions to generate models like  *
@@ -1476,14 +1476,14 @@ void miniCreateLandscape(unsigned char*     pData,
             if (pVertexFormat->m_UseColors)
             {
                 // generate texture coordinates
-                uv1.m_X = 0.0f;
-                uv1.m_Y = 0.0f;
-                uv2.m_X = 1.0f;
-                uv2.m_Y = 0.0f;
-                uv3.m_X = 0.0f;
-                uv3.m_Y = 1.0f;
-                uv4.m_X = 1.0f;
-                uv4.m_Y = 1.0f;
+                uv1.m_X = (float)(x)     / (float)(mapX);
+                uv1.m_Y = (float)(z)     / (float)(mapZ);
+                uv2.m_X = (float)(x + 1) / (float)(mapX);
+                uv2.m_Y = (float)(z)     / (float)(mapZ);
+                uv3.m_X = (float)(x)     / (float)(mapX);
+                uv3.m_Y = (float)(z + 1) / (float)(mapZ);
+                uv4.m_X = (float)(x + 1) / (float)(mapX);
+                uv4.m_Y = (float)(z + 1) / (float)(mapZ);
             }
 
             // add first polygon first vertex to buffer
@@ -2149,5 +2149,87 @@ void miniCreateRover(MINI_VertexFormat* pVertexFormat,
     (*pVertices)[offset + 105] = x + wheel_length * cos(wheel_angle_8); (*pVertices)[offset + 106] = y + wheel_length * sin(wheel_angle_8);
     (*pVertices)[offset + 112] = x + wheel_length * cos(wheel_angle_1); (*pVertices)[offset + 113] = y + wheel_length * sin(wheel_angle_1);
     (*pVertices)[offset + 119] = x + wheel_length * cos(wheel_angle_1); (*pVertices)[offset + 120] = y + wheel_length * sin(wheel_angle_1);
+}
+//----------------------------------------------------------------------------
+// Spaceship creation functions
+//----------------------------------------------------------------------------
+void miniCreateSpaceship(MINI_VertexFormat* pVertexFormat,
+                         float**            pVertices,
+                         unsigned*          pVertexCount,
+                         MINI_MdlCmds**     pMdlCmds,
+                         MINI_Index**       pIndexes,
+                         unsigned*          pIndexCount)
+{
+    // spaceship base vertex buffer
+    const float spaceshipBase[] =
+    {
+        // x    y      z     r      g      b      a
+        -1.5f,  0.0f,  0.0f, 0.85f, 0.75f, 0.85f, 1.0f,
+         1.5f,  0.0f, -1.0f, 0.85f, 0.75f, 0.85f, 1.0f,
+         1.5f,  0.0f,  1.0f, 0.85f, 0.75f, 0.85f, 1.0f,
+         1.5f,  0.0f, -1.0f, 0.85f, 0.75f, 0.85f, 1.0f,
+         1.3f, -0.2f,  0.0f, 0.85f, 0.75f, 0.85f, 1.0f,
+         1.3f, -0.2f,  0.0f, 0.85f, 0.75f, 0.85f, 1.0f,
+         1.5f,  0.0f,  1.0f, 0.85f, 0.75f, 0.85f, 1.0f
+    };
+
+    const float spaceshipBody[] =
+    {
+        // x    y      z     r      g      b      a
+         1.3f, 0.7f,  0.0f, 0.55f, 0.45f, 0.55f, 1.0f,
+        -1.5f, 0.0f,  0.0f, 0.55f, 0.45f, 0.55f, 1.0f,
+         1.5f, 0.0f,  0.6f, 0.55f, 0.45f, 0.55f, 1.0f,
+         1.5f, 0.0f, -0.6f, 0.55f, 0.45f, 0.55f, 1.0f,
+        -1.5f, 0.0f,  0.0f, 0.55f, 0.45f, 0.55f, 1.0f
+    };
+
+    const float spaceshipCockpit[] =
+    {
+        // x    y      z     r      g      b      a
+         1.3f, 0.7f,   0.0f, 0.20f, 0.20f, 0.20f, 1.0f,
+         1.1f, 0.31f,  0.3f, 0.20f, 0.20f, 0.20f, 1.0f,
+        -0.3f, 0.31f,  0.0f, 0.20f, 0.20f, 0.20f, 1.0f,
+         1.1f, 0.31f, -0.3f, 0.20f, 0.20f, 0.20f, 1.0f,
+        -0.3f, 0.31f,  0.0f, 0.20f, 0.20f, 0.20f, 1.0f
+    };
+
+    unsigned offset = 0;
+
+    // configure the vertex format, because data are pre-defined
+    pVertexFormat->m_UseColors   = 1;
+    pVertexFormat->m_UseNormals  = 0;
+    pVertexFormat->m_UseTextures = 0;
+
+    miniCalculateStride(pVertexFormat);
+
+    // create memory for vertices and indexes
+    *pVertexCount = 17;
+    *pIndexCount  = 3;
+    *pVertices    = (float*)malloc(*pVertexCount * pVertexFormat->m_Stride * sizeof(float));
+    *pIndexes     = (MINI_Index*)malloc(*pIndexCount * sizeof(MINI_Index));
+    *pMdlCmds     = (MINI_MdlCmds*)malloc(*pIndexCount * sizeof(MINI_MdlCmds));
+
+    // add the spaceship base to final vertex buffer
+    (*pIndexes)[0].m_Start    = offset;
+    (*pIndexes)[0].m_Length   = sizeof(spaceshipBase) / sizeof(float);
+    (*pMdlCmds)[0].m_GLCmd    = 1;
+    (*pMdlCmds)[0].m_CullMode = 0;
+    memcpy(*pVertices, spaceshipBase, sizeof(spaceshipBase));
+    offset += sizeof(spaceshipBase) / sizeof(float);
+
+    // add the spaceship body to final vertex buffer
+    (*pIndexes)[1].m_Start    = offset;
+    (*pIndexes)[1].m_Length   = sizeof(spaceshipBody) / sizeof(float);
+    (*pMdlCmds)[1].m_GLCmd    = 1;
+    (*pMdlCmds)[1].m_CullMode = 0;
+    memcpy((*pVertices) + offset, spaceshipBody, sizeof(spaceshipBody));
+    offset += sizeof(spaceshipBody) / sizeof(float);
+
+    // add the spaceship cockpit to final vertex buffer
+    (*pIndexes)[2].m_Start    = offset;
+    (*pIndexes)[2].m_Length   = sizeof(spaceshipCockpit) / sizeof(float);
+    (*pMdlCmds)[2].m_GLCmd    = 1;
+    (*pMdlCmds)[2].m_CullMode = 0;
+    memcpy((*pVertices) + offset, spaceshipCockpit, sizeof(spaceshipCockpit));
 }
 //----------------------------------------------------------------------------

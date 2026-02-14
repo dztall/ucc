@@ -16,12 +16,13 @@
 
 // std
 #include <stdlib.h>
-#include <math.h>
 #include <string.h>
 
 // visual studio specific code
 #ifdef _MSC_VER
     #define _USE_MATH_DEFINES
+    #include <math.h>
+#else
     #include <math.h>
 #endif
 
@@ -31,8 +32,8 @@
 //---------------------------------------------------------------------------
 // Global defines
 //---------------------------------------------------------------------------
-#define M_MDL_Mesh_File_Version  6
-#define M_MDL_ID                 (('O' << 24) + ('P' << 16) + ('D' << 8) + 'I')
+#define M_MDL_Mesh_File_Version 6
+#define M_MDL_ID                (('O' << 24) + ('P' << 16) + ('D' << 8) + 'I')
 //---------------------------------------------------------------------------
 // Global values
 //---------------------------------------------------------------------------
@@ -291,6 +292,7 @@ unsigned char g_ColorTable[] =
     255, 243, 147, 255, 247, 199, 255, 255, 255,
     159, 91,  83
 };
+
 //---------------------------------------------------------------------------
 // Private structures
 //---------------------------------------------------------------------------
@@ -373,8 +375,8 @@ typedef struct
 */
 typedef struct
 {
-    unsigned char m_Type;
-    unsigned char m_Count;
+    unsigned      m_Type;
+    unsigned      m_Count;
     CSR_MDLVertex m_BoundingBoxMin;
     CSR_MDLVertex m_BoundingBoxMax;
     float*        m_pTime;
@@ -503,7 +505,7 @@ int csrMDLReadSkin(const CSR_Buffer*    pBuffer,
     #endif
 
     // create memory for texture
-    pSkin->m_pData = (unsigned char*)malloc((size_t)(pSkin->m_TexLen * pSkin->m_Count));
+    pSkin->m_pData = (unsigned char*)malloc((size_t)pSkin->m_TexLen * (size_t)pSkin->m_Count);
 
     // read texture from buffer. NOTE 8 bit array, same in all endianness
     return csrBufferRead(pBuffer, pOffset, pSkin->m_TexLen, pSkin->m_Count, pSkin->m_pData);
@@ -675,13 +677,13 @@ int csrMDLReadFrameGroup(const CSR_Buffer*        pBuffer,
         // the read bytes are inverted and should be swapped if the target system is big endian
         if (csrMemoryEndianness() == CSR_E_BigEndian)
             // iterate through time values to swap
-            for (i = 0; i < pFrameGroup->m_Count; ++i)
+            for (i = 0; i < (int)pFrameGroup->m_Count; ++i)
                 // swap the value in the memory (thus 0xAABBCCDD will become 0xDDCCBBAA)
                 csrMemorySwap(&pFrameGroup->m_pTime[i], sizeof(float));
     #endif
 
     // read the frames
-    for (i = 0; i < pFrameGroup->m_Count; ++i)
+    for (i = 0; i < (int)pFrameGroup->m_Count; ++i)
         if (!csrMDLReadFrame(pBuffer, pOffset, pHeader, &pFrameGroup->m_pFrame[i]))
             return 0;
 
@@ -822,7 +824,7 @@ void csrMDLPopulateModel(const CSR_MDLHeader*        pHeader,
         return;
 
     // iterate through sub-frames contained in group
-    for (i = 0; i < pFrameGroup->m_Count; ++i)
+    for (i = 0; i < (int)pFrameGroup->m_Count; ++i)
     {
         // create the vertex buffers required for the sub-frames
         pModel->m_pMesh[i].m_Count = 1;
@@ -931,7 +933,7 @@ void csrMDLReleaseObjects(CSR_MDLHeader*       pHeader,
             if (pFrameGroup[i].m_pFrame)
             {
                 // release frame vertices
-                for (j = 0; j < pFrameGroup[i].m_Count; ++j)
+                for (j = 0; j < (int)pFrameGroup[i].m_Count; ++j)
                     free(pFrameGroup[i].m_pFrame[j].m_pVertex);
 
                 // release frame

@@ -328,6 +328,13 @@ typedef struct
         void csrVec2DivVal(const CSR_Vector2* pV, float val, CSR_Vector2* pR);
 
         /**
+        * Inverses vector
+        *@param pV - vector to inverse
+        *@param[out] pR - inverted vector
+        */
+        void csrVec2Inverse(const CSR_Vector3* pV, CSR_Vector3* pR);
+
+        /**
         * Calculates vector length
         *@param pV - vector to calculate length
         *@param[out] pR - vector length
@@ -337,7 +344,7 @@ typedef struct
         /**
         * Normalizes the vector
         *@param pV - vector to normalize
-        *@param[out] pR - normailzed vector
+        *@param[out] pR - normalized vector
         */
         void csrVec2Normalize(const CSR_Vector2* pV, CSR_Vector2* pR);
 
@@ -439,6 +446,13 @@ typedef struct
         void csrVec3DivVal(const CSR_Vector3* pV, float val, CSR_Vector3* pR);
 
         /**
+        * Inverses vector
+        *@param pV - vector to inverse
+        *@param[out] pR - inverted vector
+        */
+        void csrVec3Inverse(const CSR_Vector3* pV, CSR_Vector3* pR);
+
+        /**
         * Calculates vector length
         *@param pV - vector to calculate length
         *@param[out] pR - vector length
@@ -448,7 +462,7 @@ typedef struct
         /**
         * Normalizes the vector
         *@param pV - vector to normalize
-        *@param[out] pR - normailzed vector
+        *@param[out] pR - normalized vector
         */
         void csrVec3Normalize(const CSR_Vector3* pV, CSR_Vector3* pR);
 
@@ -486,7 +500,7 @@ typedef struct
         //-------------------------------------------------------------------
 
         /**
-        * Gets matrix identity
+        * Gets identity matrix
         *@param[out] pR - identity matrix
         */
         void csrMat4Identity(CSR_Matrix4* pR);
@@ -1007,6 +1021,14 @@ typedef struct
         *@return 1 if point is inside the sphere, otherwise 0
         */
         int csrInsideSphere(const CSR_Vector3* pP, const CSR_Sphere* pS);
+
+        /**
+        * Checks if a point is inside a capsule
+        *@param pP - point to check
+        *@param pC - capsule to check against
+        *@return 1 if point is inside the capsule, otherwise 0
+        */
+        int csrInsideCapsule(const CSR_Vector3* pP, const CSR_Capsule* pC);
 
         //-------------------------------------------------------------------
         // Intersection checks

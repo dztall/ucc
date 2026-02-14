@@ -137,7 +137,7 @@ typedef struct
     CSR_Body    m_Body;
 } CSR_Ball;
 //------------------------------------------------------------------------------
-typedef struct 
+typedef struct
 {
     void*       m_pKey;
     CSR_Matrix4 m_Matrix;
@@ -743,9 +743,11 @@ void on_GLES2_Init(int view_w, int view_h)
     material.m_Color       = 0xFFFFFFFF;
     material.m_Transparent = 0;
     material.m_Wireframe   = 0;
+    material.m_uScale      = 1.0f;
+    material.m_vScale      = 1.0f;
 
     // create the ball
-    pMesh = csrShapeCreateSphere(g_Ball.m_Geometry.m_Radius, 
+    pMesh = csrShapeCreateSphere(g_Ball.m_Geometry.m_Radius,
                                  20,
                                  20,
                                 &vertexFormat,
@@ -1193,9 +1195,9 @@ void on_GLES2_Update(float timeStep_sec)
             csrSoundStop(g_pFootStepRightSound);
             csrSoundPlay(g_pFootStepRightSound);
         }
-            
+
         g_StepTime = 0.0f;
-        
+
         // next time the other footstep sound will be played
         g_AlternateStep = (g_AlternateStep + 1) & 1;
     }

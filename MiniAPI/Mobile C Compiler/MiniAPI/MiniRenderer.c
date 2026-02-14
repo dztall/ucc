@@ -561,7 +561,81 @@ void miniDrawRover(float*             pVertices,
     if (pVertexFormat->m_UseColors)
         glEnableVertexAttribArray(pShader->m_ColorSlot);
 
-    // iterate through vertex fan buffers to draw
+    // iterate through vertex buffers to draw
+    for (i = 0; i < indexCount; ++i)
+    {
+        // configure culling
+        if (pMdlCmds[i].m_CullMode == 0)
+        {
+            // disabled
+            glDisable(GL_CULL_FACE);
+            glCullFace(GL_NONE);
+        }
+        else
+        {
+            // enabled
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+            glFrontFace(GL_CCW);
+        }
+
+        // draw the next rover vertex buffer
+        if (pMdlCmds[i].m_GLCmd == 0)
+            miniDrawBuffer(&pVertices[pIndexes[i].m_Start],
+                           pIndexes[i].m_Length / pVertexFormat->m_Stride,
+                           E_TriangleStrip,
+                           pVertexFormat,
+                           pShader);
+        else
+            miniDrawBuffer(&pVertices[pIndexes[i].m_Start],
+                           pIndexes[i].m_Length / pVertexFormat->m_Stride,
+                           E_TriangleFan,
+                           pVertexFormat,
+                           pShader);
+    }
+
+    // disable vertices slots from shader
+    glDisableVertexAttribArray(pShader->m_VertexSlot);
+
+    // disable normal slot
+    if (pVertexFormat->m_UseNormals)
+        glDisableVertexAttribArray(pShader->m_NormalSlot);
+
+    // disable texture slot
+    if (pVertexFormat->m_UseTextures)
+        glDisableVertexAttribArray(pShader->m_TexCoordSlot);
+
+    // disable color slot
+    if (pVertexFormat->m_UseColors)
+        glDisableVertexAttribArray(pShader->m_ColorSlot);
+}
+//----------------------------------------------------------------------------
+void miniDrawSpaceship(float*             pVertices,
+                       unsigned           vertexCount,
+                       MINI_MdlCmds*      pMdlCmds,
+                       MINI_Index*        pIndexes,
+                       unsigned           indexCount,
+                       MINI_VertexFormat* pVertexFormat,
+                       MINI_Shader*       pShader)
+{
+    unsigned i;
+
+    // enable position slot
+    glEnableVertexAttribArray(pShader->m_VertexSlot);
+
+    // enable normal slot
+    if (pVertexFormat->m_UseNormals)
+        glEnableVertexAttribArray(pShader->m_NormalSlot);
+
+    // enable texture slot
+    if (pVertexFormat->m_UseTextures)
+        glEnableVertexAttribArray(pShader->m_TexCoordSlot);
+
+    // enable color slot
+    if (pVertexFormat->m_UseColors)
+        glEnableVertexAttribArray(pShader->m_ColorSlot);
+
+    // iterate through vertex buffers to draw
     for (i = 0; i < indexCount; ++i)
     {
         // configure culling
